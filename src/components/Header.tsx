@@ -5,9 +5,10 @@ import { useNavigate, useLocation } from "react-router-dom";
 interface HeaderProps {
   userName?: string;
   onLogout?: () => void;
+  isAdmin?: boolean;
 }
 
-const Header = ({ userName = "Usuario", onLogout }: HeaderProps) => {
+const Header = ({ userName = "Usuario", onLogout, isAdmin = false }: HeaderProps) => {
   const navigate = useNavigate();
   const location = useLocation();
   const isDashboard = location.pathname === "/dashboard";
@@ -27,7 +28,7 @@ const Header = ({ userName = "Usuario", onLogout }: HeaderProps) => {
           </div>
 
           <div className="flex items-center gap-3">
-            {isDashboard && (
+            {isAdmin && isDashboard && (
               <Button 
                 onClick={() => navigate('/obligaciones/nueva')}
                 className="gap-2"

@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils";
-import { ObligationStatus, statusLabels } from "@/types/obligation";
+import { ObligationStatus, statusLabels } from "@/services/obligationService";
 import { CheckCircle, AlertTriangle, XCircle } from "lucide-react";
 
 interface StatusBadgeProps {

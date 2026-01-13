@@ -4,30 +4,70 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Mail, Lock, ArrowRight } from "lucide-react";
+import { Mail, Lock, ArrowRight, User } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Auth = () => {
   const navigate = useNavigate();
+  const { signIn, signUp, user } = useAuth();
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [name, setName] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+
+  // Redirect if already logged in
+  if (user) {
+    navigate('/dashboard');
+    return null;
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!email || !password) {
+    if (!email || !password || (!isLogin && !name)) {
       toast.error("Por favor completa todos los campos");
+      return;
+    }
+
+    if (password.length < 6) {
+      toast.error("La contraseña debe tener al menos 6 caracteres");
       return;
     }
 
     setIsLoading(true);
     
-    // Simulate auth
-    await new Promise(resolve => setTimeout(resolve, 800));
-    
-    toast.success(isLogin ? "Bienvenido de vuelta" : "Cuenta creada exitosamente");
-    navigate('/dashboard');
+    try {
+      if (isLogin) {
+        const { error } = await signIn(email, password);
+        if (error) {
+          if (error.message.includes('Invalid login credentials')) {
+            toast.error("Credenciales incorrectas");
+          } else {
+            toast.error(error.message);
+          }
+          return;
+        }
+        toast.success("Bienvenido de vuelta");
+        navigate('/dashboard');
+      } else {
+        const { error } = await signUp(email, password, name);
+        if (error) {
+          if (error.message.includes('already registered')) {
+            toast.error("Este email ya está registrado");
+          } else {
+            toast.error(error.message);
+          }
+          return;
+        }
+        toast.success("Cuenta creada exitosamente");
+        navigate('/dashboard');
+      }
+    } catch (err) {
+      toast.error("Ocurrió un error. Intenta de nuevo.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -92,6 +132,23 @@ const Auth = () => {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">
+            {!isLogin && (
+              <div className="space-y-2">
+                <Label htmlFor="name">Nombre</Label>
+                <div className="relative">
+                  <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                  <Input
+                    id="name"
+                    type="text"
+                    placeholder="Tu nombre completo"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    className="h-12 pl-10"
+                  />
+                </div>
+              </div>
+            )}
+
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <div className="relative">
@@ -144,6 +201,10 @@ const Auth = () => {
               }
             </button>
           </div>
+
+          <p className="mt-8 text-center text-xs text-muted-foreground">
+            El primer usuario que se registre será administrador.
+          </p>
         </div>
       </div>
     </div>
