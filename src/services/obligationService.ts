@@ -54,38 +54,56 @@ export function calculateStatus(dueDate: string): ObligationStatus {
 }
 
 export async function getObligations(): Promise<Obligation[]> {
-  const { data, error } = await supabase
+  // First, get all obligations
+  const { data: obligations, error: obligationsError } = await supabase
     .from('obligations')
-    .select(`
-      *,
-      profiles!obligations_responsible_id_fkey(name)
-    `)
+    .select('*')
     .order('due_date', { ascending: true });
 
-  if (error) throw error;
+  if (obligationsError) throw obligationsError;
+  if (!obligations || obligations.length === 0) return [];
 
-  return (data || []).map(item => ({
-    ...item,
-    responsible_name: (item.profiles as any)?.name || 'Sin asignar'
+  // Get unique responsible IDs
+  const responsibleIds = [...new Set(obligations.map(o => o.responsible_id))];
+
+  // Fetch profiles for these IDs
+  const { data: profiles, error: profilesError } = await supabase
+    .from('profiles')
+    .select('id, name')
+    .in('id', responsibleIds);
+
+  if (profilesError) throw profilesError;
+
+  // Create a map of id -> name
+  const profileMap = new Map((profiles || []).map(p => [p.id, p.name]));
+
+  // Enrich obligations with responsible names
+  return obligations.map(obligation => ({
+    ...obligation,
+    responsible_name: profileMap.get(obligation.responsible_id) || 'Sin asignar'
   }));
 }
 
 export async function getObligation(id: string): Promise<Obligation | null> {
   const { data, error } = await supabase
     .from('obligations')
-    .select(`
-      *,
-      profiles!obligations_responsible_id_fkey(name)
-    `)
+    .select('*')
     .eq('id', id)
     .maybeSingle();
 
   if (error) throw error;
   if (!data) return null;
 
+  // Fetch the responsible person's profile
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('name')
+    .eq('id', data.responsible_id)
+    .maybeSingle();
+
   return {
     ...data,
-    responsible_name: (data.profiles as any)?.name || 'Sin asignar'
+    responsible_name: profile?.name || 'Sin asignar'
   };
 }
 
@@ -151,20 +169,30 @@ export async function updateObligationNotes(
 }
 
 export async function getObligationHistory(obligationId: string): Promise<ObligationHistory[]> {
-  const { data, error } = await supabase
+  const { data: history, error } = await supabase
     .from('obligation_history')
-    .select(`
-      *,
-      profiles!obligation_history_changed_by_fkey(name)
-    `)
+    .select('*')
     .eq('obligation_id', obligationId)
     .order('created_at', { ascending: false });
 
   if (error) throw error;
+  if (!history || history.length === 0) return [];
 
-  return (data || []).map(item => ({
+  // Get unique user IDs
+  const userIds = [...new Set(history.map(h => h.changed_by))];
+
+  // Fetch profiles
+  const { data: profiles } = await supabase
+    .from('profiles')
+    .select('id, name')
+    .in('id', userIds);
+
+  // Create map
+  const profileMap = new Map((profiles || []).map(p => [p.id, p.name]));
+
+  return history.map(item => ({
     ...item,
-    changed_by_name: (item.profiles as any)?.name || 'Usuario'
+    changed_by_name: profileMap.get(item.changed_by) || 'Usuario'
   }));
 }
 

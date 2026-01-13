@@ -14,7 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useAuth } from "@/contexts/AuthContext";
-import { getObligations, subscribeToObligations, Obligation, categoryLabels, statusLabels } from "@/services/obligationService";
+import { getObligations, Obligation, categoryLabels, statusLabels } from "@/services/obligationService";
 import { Search, Filter, ArrowLeft, Loader2, LayoutGrid, List, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 
@@ -41,18 +41,18 @@ const AllObligations = () => {
     }
   }, [user]);
 
-  // Real-time subscription
+  // Reload obligations when window regains focus
   useEffect(() => {
-    if (!user) return;
-
-    const unsubscribe = subscribeToObligations(() => {
-      loadObligations();
-    });
-
-    return () => {
-      unsubscribe();
+    const handleFocus = () => {
+      if (user) {
+        loadObligations();
+      }
     };
+
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
   }, [user]);
+
 
   const loadObligations = async () => {
     try {

@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import Header from "@/components/Header";
 import StatusBadge from "@/components/StatusBadge";
+import NotificationManager from "@/components/NotificationManager";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -11,22 +12,22 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { 
-  getObligation, 
-  getObligationHistory, 
+import {
+  getObligation,
+  getObligationHistory,
   getObligationFiles,
-  updateObligationStatus, 
+  updateObligationStatus,
   updateObligationNotes,
   uploadObligationFile,
   deleteObligationFile,
   getSignedFileUrl,
-  Obligation, 
+  Obligation,
   ObligationHistory,
   ObligationFile,
-  categoryLabels, 
-  categoryIcons, 
-  statusLabels, 
-  ObligationStatus 
+  categoryLabels,
+  categoryIcons,
+  statusLabels,
+  ObligationStatus
 } from "@/services/obligationService";
 import { useAuth } from "@/contexts/AuthContext";
 import { format } from "date-fns";
@@ -40,7 +41,7 @@ const ObligationDetail = () => {
   const { id } = useParams();
   const { user, profile, isAdmin, isLoading: authLoading, signOut } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  
+
   const [obligation, setObligation] = useState<Obligation | null>(null);
   const [history, setHistory] = useState<ObligationHistory[]>([]);
   const [files, setFiles] = useState<ObligationFile[]>([]);
@@ -71,13 +72,13 @@ const ObligationDetail = () => {
         getObligationHistory(id!),
         getObligationFiles(id!)
       ]);
-      
+
       if (!obligationData) {
         toast.error("Obligación no encontrada");
         navigate('/dashboard');
         return;
       }
-      
+
       setObligation(obligationData);
       setStatus(obligationData.status);
       setHistory(historyData);
@@ -93,13 +94,13 @@ const ObligationDetail = () => {
 
   const handleStatusChange = async (newStatus: ObligationStatus) => {
     if (!obligation || !user || newStatus === status) return;
-    
+
     setIsUpdatingStatus(true);
     try {
       await updateObligationStatus(obligation.id, newStatus, status, user.id);
       setStatus(newStatus);
       toast.success(`Estado actualizado a "${statusLabels[newStatus]}"`);
-      
+
       // Reload history
       const historyData = await getObligationHistory(obligation.id);
       setHistory(historyData);
@@ -116,14 +117,14 @@ const ObligationDetail = () => {
       toast.error("Escribe una nota antes de guardar");
       return;
     }
-    
+
     setIsSavingNote(true);
     try {
       const existingNotes = obligation.notes || '';
       const timestamp = format(new Date(), "d MMM yyyy, HH:mm", { locale: es });
       const newNote = `[${timestamp}] ${profile?.name || 'Usuario'}: ${note}`;
       const updatedNotes = existingNotes ? `${existingNotes}\n\n${newNote}` : newNote;
-      
+
       await updateObligationNotes(obligation.id, updatedNotes);
       setObligation({ ...obligation, notes: updatedNotes });
       setNote("");
@@ -218,14 +219,14 @@ const ObligationDetail = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <Header 
-        userName={profile?.name || user.email || 'Usuario'} 
+      <Header
+        userName={profile?.name || user.email || 'Usuario'}
         onLogout={handleLogout}
         isAdmin={isAdmin}
       />
-      
+
       <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 max-w-3xl">
-        <button 
+        <button
           onClick={() => navigate('/dashboard')}
           className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-6"
         >
@@ -263,9 +264,9 @@ const ObligationDetail = () => {
                     daysUntilDue >= 0 && daysUntilDue <= 30 && "text-status-warning",
                     daysUntilDue > 30 && "text-status-success"
                   )}>
-                    {daysUntilDue < 0 
+                    {daysUntilDue < 0
                       ? `Vencida hace ${Math.abs(daysUntilDue)} días`
-                      : daysUntilDue === 0 
+                      : daysUntilDue === 0
                         ? "Vence hoy"
                         : `${daysUntilDue} días restantes`
                     }
@@ -285,8 +286,8 @@ const ObligationDetail = () => {
           {/* Change Status */}
           <div className="card-elevated p-6">
             <h2 className="font-semibold text-foreground mb-4">Cambiar estado</h2>
-            <Select 
-              value={status} 
+            <Select
+              value={status}
               onValueChange={(value: ObligationStatus) => handleStatusChange(value)}
               disabled={isUpdatingStatus}
             >
@@ -322,13 +323,13 @@ const ObligationDetail = () => {
           {/* Notes */}
           <div className="card-elevated p-6">
             <h2 className="font-semibold text-foreground mb-4">Notas</h2>
-            
+
             {obligation.notes && (
               <div className="bg-secondary/50 rounded-lg p-4 mb-4 text-sm whitespace-pre-wrap">
                 {obligation.notes}
               </div>
             )}
-            
+
             <div className="space-y-3">
               <Textarea
                 placeholder="Escribe una nota sobre esta obligación..."
@@ -336,8 +337,8 @@ const ObligationDetail = () => {
                 onChange={(e) => setNote(e.target.value)}
                 rows={3}
               />
-              <Button 
-                onClick={handleAddNote} 
+              <Button
+                onClick={handleAddNote}
                 variant="secondary"
                 disabled={isSavingNote}
               >
@@ -356,12 +357,12 @@ const ObligationDetail = () => {
           {/* Files */}
           <div className="card-elevated p-6">
             <h2 className="font-semibold text-foreground mb-4">Archivos de evidencia</h2>
-            
+
             {/* Uploaded files list */}
             {files.length > 0 && (
               <div className="space-y-2 mb-4">
                 {files.map((file) => (
-                  <div 
+                  <div
                     key={file.id}
                     className="flex items-center justify-between p-3 bg-secondary/50 rounded-lg"
                   >
@@ -411,14 +412,19 @@ const ObligationDetail = () => {
                   <span className="text-xs text-muted-foreground mt-1">PDF, JPG, PNG, Word, Excel (max 10MB)</span>
                 </>
               )}
-              <input 
+              <input
                 ref={fileInputRef}
-                type="file" 
-                className="hidden" 
+                type="file"
+                className="hidden"
                 onChange={handleFileUpload}
                 accept=".pdf,.jpg,.jpeg,.png,.gif,.webp,.doc,.docx,.xls,.xlsx,.txt,.csv"
               />
             </label>
+          </div>
+
+          {/* Email Notifications */}
+          <div className="card-elevated p-6">
+            <NotificationManager obligationId={obligation.id} />
           </div>
 
           {/* History */}

@@ -10,12 +10,17 @@ interface StatusCardProps {
 const StatusCard = ({ count, label, status, icon }: StatusCardProps) => {
   return (
     <div className={cn(
-      "card-elevated p-6 transition-all duration-200 hover:shadow-elevated animate-fade-in",
-      status === 'success' && "border-l-4 border-l-status-success",
-      status === 'warning' && "border-l-4 border-l-status-warning",
-      status === 'danger' && "border-l-4 border-l-status-danger"
+      "card-elevated p-6 transition-all duration-200 hover:shadow-elevated animate-fade-in relative overflow-hidden",
     )}>
-      <div className="flex items-start justify-between">
+      {/* Colored background accent */}
+      <div className={cn(
+        "absolute inset-0 opacity-5",
+        status === 'success' && "bg-status-success",
+        status === 'warning' && "bg-status-warning",
+        status === 'danger' && "bg-status-danger"
+      )} />
+
+      <div className="relative flex items-start justify-between">
         <div>
           <p className="text-sm font-medium text-muted-foreground">{label}</p>
           <p className={cn(

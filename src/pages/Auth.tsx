@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Mail, Lock, ArrowRight, User } from "lucide-react";
+import { Mail, Lock, ArrowRight, User, Eye, EyeOff } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
 const Auth = () => {
@@ -15,6 +15,7 @@ const Auth = () => {
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   // Redirect if already logged in
   if (user) {
@@ -24,7 +25,7 @@ const Auth = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!email || !password || (!isLogin && !name)) {
       toast.error("Por favor completa todos los campos");
       return;
@@ -36,7 +37,7 @@ const Auth = () => {
     }
 
     setIsLoading(true);
-    
+
     try {
       if (isLogin) {
         const { error } = await signIn(email, password);
@@ -82,7 +83,7 @@ const Auth = () => {
             <span className="text-2xl font-bold text-primary-foreground">IfsinRem</span>
           </div>
         </div>
-        
+
         <div>
           <h1 className="text-4xl font-bold text-primary-foreground mb-4 leading-tight">
             Nunca más olvides un vencimiento importante
@@ -124,8 +125,8 @@ const Auth = () => {
               {isLogin ? "Iniciar sesión" : "Crear cuenta"}
             </h2>
             <p className="text-muted-foreground">
-              {isLogin 
-                ? "Ingresa tus credenciales para continuar" 
+              {isLogin
+                ? "Ingresa tus credenciales para continuar"
                 : "Completa tus datos para empezar"
               }
             </p>
@@ -170,17 +171,28 @@ const Auth = () => {
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                 <Input
                   id="password"
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="h-12 pl-10"
+                  className="h-12 pl-10 pr-10"
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  {showPassword ? (
+                    <EyeOff className="w-5 h-5" />
+                  ) : (
+                    <Eye className="w-5 h-5" />
+                  )}
+                </button>
               </div>
             </div>
 
-            <Button 
-              type="submit" 
+            <Button
+              type="submit"
               className="w-full h-12 text-base gap-2"
               disabled={isLoading}
             >
@@ -195,8 +207,8 @@ const Auth = () => {
               onClick={() => setIsLogin(!isLogin)}
               className="text-sm text-muted-foreground hover:text-foreground transition-colors"
             >
-              {isLogin 
-                ? "¿No tienes cuenta? Regístrate" 
+              {isLogin
+                ? "¿No tienes cuenta? Regístrate"
                 : "¿Ya tienes cuenta? Inicia sesión"
               }
             </button>

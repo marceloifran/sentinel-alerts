@@ -10,6 +10,7 @@ import Dashboard from "./pages/Dashboard";
 import AllObligations from "./pages/AllObligations";
 import CreateObligation from "./pages/CreateObligation";
 import ObligationDetail from "./pages/ObligationDetail";
+import UserManagement from "./pages/UserManagement";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -28,6 +29,7 @@ const App = () => (
             <Route path="/obligaciones" element={<AllObligations />} />
             <Route path="/obligaciones/nueva" element={<CreateObligation />} />
             <Route path="/obligaciones/:id" element={<ObligationDetail />} />
+            <Route path="/usuarios" element={<UserManagement />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

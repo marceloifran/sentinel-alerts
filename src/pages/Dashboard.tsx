@@ -6,7 +6,7 @@ import GeneralStatus from "@/components/GeneralStatus";
 import ObligationCard from "@/components/ObligationCard";
 import EmptyState from "@/components/EmptyState";
 import { useAuth } from "@/contexts/AuthContext";
-import { getObligations, subscribeToObligations, Obligation, statusLabels, categoryLabels } from "@/services/obligationService";
+import { getObligations, Obligation, statusLabels, categoryLabels } from "@/services/obligationService";
 import { CheckCircle, AlertTriangle, XCircle, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -28,17 +28,16 @@ const Dashboard = () => {
     }
   }, [user]);
 
-  // Real-time subscription
+  // Reload obligations when window regains focus (e.g., after creating an obligation)
   useEffect(() => {
-    if (!user) return;
-
-    const unsubscribe = subscribeToObligations(() => {
-      loadObligations();
-    });
-
-    return () => {
-      unsubscribe();
+    const handleFocus = () => {
+      if (user) {
+        loadObligations();
+      }
     };
+
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
   }, [user]);
 
   const loadObligations = async () => {
@@ -103,7 +102,14 @@ const Dashboard = () => {
 
         {/* General Status */}
         <div className="mb-8 animate-fade-in">
-          <GeneralStatus hasOverdue={hasOverdue} />
+          {isLoading ? (
+            <div className="card-elevated p-6 animate-pulse">
+              <div className="h-6 bg-muted rounded w-32 mb-2"></div>
+              <div className="h-8 bg-muted rounded w-48"></div>
+            </div>
+          ) : (
+            <GeneralStatus hasOverdue={hasOverdue} />
+          )}
         </div>
 
         {/* Stats Cards */}
