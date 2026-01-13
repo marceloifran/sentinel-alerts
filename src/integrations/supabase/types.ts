@@ -14,16 +14,193 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      obligation_files: {
+        Row: {
+          created_at: string
+          file_name: string
+          file_path: string
+          file_size: number
+          file_type: string
+          id: string
+          obligation_id: string
+          uploaded_by: string
+        }
+        Insert: {
+          created_at?: string
+          file_name: string
+          file_path: string
+          file_size: number
+          file_type: string
+          id?: string
+          obligation_id: string
+          uploaded_by: string
+        }
+        Update: {
+          created_at?: string
+          file_name?: string
+          file_path?: string
+          file_size?: number
+          file_type?: string
+          id?: string
+          obligation_id?: string
+          uploaded_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "obligation_files_obligation_id_fkey"
+            columns: ["obligation_id"]
+            isOneToOne: false
+            referencedRelation: "obligations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      obligation_history: {
+        Row: {
+          changed_by: string
+          created_at: string
+          id: string
+          new_status: Database["public"]["Enums"]["obligation_status"]
+          note: string | null
+          obligation_id: string
+          previous_status:
+            | Database["public"]["Enums"]["obligation_status"]
+            | null
+        }
+        Insert: {
+          changed_by: string
+          created_at?: string
+          id?: string
+          new_status: Database["public"]["Enums"]["obligation_status"]
+          note?: string | null
+          obligation_id: string
+          previous_status?:
+            | Database["public"]["Enums"]["obligation_status"]
+            | null
+        }
+        Update: {
+          changed_by?: string
+          created_at?: string
+          id?: string
+          new_status?: Database["public"]["Enums"]["obligation_status"]
+          note?: string | null
+          obligation_id?: string
+          previous_status?:
+            | Database["public"]["Enums"]["obligation_status"]
+            | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "obligation_history_obligation_id_fkey"
+            columns: ["obligation_id"]
+            isOneToOne: false
+            referencedRelation: "obligations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      obligations: {
+        Row: {
+          category: Database["public"]["Enums"]["obligation_category"]
+          created_at: string
+          created_by: string
+          due_date: string
+          id: string
+          name: string
+          notes: string | null
+          responsible_id: string
+          status: Database["public"]["Enums"]["obligation_status"]
+          updated_at: string
+        }
+        Insert: {
+          category: Database["public"]["Enums"]["obligation_category"]
+          created_at?: string
+          created_by: string
+          due_date: string
+          id?: string
+          name: string
+          notes?: string | null
+          responsible_id: string
+          status?: Database["public"]["Enums"]["obligation_status"]
+          updated_at?: string
+        }
+        Update: {
+          category?: Database["public"]["Enums"]["obligation_category"]
+          created_at?: string
+          created_by?: string
+          due_date?: string
+          id?: string
+          name?: string
+          notes?: string | null
+          responsible_id?: string
+          status?: Database["public"]["Enums"]["obligation_status"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      is_admin: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "responsable"
+      obligation_category: "legal" | "fiscal" | "seguridad" | "operativa"
+      obligation_status: "al_dia" | "por_vencer" | "vencida"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +327,10 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "responsable"],
+      obligation_category: ["legal", "fiscal", "seguridad", "operativa"],
+      obligation_status: ["al_dia", "por_vencer", "vencida"],
+    },
   },
 } as const
