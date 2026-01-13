@@ -77,9 +77,7 @@ const Auth = () => {
       <div className="hidden lg:flex lg:w-1/2 bg-primary p-12 flex-col justify-between">
         <div>
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-primary-foreground/20 flex items-center justify-center">
-              <span className="text-primary-foreground font-bold text-xl">I</span>
-            </div>
+            <img src="/logo.png" alt="IfsinRem Logo" className="w-12 h-12 object-contain" />
             <span className="text-2xl font-bold text-primary-foreground">IfsinRem</span>
           </div>
         </div>
@@ -114,9 +112,7 @@ const Auth = () => {
         <div className="w-full max-w-md animate-fade-in">
           {/* Mobile logo */}
           <div className="lg:hidden flex items-center gap-3 mb-8 justify-center">
-            <div className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center">
-              <span className="text-primary-foreground font-bold text-xl">I</span>
-            </div>
+            <img src="/logo.png" alt="IfsinRem Logo" className="w-12 h-12 object-contain" />
             <span className="text-2xl font-bold text-foreground">IfsinRem</span>
           </div>
 

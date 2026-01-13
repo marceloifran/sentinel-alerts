@@ -39,9 +39,7 @@ const Header = ({ userName = "Usuario", onLogout, isAdmin = false }: HeaderProps
             className="flex items-center gap-3 cursor-pointer"
             onClick={() => navigate('/dashboard')}
           >
-            <div className="w-9 h-9 rounded-lg bg-primary flex items-center justify-center">
-              <span className="text-primary-foreground font-bold text-lg">I</span>
-            </div>
+            <img src="/logo.png" alt="IfsinRem Logo" className="w-10 h-10 object-contain" />
             <span className="text-xl font-bold text-foreground">IfsinRem</span>
           </div>
 

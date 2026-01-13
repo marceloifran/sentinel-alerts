@@ -67,9 +67,7 @@ const Index = () => {
       <header className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 sticky top-0 bg-background/80 backdrop-blur-lg z-50 border-b border-border/40">
         <nav className="flex items-center justify-between">
           <div className="flex items-center gap-3 animate-fade-in">
-            <div className="w-9 h-9 rounded-lg bg-primary flex items-center justify-center">
-              <span className="text-primary-foreground font-bold text-lg">I</span>
-            </div>
+            <img src="/logo.png" alt="IfsinRem Logo" className="w-12 h-12 object-contain" />
             <span className="text-xl font-bold text-foreground">IfsinRem</span>
           </div>
           <div className="flex items-center gap-3 animate-fade-in">
@@ -186,8 +184,8 @@ const Index = () => {
               <div
                 key={plan.name}
                 className={`card-elevated p-6 sm:p-8 animate-slide-up hover:scale-105 transition-all duration-300 ${plan.highlighted
-                    ? 'border-2 border-primary shadow-xl shadow-primary/20 relative'
-                    : 'hover:shadow-xl'
+                  ? 'border-2 border-primary shadow-xl shadow-primary/20 relative'
+                  : 'hover:shadow-xl'
                   }`}
                 style={{ animationDelay: `${index * 100}ms` }}
               >
@@ -218,8 +216,8 @@ const Index = () => {
                 <Button
                   onClick={plan.action}
                   className={`w-full gap-2 group ${plan.highlighted
-                      ? ''
-                      : 'variant-outline'
+                    ? ''
+                    : 'variant-outline'
                     }`}
                   variant={plan.highlighted ? 'default' : 'outline'}
                 >
