@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
 import { Button } from "@/components/ui/button";
@@ -16,20 +16,50 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { CalendarIcon, ArrowLeft } from "lucide-react";
-import { categoryLabels, categoryIcons, ObligationCategory } from "@/types/obligation";
-import { mockUsers } from "@/data/mockData";
+import { CalendarIcon, ArrowLeft, Loader2 } from "lucide-react";
+import { categoryLabels, categoryIcons, ObligationCategory } from "@/services/obligationService";
+import { createObligation, getResponsibles } from "@/services/obligationService";
+import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 
 const CreateObligation = () => {
   const navigate = useNavigate();
+  const { user, profile, isAdmin, isLoading: authLoading, signOut } = useAuth();
   const [name, setName] = useState("");
   const [category, setCategory] = useState<ObligationCategory | "">("");
   const [dueDate, setDueDate] = useState<Date>();
   const [responsible, setResponsible] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [responsibles, setResponsibles] = useState<{ id: string; name: string; email: string }[]>([]);
+  const [loadingResponsibles, setLoadingResponsibles] = useState(true);
 
-  const responsibles = mockUsers.filter(u => u.role === 'responsable');
+  useEffect(() => {
+    if (!authLoading && !user) {
+      navigate('/auth');
+    }
+    if (!authLoading && user && !isAdmin) {
+      toast.error("Solo los administradores pueden crear obligaciones");
+      navigate('/dashboard');
+    }
+  }, [user, authLoading, isAdmin, navigate]);
+
+  useEffect(() => {
+    if (user && isAdmin) {
+      loadResponsibles();
+    }
+  }, [user, isAdmin]);
+
+  const loadResponsibles = async () => {
+    try {
+      const data = await getResponsibles();
+      setResponsibles(data);
+    } catch (error) {
+      console.error('Error loading responsibles:', error);
+      toast.error("Error al cargar los responsables");
+    } finally {
+      setLoadingResponsibles(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,18 +69,53 @@ const CreateObligation = () => {
       return;
     }
 
+    if (!user) {
+      toast.error("Debes iniciar sesión");
+      return;
+    }
+
     setIsSubmitting(true);
     
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    toast.success("Obligación creada exitosamente");
-    navigate('/dashboard');
+    try {
+      await createObligation({
+        name,
+        category: category as ObligationCategory,
+        due_date: format(dueDate, 'yyyy-MM-dd'),
+        responsible_id: responsible
+      }, user.id);
+      
+      toast.success("Obligación creada exitosamente");
+      navigate('/dashboard');
+    } catch (error) {
+      console.error('Error creating obligation:', error);
+      toast.error("Error al crear la obligación");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
+
+  const handleLogout = async () => {
+    await signOut();
+    navigate('/');
+  };
+
+  if (authLoading || loadingResponsibles) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!user || !isAdmin) return null;
 
   return (
     <div className="min-h-screen bg-background">
-      <Header userName="María García" onLogout={() => navigate('/')} />
+      <Header 
+        userName={profile?.name || user.email || 'Usuario'} 
+        onLogout={handleLogout}
+        isAdmin={isAdmin}
+      />
       
       <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 max-w-2xl">
         <button 
@@ -119,7 +184,6 @@ const CreateObligation = () => {
                     selected={dueDate}
                     onSelect={setDueDate}
                     initialFocus
-                    disabled={(date) => date < new Date()}
                   />
                 </PopoverContent>
               </Popover>
@@ -135,11 +199,16 @@ const CreateObligation = () => {
                 <SelectContent>
                   {responsibles.map((user) => (
                     <SelectItem key={user.id} value={user.id}>
-                      {user.name}
+                      {user.name} ({user.email})
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
+              {responsibles.length === 0 && (
+                <p className="text-sm text-muted-foreground">
+                  No hay usuarios registrados aún
+                </p>
+              )}
             </div>
 
             {/* Submit */}
@@ -157,7 +226,14 @@ const CreateObligation = () => {
                 className="flex-1"
                 disabled={isSubmitting}
               >
-                {isSubmitting ? "Guardando..." : "Crear obligación"}
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Guardando...
+                  </>
+                ) : (
+                  "Crear obligación"
+                )}
               </Button>
             </div>
           </form>

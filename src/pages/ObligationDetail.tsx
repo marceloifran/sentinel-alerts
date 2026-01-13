@@ -1,10 +1,9 @@
-import { useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import Header from "@/components/Header";
 import StatusBadge from "@/components/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -12,60 +11,218 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { mockObligations } from "@/data/mockData";
-import { categoryLabels, categoryIcons, statusLabels, ObligationStatus } from "@/types/obligation";
+import { 
+  getObligation, 
+  getObligationHistory, 
+  getObligationFiles,
+  updateObligationStatus, 
+  updateObligationNotes,
+  uploadObligationFile,
+  deleteObligationFile,
+  getSignedFileUrl,
+  Obligation, 
+  ObligationHistory,
+  ObligationFile,
+  categoryLabels, 
+  categoryIcons, 
+  statusLabels, 
+  ObligationStatus 
+} from "@/services/obligationService";
+import { useAuth } from "@/contexts/AuthContext";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { ArrowLeft, Calendar, User, Clock, FileUp } from "lucide-react";
+import { ArrowLeft, Calendar, User, Clock, FileUp, Trash2, Download, File, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
 const ObligationDetail = () => {
   const navigate = useNavigate();
   const { id } = useParams();
+  const { user, profile, isAdmin, isLoading: authLoading, signOut } = useAuth();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
-  const obligation = mockObligations.find(o => o.id === id);
-  
-  const [status, setStatus] = useState<ObligationStatus>(obligation?.status || 'al_dia');
+  const [obligation, setObligation] = useState<Obligation | null>(null);
+  const [history, setHistory] = useState<ObligationHistory[]>([]);
+  const [files, setFiles] = useState<ObligationFile[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [status, setStatus] = useState<ObligationStatus>('al_dia');
   const [note, setNote] = useState("");
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+  const [isSavingNote, setIsSavingNote] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
 
-  if (!obligation) {
+  useEffect(() => {
+    if (!authLoading && !user) {
+      navigate('/auth');
+    }
+  }, [user, authLoading, navigate]);
+
+  useEffect(() => {
+    if (user && id) {
+      loadData();
+    }
+  }, [user, id]);
+
+  const loadData = async () => {
+    try {
+      setIsLoading(true);
+      const [obligationData, historyData, filesData] = await Promise.all([
+        getObligation(id!),
+        getObligationHistory(id!),
+        getObligationFiles(id!)
+      ]);
+      
+      if (!obligationData) {
+        toast.error("Obligación no encontrada");
+        navigate('/dashboard');
+        return;
+      }
+      
+      setObligation(obligationData);
+      setStatus(obligationData.status);
+      setHistory(historyData);
+      setFiles(filesData);
+    } catch (error) {
+      console.error('Error loading obligation:', error);
+      toast.error("Error al cargar la obligación");
+      navigate('/dashboard');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleStatusChange = async (newStatus: ObligationStatus) => {
+    if (!obligation || !user || newStatus === status) return;
+    
+    setIsUpdatingStatus(true);
+    try {
+      await updateObligationStatus(obligation.id, newStatus, status, user.id);
+      setStatus(newStatus);
+      toast.success(`Estado actualizado a "${statusLabels[newStatus]}"`);
+      
+      // Reload history
+      const historyData = await getObligationHistory(obligation.id);
+      setHistory(historyData);
+    } catch (error) {
+      console.error('Error updating status:', error);
+      toast.error("Error al actualizar el estado");
+    } finally {
+      setIsUpdatingStatus(false);
+    }
+  };
+
+  const handleAddNote = async () => {
+    if (!note.trim() || !obligation) {
+      toast.error("Escribe una nota antes de guardar");
+      return;
+    }
+    
+    setIsSavingNote(true);
+    try {
+      const existingNotes = obligation.notes || '';
+      const timestamp = format(new Date(), "d MMM yyyy, HH:mm", { locale: es });
+      const newNote = `[${timestamp}] ${profile?.name || 'Usuario'}: ${note}`;
+      const updatedNotes = existingNotes ? `${existingNotes}\n\n${newNote}` : newNote;
+      
+      await updateObligationNotes(obligation.id, updatedNotes);
+      setObligation({ ...obligation, notes: updatedNotes });
+      setNote("");
+      toast.success("Nota agregada");
+    } catch (error) {
+      console.error('Error adding note:', error);
+      toast.error("Error al agregar la nota");
+    } finally {
+      setIsSavingNote(false);
+    }
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !obligation || !user) return;
+
+    // Validate file size (max 10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("El archivo es demasiado grande (máximo 10MB)");
+      return;
+    }
+
+    setIsUploading(true);
+    try {
+      const uploadedFile = await uploadObligationFile(obligation.id, file, user.id);
+      setFiles([uploadedFile, ...files]);
+      toast.success("Archivo subido exitosamente");
+    } catch (error) {
+      console.error('Error uploading file:', error);
+      toast.error("Error al subir el archivo");
+    } finally {
+      setIsUploading(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
+  const handleDownloadFile = async (file: ObligationFile) => {
+    try {
+      const url = await getSignedFileUrl(file.file_path);
+      window.open(url, '_blank');
+    } catch (error) {
+      console.error('Error getting file URL:', error);
+      toast.error("Error al descargar el archivo");
+    }
+  };
+
+  const handleDeleteFile = async (file: ObligationFile) => {
+    try {
+      await deleteObligationFile(file.id, file.file_path);
+      setFiles(files.filter(f => f.id !== file.id));
+      toast.success("Archivo eliminado");
+    } catch (error) {
+      console.error('Error deleting file:', error);
+      toast.error("Error al eliminar el archivo");
+    }
+  };
+
+  const handleLogout = async () => {
+    await signOut();
+    navigate('/');
+  };
+
+  const formatFileSize = (bytes: number): string => {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  };
+
+  const getFileIcon = (fileType: string): string => {
+    if (fileType.startsWith('image/')) return '🖼️';
+    if (fileType === 'application/pdf') return '📄';
+    if (fileType.includes('word')) return '📝';
+    if (fileType.includes('excel') || fileType.includes('spreadsheet')) return '📊';
+    return '📎';
+  };
+
+  if (authLoading || isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <h2 className="text-xl font-semibold text-foreground mb-2">Obligación no encontrada</h2>
-          <Button onClick={() => navigate('/dashboard')}>Volver al dashboard</Button>
-        </div>
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     );
   }
 
+  if (!user || !obligation) return null;
+
   const daysUntilDue = Math.ceil(
-    (new Date(obligation.dueDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)
+    (new Date(obligation.due_date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)
   );
-
-  const handleStatusChange = (newStatus: ObligationStatus) => {
-    setStatus(newStatus);
-    toast.success(`Estado actualizado a "${statusLabels[newStatus]}"`);
-  };
-
-  const handleAddNote = () => {
-    if (!note.trim()) {
-      toast.error("Escribe una nota antes de guardar");
-      return;
-    }
-    toast.success("Nota agregada");
-    setNote("");
-  };
-
-  const mockHistory = [
-    { date: new Date(), user: "María García", from: "por_vencer" as const, to: status },
-    { date: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), user: "Sistema", from: "al_dia" as const, to: "por_vencer" as const },
-  ];
 
   return (
     <div className="min-h-screen bg-background">
-      <Header userName="María García" onLogout={() => navigate('/')} />
+      <Header 
+        userName={profile?.name || user.email || 'Usuario'} 
+        onLogout={handleLogout}
+        isAdmin={isAdmin}
+      />
       
       <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 max-w-3xl">
         <button 
@@ -98,7 +255,7 @@ const ObligationDetail = () => {
                 <div>
                   <p className="text-xs text-muted-foreground">Vencimiento</p>
                   <p className="font-medium text-foreground">
-                    {format(new Date(obligation.dueDate), "d 'de' MMMM, yyyy", { locale: es })}
+                    {format(new Date(obligation.due_date), "d 'de' MMMM, yyyy", { locale: es })}
                   </p>
                   <p className={cn(
                     "text-xs",
@@ -119,7 +276,7 @@ const ObligationDetail = () => {
                 <User className="w-5 h-5 text-muted-foreground" />
                 <div>
                   <p className="text-xs text-muted-foreground">Responsable</p>
-                  <p className="font-medium text-foreground">{obligation.responsibleName}</p>
+                  <p className="font-medium text-foreground">{obligation.responsible_name}</p>
                 </div>
               </div>
             </div>
@@ -128,7 +285,11 @@ const ObligationDetail = () => {
           {/* Change Status */}
           <div className="card-elevated p-6">
             <h2 className="font-semibold text-foreground mb-4">Cambiar estado</h2>
-            <Select value={status} onValueChange={(value: ObligationStatus) => handleStatusChange(value)}>
+            <Select 
+              value={status} 
+              onValueChange={(value: ObligationStatus) => handleStatusChange(value)}
+              disabled={isUpdatingStatus}
+            >
               <SelectTrigger className="h-12">
                 <SelectValue />
               </SelectTrigger>
@@ -153,11 +314,21 @@ const ObligationDetail = () => {
                 </SelectItem>
               </SelectContent>
             </Select>
+            {isUpdatingStatus && (
+              <p className="text-sm text-muted-foreground mt-2">Actualizando...</p>
+            )}
           </div>
 
-          {/* Add Note */}
+          {/* Notes */}
           <div className="card-elevated p-6">
-            <h2 className="font-semibold text-foreground mb-4">Agregar nota</h2>
+            <h2 className="font-semibold text-foreground mb-4">Notas</h2>
+            
+            {obligation.notes && (
+              <div className="bg-secondary/50 rounded-lg p-4 mb-4 text-sm whitespace-pre-wrap">
+                {obligation.notes}
+              </div>
+            )}
+            
             <div className="space-y-3">
               <Textarea
                 placeholder="Escribe una nota sobre esta obligación..."
@@ -165,44 +336,122 @@ const ObligationDetail = () => {
                 onChange={(e) => setNote(e.target.value)}
                 rows={3}
               />
-              <Button onClick={handleAddNote} variant="secondary">
-                Guardar nota
+              <Button 
+                onClick={handleAddNote} 
+                variant="secondary"
+                disabled={isSavingNote}
+              >
+                {isSavingNote ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Guardando...
+                  </>
+                ) : (
+                  "Agregar nota"
+                )}
               </Button>
             </div>
           </div>
 
-          {/* Upload Evidence */}
+          {/* Files */}
           <div className="card-elevated p-6">
-            <h2 className="font-semibold text-foreground mb-4">Subir evidencia</h2>
-            <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-border rounded-xl cursor-pointer hover:border-primary/50 hover:bg-accent/50 transition-colors">
-              <FileUp className="w-8 h-8 text-muted-foreground mb-2" />
-              <span className="text-sm text-muted-foreground">Click para subir archivo</span>
-              <input type="file" className="hidden" />
+            <h2 className="font-semibold text-foreground mb-4">Archivos de evidencia</h2>
+            
+            {/* Uploaded files list */}
+            {files.length > 0 && (
+              <div className="space-y-2 mb-4">
+                {files.map((file) => (
+                  <div 
+                    key={file.id}
+                    className="flex items-center justify-between p-3 bg-secondary/50 rounded-lg"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <span className="text-xl">{getFileIcon(file.file_type)}</span>
+                      <div className="min-w-0">
+                        <p className="font-medium text-foreground truncate">{file.file_name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {formatFileSize(file.file_size)} • {format(new Date(file.created_at), "d MMM yyyy", { locale: es })}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleDownloadFile(file)}
+                      >
+                        <Download className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleDeleteFile(file)}
+                        className="text-destructive hover:text-destructive"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Upload area */}
+            <label className={cn(
+              "flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-border rounded-xl cursor-pointer",
+              "hover:border-primary/50 hover:bg-accent/50 transition-colors",
+              isUploading && "pointer-events-none opacity-50"
+            )}>
+              {isUploading ? (
+                <Loader2 className="w-8 h-8 text-muted-foreground animate-spin" />
+              ) : (
+                <>
+                  <FileUp className="w-8 h-8 text-muted-foreground mb-2" />
+                  <span className="text-sm text-muted-foreground">Click para subir archivo</span>
+                  <span className="text-xs text-muted-foreground mt-1">PDF, JPG, PNG, Word, Excel (max 10MB)</span>
+                </>
+              )}
+              <input 
+                ref={fileInputRef}
+                type="file" 
+                className="hidden" 
+                onChange={handleFileUpload}
+                accept=".pdf,.jpg,.jpeg,.png,.gif,.webp,.doc,.docx,.xls,.xlsx,.txt,.csv"
+              />
             </label>
           </div>
 
           {/* History */}
           <div className="card-elevated p-6">
             <h2 className="font-semibold text-foreground mb-4">Historial de cambios</h2>
-            <div className="space-y-4">
-              {mockHistory.map((entry, index) => (
-                <div key={index} className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center flex-shrink-0">
-                    <Clock className="w-4 h-4 text-muted-foreground" />
+            {history.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No hay cambios registrados aún</p>
+            ) : (
+              <div className="space-y-4">
+                {history.map((entry) => (
+                  <div key={entry.id} className="flex items-start gap-3">
+                    <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center flex-shrink-0">
+                      <Clock className="w-4 h-4 text-muted-foreground" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-foreground">
+                        <span className="font-medium">{entry.changed_by_name}</span> cambió el estado
+                        {entry.previous_status && (
+                          <> de <span className="font-medium">{statusLabels[entry.previous_status]}</span></>
+                        )}
+                        {' '}a <span className="font-medium">{statusLabels[entry.new_status]}</span>
+                      </p>
+                      {entry.note && (
+                        <p className="text-sm text-muted-foreground mt-1">{entry.note}</p>
+                      )}
+                      <p className="text-xs text-muted-foreground">
+                        {format(new Date(entry.created_at), "d MMM yyyy, HH:mm", { locale: es })}
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-sm text-foreground">
-                      <span className="font-medium">{entry.user}</span> cambió el estado de{" "}
-                      <span className="font-medium">{statusLabels[entry.from]}</span> a{" "}
-                      <span className="font-medium">{statusLabels[entry.to]}</span>
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {format(entry.date, "d MMM yyyy, HH:mm", { locale: es })}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </main>

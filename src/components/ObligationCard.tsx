@@ -1,9 +1,21 @@
 import { cn } from "@/lib/utils";
-import { Obligation, categoryLabels, categoryIcons } from "@/types/obligation";
+import { categoryLabels, categoryIcons, ObligationStatus, ObligationCategory } from "@/services/obligationService";
 import StatusBadge from "./StatusBadge";
 import { Calendar, User } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
+
+interface Obligation {
+  id: string;
+  name: string;
+  category: ObligationCategory;
+  dueDate: Date;
+  responsibleId: string;
+  responsibleName: string;
+  status: ObligationStatus;
+  createdAt: Date;
+  updatedAt: Date;
+}
 
 interface ObligationCardProps {
   obligation: Obligation;
