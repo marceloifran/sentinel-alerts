@@ -86,12 +86,15 @@ const Header = ({ userName = "Usuario", onLogout, isAdmin = false }: HeaderProps
             )}
 
             {/* User info */}
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-secondary">
+            <button
+              onClick={() => navigate('/configuracion')}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-secondary hover:bg-secondary/80 transition-colors cursor-pointer"
+            >
               <User className="w-4 h-4 text-muted-foreground" />
               <span className="text-sm font-medium text-secondary-foreground hidden sm:inline">
                 {userName}
               </span>
-            </div>
+            </button>
 
             {/* Logout button */}
             <Button

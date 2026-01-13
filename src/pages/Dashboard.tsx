@@ -4,17 +4,22 @@ import Header from "@/components/Header";
 import StatusCard from "@/components/StatusCard";
 import GeneralStatus from "@/components/GeneralStatus";
 import ObligationCard from "@/components/ObligationCard";
+import CalendarView from "@/components/CalendarView";
 import EmptyState from "@/components/EmptyState";
+import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { getObligations, Obligation, statusLabels, categoryLabels } from "@/services/obligationService";
-import { CheckCircle, AlertTriangle, XCircle, Loader2 } from "lucide-react";
+import { CheckCircle, AlertTriangle, XCircle, Loader2, List, Calendar as CalendarIcon } from "lucide-react";
 import { toast } from "sonner";
+
+type ViewMode = 'list' | 'calendar';
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const { user, profile, isAdmin, isLoading: authLoading, signOut } = useAuth();
   const [obligations, setObligations] = useState<Obligation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [viewMode, setViewMode] = useState<ViewMode>('list');
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -71,6 +76,10 @@ const Dashboard = () => {
   const handleLogout = async () => {
     await signOut();
     navigate('/');
+  };
+
+  const handleSelectObligation = (obligation: Obligation) => {
+    navigate(`/obligaciones/${obligation.id}`);
   };
 
   if (authLoading) {
@@ -134,54 +143,65 @@ const Dashboard = () => {
           />
         </div>
 
-        {/* Critical Obligations */}
-        <section>
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-foreground">
-              {criticalObligations.length > 0 ? "Obligaciones críticas" : "Tus obligaciones"}
-            </h2>
-            {obligations.length > 0 && (
-              <button
-                onClick={() => navigate('/obligaciones')}
-                className="text-sm text-primary hover:underline"
-              >
-                Ver todas ({obligations.length})
-              </button>
-            )}
+        {/* View Toggle */}
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-2xl font-semibold text-foreground">
+            {viewMode === 'list' ? 'Obligaciones críticas' : 'Vista de calendario'}
+          </h2>
+          <div className="flex items-center gap-2">
+            <Button
+              variant={viewMode === 'list' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setViewMode('list')}
+              className="gap-2"
+            >
+              <List className="w-4 h-4" />
+              Lista
+            </Button>
+            <Button
+              variant={viewMode === 'calendar' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setViewMode('calendar')}
+              className="gap-2"
+            >
+              <CalendarIcon className="w-4 h-4" />
+              Calendario
+            </Button>
           </div>
+        </div>
 
-          {isLoading ? (
-            <div className="flex items-center justify-center py-16">
-              <Loader2 className="w-8 h-8 animate-spin text-primary" />
-            </div>
-          ) : obligations.length === 0 ? (
-            <EmptyState />
-          ) : (
-            <div className="space-y-3">
-              {(criticalObligations.length > 0 ? criticalObligations : obligations.slice(0, 5)).map((obligation, index) => (
-                <div
-                  key={obligation.id}
-                  style={{ animationDelay: `${index * 50}ms` }}
-                >
+        {/* Content based on view mode */}
+        {isLoading ? (
+          <div className="flex items-center justify-center py-16">
+            <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          </div>
+        ) : viewMode === 'calendar' ? (
+          <CalendarView
+            obligations={obligations}
+            onSelectObligation={handleSelectObligation}
+          />
+        ) : (
+          <>
+            {/* Critical Obligations List */}
+            {criticalObligations.length === 0 ? (
+              <EmptyState
+                title="¡Todo al día!"
+                description="No hay obligaciones vencidas ni próximas a vencer"
+                icon={<CheckCircle className="w-12 h-12 text-status-success" />}
+              />
+            ) : (
+              <div className="space-y-4">
+                {criticalObligations.map((obligation) => (
                   <ObligationCard
-                    obligation={{
-                      id: obligation.id,
-                      name: obligation.name,
-                      category: obligation.category,
-                      dueDate: new Date(obligation.due_date),
-                      responsibleId: obligation.responsible_id,
-                      responsibleName: obligation.responsible_name || 'Sin asignar',
-                      status: obligation.status,
-                      createdAt: new Date(obligation.created_at),
-                      updatedAt: new Date(obligation.updated_at)
-                    }}
+                    key={obligation.id}
+                    obligation={obligation}
                     onClick={() => navigate(`/obligaciones/${obligation.id}`)}
                   />
-                </div>
-              ))}
-            </div>
-          )}
-        </section>
+                ))}
+              </div>
+            )}
+          </>
+        )}
       </main>
     </div>
   );
