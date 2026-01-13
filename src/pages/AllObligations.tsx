@@ -3,7 +3,9 @@ import { useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
 import ObligationCard from "@/components/ObligationCard";
 import EmptyState from "@/components/EmptyState";
+import KanbanBoard from "@/components/KanbanBoard";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -12,8 +14,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useAuth } from "@/contexts/AuthContext";
-import { getObligations, Obligation, categoryLabels, statusLabels } from "@/services/obligationService";
-import { Search, Filter, ArrowLeft, Loader2 } from "lucide-react";
+import { getObligations, subscribeToObligations, Obligation, categoryLabels, statusLabels } from "@/services/obligationService";
+import { Search, Filter, ArrowLeft, Loader2, LayoutGrid, List, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 
 const AllObligations = () => {
@@ -24,6 +26,8 @@ const AllObligations = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [viewMode, setViewMode] = useState<"list" | "kanban">("list");
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -37,6 +41,19 @@ const AllObligations = () => {
     }
   }, [user]);
 
+  // Real-time subscription
+  useEffect(() => {
+    if (!user) return;
+
+    const unsubscribe = subscribeToObligations(() => {
+      loadObligations();
+    });
+
+    return () => {
+      unsubscribe();
+    };
+  }, [user]);
+
   const loadObligations = async () => {
     try {
       setIsLoading(true);
@@ -47,6 +64,20 @@ const AllObligations = () => {
       toast.error("Error al cargar las obligaciones");
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleRefresh = async () => {
+    try {
+      setIsRefreshing(true);
+      const data = await getObligations();
+      setObligations(data);
+      toast.success("Obligaciones actualizadas");
+    } catch (error) {
+      console.error('Error refreshing obligations:', error);
+      toast.error("Error al actualizar las obligaciones");
+    } finally {
+      setIsRefreshing(false);
     }
   };
 
@@ -77,14 +108,14 @@ const AllObligations = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <Header 
-        userName={profile?.name || user.email || 'Usuario'} 
+      <Header
+        userName={profile?.name || user.email || 'Usuario'}
         onLogout={handleLogout}
         isAdmin={isAdmin}
       />
-      
+
       <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <button 
+        <button
           onClick={() => navigate('/dashboard')}
           className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-6"
         >
@@ -99,6 +130,39 @@ const AllObligations = () => {
               ({filteredObligations.length})
             </span>
           </h1>
+
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={handleRefresh}
+              disabled={isRefreshing}
+              className="shrink-0"
+            >
+              <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+            </Button>
+
+            <div className="flex items-center gap-1 bg-muted p-1 rounded-lg">
+              <Button
+                variant={viewMode === "list" ? "default" : "ghost"}
+                size="sm"
+                onClick={() => setViewMode("list")}
+                className="gap-2"
+              >
+                <List className="w-4 h-4" />
+                Lista
+              </Button>
+              <Button
+                variant={viewMode === "kanban" ? "default" : "ghost"}
+                size="sm"
+                onClick={() => setViewMode("kanban")}
+                className="gap-2"
+              >
+                <LayoutGrid className="w-4 h-4" />
+                Kanban
+              </Button>
+            </div>
+          </div>
         </div>
 
         {/* Filters */}
@@ -113,7 +177,7 @@ const AllObligations = () => {
                 className="pl-10"
               />
             </div>
-            
+
             <Select value={categoryFilter} onValueChange={setCategoryFilter}>
               <SelectTrigger className="w-full sm:w-[180px]">
                 <Filter className="w-4 h-4 mr-2" />
@@ -142,7 +206,7 @@ const AllObligations = () => {
           </div>
         </div>
 
-        {/* Obligations list */}
+        {/* Obligations display */}
         {isLoading ? (
           <div className="flex items-center justify-center py-16">
             <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -155,14 +219,19 @@ const AllObligations = () => {
               <p>No se encontraron obligaciones con los filtros seleccionados</p>
             </div>
           )
+        ) : viewMode === "kanban" ? (
+          <KanbanBoard
+            obligations={filteredObligations}
+            onUpdate={loadObligations}
+          />
         ) : (
           <div className="space-y-3">
             {filteredObligations.map((obligation, index) => (
-              <div 
+              <div
                 key={obligation.id}
                 style={{ animationDelay: `${index * 30}ms` }}
               >
-                <ObligationCard 
+                <ObligationCard
                   obligation={{
                     id: obligation.id,
                     name: obligation.name,

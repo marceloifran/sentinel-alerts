@@ -13,7 +13,7 @@ export interface Obligation extends ObligationRow {
   responsible_name?: string;
 }
 
-export interface ObligationFile extends ObligationFileRow {}
+export interface ObligationFile extends ObligationFileRow { }
 
 export interface ObligationHistory extends ObligationHistoryRow {
   changed_by_name?: string;
@@ -45,9 +45,9 @@ export function calculateStatus(dueDate: string): ObligationStatus {
   today.setHours(0, 0, 0, 0);
   const due = new Date(dueDate);
   due.setHours(0, 0, 0, 0);
-  
+
   const diffDays = Math.ceil((due.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-  
+
   if (diffDays < 0) return 'vencida';
   if (diffDays <= 30) return 'por_vencer';
   return 'al_dia';
@@ -94,7 +94,7 @@ export async function createObligation(
   userId: string
 ): Promise<Obligation> {
   const status = calculateStatus(obligation.due_date);
-  
+
   const { data, error } = await supabase
     .from('obligations')
     .insert({
@@ -233,7 +233,7 @@ export function getFileUrl(filePath: string): string {
   const { data } = supabase.storage
     .from('obligation-files')
     .getPublicUrl(filePath);
-  
+
   return data.publicUrl;
 }
 
@@ -254,6 +254,27 @@ export async function getResponsibles(): Promise<{ id: string; name: string; ema
 
   if (error) throw error;
   return data || [];
+}
+
+export function subscribeToObligations(callback: () => void) {
+  const channel = supabase
+    .channel('obligations-changes')
+    .on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'obligations'
+      },
+      () => {
+        callback();
+      }
+    )
+    .subscribe();
+
+  return () => {
+    supabase.removeChannel(channel);
+  };
 }
 
 export type { ObligationStatus, ObligationCategory };

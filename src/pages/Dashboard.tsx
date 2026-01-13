@@ -6,7 +6,7 @@ import GeneralStatus from "@/components/GeneralStatus";
 import ObligationCard from "@/components/ObligationCard";
 import EmptyState from "@/components/EmptyState";
 import { useAuth } from "@/contexts/AuthContext";
-import { getObligations, Obligation, statusLabels, categoryLabels } from "@/services/obligationService";
+import { getObligations, subscribeToObligations, Obligation, statusLabels, categoryLabels } from "@/services/obligationService";
 import { CheckCircle, AlertTriangle, XCircle, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -26,6 +26,19 @@ const Dashboard = () => {
     if (user) {
       loadObligations();
     }
+  }, [user]);
+
+  // Real-time subscription
+  useEffect(() => {
+    if (!user) return;
+
+    const unsubscribe = subscribeToObligations(() => {
+      loadObligations();
+    });
+
+    return () => {
+      unsubscribe();
+    };
   }, [user]);
 
   const loadObligations = async () => {
@@ -73,18 +86,17 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <Header 
-        userName={profile?.name || user.email || 'Usuario'} 
+      <Header
+        userName={profile?.name || user.email || 'Usuario'}
         onLogout={handleLogout}
         isAdmin={isAdmin}
       />
-      
+
       <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Role badge */}
         <div className="mb-4">
-          <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
-            isAdmin ? 'bg-primary/10 text-primary' : 'bg-secondary text-secondary-foreground'
-          }`}>
+          <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${isAdmin ? 'bg-primary/10 text-primary' : 'bg-secondary text-secondary-foreground'
+            }`}>
             {isAdmin ? '👑 Administrador' : '👤 Responsable'}
           </span>
         </div>
@@ -131,7 +143,7 @@ const Dashboard = () => {
               </button>
             )}
           </div>
-          
+
           {isLoading ? (
             <div className="flex items-center justify-center py-16">
               <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -141,11 +153,11 @@ const Dashboard = () => {
           ) : (
             <div className="space-y-3">
               {(criticalObligations.length > 0 ? criticalObligations : obligations.slice(0, 5)).map((obligation, index) => (
-                <div 
+                <div
                   key={obligation.id}
                   style={{ animationDelay: `${index * 50}ms` }}
                 >
-                  <ObligationCard 
+                  <ObligationCard
                     obligation={{
                       id: obligation.id,
                       name: obligation.name,
