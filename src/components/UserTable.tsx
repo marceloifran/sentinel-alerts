@@ -44,11 +44,14 @@ const UserTable = ({ users, onRoleChanged }: UserTableProps) => {
                                     <td className="p-4">
                                         <span
                                             className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium ${user.role === 'admin'
-                                                    ? 'bg-amber-500/10 text-amber-700 dark:text-amber-400'
-                                                    : 'bg-blue-500/10 text-blue-700 dark:text-blue-400'
+                                                ? 'bg-primary/10 text-primary border border-primary/20'
+                                                : 'bg-secondary text-secondary-foreground border border-border'
                                                 }`}
                                         >
-                                            <span>{roleIcons[user.role]}</span>
+                                            {(() => {
+                                                const Icon = roleIcons[user.role];
+                                                return <Icon className="w-3.5 h-3.5" />;
+                                            })()}
                                             <span>{roleLabels[user.role]}</span>
                                         </span>
                                     </td>

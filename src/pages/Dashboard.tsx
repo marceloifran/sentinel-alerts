@@ -9,7 +9,7 @@ import EmptyState from "@/components/EmptyState";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { getObligations, Obligation, statusLabels, categoryLabels } from "@/services/obligationService";
-import { CheckCircle, AlertTriangle, XCircle, Loader2, List, Calendar as CalendarIcon } from "lucide-react";
+import { CheckCircle, AlertTriangle, XCircle, Loader2, List, Calendar as CalendarIcon, Shield, Eye } from "lucide-react";
 import { toast } from "sonner";
 
 type ViewMode = 'list' | 'calendar';
@@ -103,9 +103,19 @@ const Dashboard = () => {
       <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Role badge */}
         <div className="mb-4">
-          <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${isAdmin ? 'bg-primary/10 text-primary' : 'bg-secondary text-secondary-foreground'
+          <span className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium ${isAdmin ? 'bg-primary/10 text-primary border border-primary/20' : 'bg-secondary text-secondary-foreground border border-border'
             }`}>
-            {isAdmin ? '👑 Administrador' : '👤 Responsable'}
+            {isAdmin ? (
+              <>
+                <Shield className="w-3.5 h-3.5" />
+                Administrador
+              </>
+            ) : (
+              <>
+                <Eye className="w-3.5 h-3.5" />
+                Responsable
+              </>
+            )}
           </span>
         </div>
 

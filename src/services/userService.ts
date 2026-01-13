@@ -1,5 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
+import { Shield, Eye } from 'lucide-react';
 
 type AppRole = Database['public']['Enums']['app_role'];
 
@@ -16,9 +17,9 @@ export const roleLabels: Record<AppRole, string> = {
     responsable: 'Responsable',
 };
 
-export const roleIcons: Record<AppRole, string> = {
-    admin: '👑',
-    responsable: '👤',
+export const roleIcons: Record<AppRole, any> = {
+    admin: Shield,
+    responsable: Eye,
 };
 
 export async function getAllUsers(): Promise<UserWithRole[]> {

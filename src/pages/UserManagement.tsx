@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/select";
 import { useAuth } from "@/contexts/AuthContext";
 import { getAllUsers, UserWithRole, AppRole } from "@/services/userService";
-import { Search, ArrowLeft, Loader2, Users } from "lucide-react";
+import { Search, ArrowLeft, Loader2, Users, Shield, Eye } from "lucide-react";
 import { toast } from "sonner";
 
 const UserManagement = () => {
@@ -130,8 +130,18 @@ const UserManagement = () => {
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="all">Todos los roles</SelectItem>
-                                <SelectItem value="admin">👑 Administradores</SelectItem>
-                                <SelectItem value="responsable">👤 Responsables</SelectItem>
+                                <SelectItem value="admin">
+                                    <div className="flex items-center gap-2">
+                                        <Shield className="w-4 h-4" />
+                                        Administradores
+                                    </div>
+                                </SelectItem>
+                                <SelectItem value="responsable">
+                                    <div className="flex items-center gap-2">
+                                        <Eye className="w-4 h-4" />
+                                        Responsables
+                                    </div>
+                                </SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
