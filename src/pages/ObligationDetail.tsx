@@ -99,7 +99,15 @@ const ObligationDetail = () => {
     try {
       await updateObligationStatus(obligation.id, newStatus, status, user.id);
       setStatus(newStatus);
-      toast.success(`Estado actualizado a "${statusLabels[newStatus]}"`);
+      
+      // Confirmación emocional cuando se cambia a "Al día"
+      if (newStatus === 'al_dia') {
+        toast.success("Listo. Esta obligación quedó cubierta.", {
+          duration: 5000,
+        });
+      } else {
+        toast.success(`Estado actualizado a "${statusLabels[newStatus]}"`);
+      }
 
       // Reload history
       const historyData = await getObligationHistory(obligation.id);
@@ -110,6 +118,22 @@ const ObligationDetail = () => {
     } finally {
       setIsUpdatingStatus(false);
     }
+  };
+
+  const getHumanMessage = (days: number, currentStatus: ObligationStatus): string => {
+    if (currentStatus === 'al_dia') {
+      return "Todavía estás a tiempo";
+    }
+    if (days < 0) {
+      return "Esta obligación está vencida";
+    }
+    if (days === 0) {
+      return "Atención: vence hoy";
+    }
+    if (days <= 30) {
+      return "Atención: vence pronto";
+    }
+    return "Todavía estás a tiempo";
   };
 
   const handleAddNote = async () => {
@@ -237,29 +261,31 @@ const ObligationDetail = () => {
         <div className="space-y-6 animate-fade-in">
           {/* Main Card */}
           <div className="card-elevated p-6 sm:p-8">
-            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-6">
-              <div>
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="text-xl">{categoryIcons[obligation.category]}</span>
-                  <span className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
-                    {categoryLabels[obligation.category]}
-                  </span>
-                </div>
-                <h1 className="text-2xl font-bold text-foreground">{obligation.name}</h1>
+            {/* Estado prominente en la parte superior */}
+            <div className="flex items-center justify-center mb-6 pb-6 border-b border-border">
+              <StatusBadge status={status} size="lg" />
+            </div>
+
+            <div className="flex flex-col gap-4 mb-6">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-xl">{categoryIcons[obligation.category]}</span>
+                <span className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+                  {categoryLabels[obligation.category]}
+                </span>
               </div>
-              <StatusBadge status={status} size="md" />
+              <h1 className="text-2xl font-bold text-foreground">{obligation.name}</h1>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 bg-secondary/50 rounded-xl">
               <div className="flex items-center gap-3">
                 <Calendar className="w-5 h-5 text-muted-foreground" />
-                <div>
+                <div className="flex-1">
                   <p className="text-xs text-muted-foreground">Vencimiento</p>
                   <p className="font-medium text-foreground">
                     {format(new Date(obligation.due_date), "d 'de' MMMM, yyyy", { locale: es })}
                   </p>
                   <p className={cn(
-                    "text-xs",
+                    "text-xs font-medium mt-1",
                     daysUntilDue < 0 && "text-status-danger",
                     daysUntilDue >= 0 && daysUntilDue <= 30 && "text-status-warning",
                     daysUntilDue > 30 && "text-status-success"
@@ -270,6 +296,14 @@ const ObligationDetail = () => {
                         ? "Vence hoy"
                         : `${daysUntilDue} días restantes`
                     }
+                  </p>
+                  <p className={cn(
+                    "text-sm font-semibold mt-2",
+                    daysUntilDue < 0 && "text-status-danger",
+                    daysUntilDue >= 0 && daysUntilDue <= 30 && "text-status-warning",
+                    daysUntilDue > 30 && "text-status-success"
+                  )}>
+                    {getHumanMessage(daysUntilDue, status)}
                   </p>
                 </div>
               </div>
@@ -424,7 +458,13 @@ const ObligationDetail = () => {
 
           {/* Email Notifications */}
           <div className="card-elevated p-6">
-            <NotificationManager obligationId={obligation.id} />
+            <NotificationManager 
+              obligationId={obligation.id} 
+              userEmail={user.email || ''} 
+              obligationName={obligation.name}
+              dueDate={obligation.due_date}
+              daysUntilDue={daysUntilDue}
+            />
           </div>
 
           {/* History */}

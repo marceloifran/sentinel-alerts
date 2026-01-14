@@ -89,18 +89,22 @@ export async function updateNotificationMessage(
     if (error) throw error;
 }
 
+import { sendObligationAlert } from './emailService';
+
 // This would be called from a backend cron job or edge function
 export async function sendObligationAlerts(): Promise<void> {
     // Get obligations that are due in the next 7, 15, or 30 days
     const today = new Date();
+    today.setHours(0, 0, 0, 0);
     const futureDate = new Date();
     futureDate.setDate(today.getDate() + 30);
+    futureDate.setHours(23, 59, 59, 999);
 
     const { data: obligations, error: obligationsError } = await supabase
         .from('obligations')
         .select('*, obligation_notifications(*)')
-        .gte('due_date', today.toISOString())
-        .lte('due_date', futureDate.toISOString())
+        .gte('due_date', today.toISOString().split('T')[0])
+        .lte('due_date', futureDate.toISOString().split('T')[0])
         .eq('obligation_notifications.is_active', true);
 
     if (obligationsError) throw obligationsError;
@@ -108,14 +112,27 @@ export async function sendObligationAlerts(): Promise<void> {
     // For each obligation, check if we need to send alerts
     for (const obligation of obligations || []) {
         const dueDate = new Date((obligation as any).due_date);
+        dueDate.setHours(0, 0, 0, 0);
         const daysUntilDue = Math.ceil((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
 
         // Send alerts to users whose days_before matches
         const notifications = (obligation as any).obligation_notifications || [];
+        
         for (const notification of notifications) {
-            if (notification.days_before === daysUntilDue) {
-                // Here you would call the email service
-                console.log(`Sending alert to ${notification.user_email} for obligation ${(obligation as any).name}`);
+            // Solo enviar si coincide con los días antes configurados o si es el día exacto
+            if (notification.days_before === daysUntilDue || daysUntilDue === 0) {
+                try {
+                    await sendObligationAlert({
+                        to: notification.user_email,
+                        userName: notification.user_name,
+                        obligationName: (obligation as any).name,
+                        daysUntilDue,
+                        dueDate: (obligation as any).due_date,
+                    });
+                    console.log(`✅ Email enviado a ${notification.user_email} para la obligación ${(obligation as any).name}`);
+                } catch (error) {
+                    console.error(`❌ Error enviando email a ${notification.user_email}:`, error);
+                }
             }
         }
     }

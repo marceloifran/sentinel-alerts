@@ -4,7 +4,7 @@ import { CheckCircle, AlertTriangle, XCircle } from "lucide-react";
 
 interface StatusBadgeProps {
   status: ObligationStatus;
-  size?: 'sm' | 'md';
+  size?: 'sm' | 'md' | 'lg';
 }
 
 const StatusBadge = ({ status, size = 'md' }: StatusBadgeProps) => {
@@ -23,11 +23,13 @@ const StatusBadge = ({ status, size = 'md' }: StatusBadgeProps) => {
       status === 'por_vencer' && "status-warning",
       status === 'vencida' && "status-danger",
       size === 'sm' && "text-xs px-2 py-0.5",
-      size === 'md' && "text-sm px-3 py-1"
+      size === 'md' && "text-sm px-3 py-1",
+      size === 'lg' && "text-lg px-6 py-3 font-semibold"
     )}>
       <Icon className={cn(
         size === 'sm' && "w-3 h-3",
-        size === 'md' && "w-4 h-4"
+        size === 'md' && "w-4 h-4",
+        size === 'lg' && "w-6 h-6"
       )} />
       {statusLabels[status]}
     </span>

@@ -124,6 +124,32 @@ export async function createObligation(
     .single();
 
   if (error) throw error;
+
+  // Crear automáticamente la notificación para el creador
+  try {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('email, name')
+      .eq('id', userId)
+      .maybeSingle();
+
+    if (profile) {
+      await supabase
+        .from('obligation_notifications' as any)
+        .insert({
+          obligation_id: data.id,
+          user_email: profile.email,
+          user_name: profile.name,
+          custom_message: null,
+          days_before: 7,
+          is_active: true,
+        });
+    }
+  } catch (notificationError) {
+    console.error('Error creando notificación automática:', notificationError);
+    // No lanzamos error para no interrumpir la creación de la obligación
+  }
+
   return data;
 }
 
