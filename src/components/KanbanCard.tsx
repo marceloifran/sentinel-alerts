@@ -1,10 +1,10 @@
-import { Obligation, ObligationStatus } from "@/services/obligationService";
+import { Obligation } from "@/services/obligationService";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { Calendar, User } from "lucide-react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { categoryIcons } from "@/services/obligationService";
+import { CategoryIcon } from "./CategoryIcon";
 
 interface KanbanCardProps {
   obligation: Obligation;
@@ -40,9 +40,7 @@ const KanbanCard = ({ obligation, onClick }: KanbanCardProps) => {
         <h3 className="font-medium text-sm text-foreground line-clamp-2 flex-1">
           {obligation.name}
         </h3>
-        <span className="text-lg shrink-0">
-          {categoryIcons[obligation.category]}
-        </span>
+        <CategoryIcon category={obligation.category} className="shrink-0" />
       </div>
 
       <div className="space-y-1.5">

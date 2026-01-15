@@ -2,7 +2,8 @@ import { useMemo, useState } from 'react';
 import { Calendar, dateFnsLocalizer, View } from 'react-big-calendar';
 import { format, parse, startOfWeek, getDay } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { Obligation, ObligationStatus, statusLabels, categoryIcons } from '@/services/obligationService';
+import { Obligation, ObligationStatus, statusLabels } from '@/services/obligationService';
+import { CategoryIcon } from '@/components/CategoryIcon';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -55,7 +56,7 @@ const CalendarView = ({ obligations, onSelectObligation }: CalendarViewProps) =>
     const events: CalendarEvent[] = useMemo(() => {
         return filteredObligations.map(obligation => ({
             id: obligation.id,
-            title: `${categoryIcons[obligation.category]} ${obligation.name}`,
+            title: obligation.name,
             start: new Date(obligation.due_date),
             end: new Date(obligation.due_date),
             resource: obligation,
@@ -100,6 +101,7 @@ const CalendarView = ({ obligations, onSelectObligation }: CalendarViewProps) =>
     const EventComponent = ({ event }: { event: CalendarEvent }) => {
         return (
             <div className="flex items-center gap-1 overflow-hidden">
+                <CategoryIcon category={event.resource.category} className="w-3 h-3 shrink-0" />
                 <span className="truncate">{event.title}</span>
             </div>
         );
@@ -209,5 +211,7 @@ const CalendarView = ({ obligations, onSelectObligation }: CalendarViewProps) =>
         </div>
     );
 };
+
+
 
 export default CalendarView;

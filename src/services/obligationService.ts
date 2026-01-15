@@ -32,12 +32,7 @@ export const statusLabels: Record<ObligationStatus, string> = {
   vencida: 'Vencida',
 };
 
-export const categoryIcons: Record<ObligationCategory, string> = {
-  legal: '⚖️',
-  fiscal: '📊',
-  seguridad: '🛡️',
-  operativa: '⚙️',
-};
+
 
 // Calculate status based on due date
 export function calculateStatus(dueDate: string): ObligationStatus {

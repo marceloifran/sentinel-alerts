@@ -25,10 +25,10 @@ import {
   ObligationHistory,
   ObligationFile,
   categoryLabels,
-  categoryIcons,
   statusLabels,
   ObligationStatus
 } from "@/services/obligationService";
+import { CategoryIcon } from "@/components/CategoryIcon";
 import { useAuth } from "@/contexts/AuthContext";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
@@ -99,7 +99,7 @@ const ObligationDetail = () => {
     try {
       await updateObligationStatus(obligation.id, newStatus, status, user.id);
       setStatus(newStatus);
-      
+
       // Confirmación emocional cuando se cambia a "Al día"
       if (newStatus === 'al_dia') {
         toast.success("Listo. Esta obligación quedó cubierta.", {
@@ -268,7 +268,7 @@ const ObligationDetail = () => {
 
             <div className="flex flex-col gap-4 mb-6">
               <div className="flex items-center gap-2 mb-2">
-                <span className="text-xl">{categoryIcons[obligation.category]}</span>
+                <CategoryIcon category={obligation.category} className="w-6 h-6" />
                 <span className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
                   {categoryLabels[obligation.category]}
                 </span>
@@ -458,9 +458,9 @@ const ObligationDetail = () => {
 
           {/* Email Notifications */}
           <div className="card-elevated p-6">
-            <NotificationManager 
-              obligationId={obligation.id} 
-              userEmail={user.email || ''} 
+            <NotificationManager
+              obligationId={obligation.id}
+              userEmail={user.email || ''}
               obligationName={obligation.name}
               dueDate={obligation.due_date}
               daysUntilDue={daysUntilDue}

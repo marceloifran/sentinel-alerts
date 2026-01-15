@@ -42,14 +42,14 @@ serve(async (req) => {
     const subject = daysUntilDue === 0
       ? `⚠️ Atención: ${obligationName} vence hoy`
       : daysUntilDue <= 30
-      ? `⚠️ Atención: ${obligationName} vence pronto`
-      : `📅 Recordatorio: ${obligationName}`;
+        ? `⚠️ Atención: ${obligationName} vence pronto`
+        : `📅 Recordatorio: ${obligationName}`;
 
     const message = daysUntilDue === 0
       ? `La obligación "${obligationName}" vence hoy.`
       : daysUntilDue < 0
-      ? `La obligación "${obligationName}" está vencida hace ${Math.abs(daysUntilDue)} días.`
-      : `La obligación "${obligationName}" tiene ${daysUntilDue} días para su vencimiento.`;
+        ? `La obligación "${obligationName}" está vencida hace ${Math.abs(daysUntilDue)} días.`
+        : `La obligación "${obligationName}" tiene ${daysUntilDue} días para su vencimiento.`;
 
     const htmlContent = `
 <!DOCTYPE html>
@@ -105,9 +105,9 @@ serve(async (req) => {
   } catch (error) {
     console.error("Error en send-email function:", error);
     return new Response(
-      JSON.stringify({ 
-        success: false, 
-        error: error instanceof Error ? error.message : "Error desconocido" 
+      JSON.stringify({
+        success: false,
+        error: error instanceof Error ? error.message : "Error desconocido"
       }),
       {
         status: 500,

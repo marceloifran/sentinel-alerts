@@ -17,7 +17,8 @@ import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { CalendarIcon, ArrowLeft, Loader2 } from "lucide-react";
-import { categoryLabels, categoryIcons, ObligationCategory } from "@/services/obligationService";
+import { categoryLabels, ObligationCategory } from "@/services/obligationService";
+import { CategoryIcon } from "@/components/CategoryIcon";
 import { createObligation, getResponsibles } from "@/services/obligationService";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
@@ -63,7 +64,7 @@ const CreateObligation = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!name || !category || !dueDate || !responsible) {
       toast.error("Por favor completa todos los campos");
       return;
@@ -75,7 +76,7 @@ const CreateObligation = () => {
     }
 
     setIsSubmitting(true);
-    
+
     try {
       await createObligation({
         name,
@@ -83,7 +84,7 @@ const CreateObligation = () => {
         due_date: format(dueDate, 'yyyy-MM-dd'),
         responsible_id: responsible
       }, user.id);
-      
+
       toast.success("Obligación creada exitosamente");
       navigate('/dashboard');
     } catch (error) {
@@ -111,14 +112,14 @@ const CreateObligation = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <Header 
-        userName={profile?.name || user.email || 'Usuario'} 
+      <Header
+        userName={profile?.name || user.email || 'Usuario'}
         onLogout={handleLogout}
         isAdmin={isAdmin}
       />
-      
+
       <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 max-w-2xl">
-        <button 
+        <button
           onClick={() => navigate('/dashboard')}
           className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-6"
         >
@@ -128,7 +129,7 @@ const CreateObligation = () => {
 
         <div className="card-elevated p-6 sm:p-8 animate-fade-in">
           <h1 className="text-2xl font-bold text-foreground mb-6">Nueva obligación</h1>
-          
+
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Name */}
             <div className="space-y-2">
@@ -153,7 +154,7 @@ const CreateObligation = () => {
                   {(Object.keys(categoryLabels) as ObligationCategory[]).map((cat) => (
                     <SelectItem key={cat} value={cat}>
                       <div className="flex items-center gap-2">
-                        <span>{categoryIcons[cat]}</span>
+                        <CategoryIcon category={cat} />
                         <span>{categoryLabels[cat]}</span>
                       </div>
                     </SelectItem>
@@ -221,8 +222,8 @@ const CreateObligation = () => {
               >
                 Cancelar
               </Button>
-              <Button 
-                type="submit" 
+              <Button
+                type="submit"
                 className="flex-1"
                 disabled={isSubmitting}
               >
