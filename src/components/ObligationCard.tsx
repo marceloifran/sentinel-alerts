@@ -1,21 +1,9 @@
 import { cn } from "@/lib/utils";
-import { categoryLabels, categoryIcons, ObligationStatus, ObligationCategory } from "@/services/obligationService";
+import { categoryLabels, categoryIcons, Obligation } from "@/services/obligationService";
 import StatusBadge from "./StatusBadge";
 import { Calendar, User } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-
-interface Obligation {
-  id: string;
-  name: string;
-  category: ObligationCategory;
-  dueDate: Date;
-  responsibleId: string;
-  responsibleName: string;
-  status: ObligationStatus;
-  createdAt: Date;
-  updatedAt: Date;
-}
 
 interface ObligationCardProps {
   obligation: Obligation;
@@ -42,7 +30,7 @@ const ObligationCard = ({ obligation, onClick }: ObligationCardProps) => {
     return new Date(); // Fallback to today
   };
 
-  const dueDate = parseDueDate(obligation.dueDate);
+  const dueDate = parseDueDate(obligation.due_date);
   const isValidDate = !isNaN(dueDate.getTime());
   const formattedDate = isValidDate ? format(dueDate, "d 'de' MMMM, yyyy", { locale: es }) : 'Fecha inválida';
   const daysUntilDue = isValidDate ? Math.ceil((dueDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)) : 0;
@@ -86,7 +74,7 @@ const ObligationCard = ({ obligation, onClick }: ObligationCardProps) => {
             </div>
             <div className="flex items-center gap-1.5">
               <User className="w-4 h-4" />
-              <span>{obligation.responsibleName}</span>
+              <span>{obligation.responsible_name || 'Sin asignar'}</span>
             </div>
           </div>
         </div>

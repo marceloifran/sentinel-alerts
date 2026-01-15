@@ -232,17 +232,7 @@ const AllObligations = () => {
                 style={{ animationDelay: `${index * 30}ms` }}
               >
                 <ObligationCard
-                  obligation={{
-                    id: obligation.id,
-                    name: obligation.name,
-                    category: obligation.category,
-                    dueDate: new Date(obligation.due_date),
-                    responsibleId: obligation.responsible_id,
-                    responsibleName: obligation.responsible_name || 'Sin asignar',
-                    status: obligation.status,
-                    createdAt: new Date(obligation.created_at),
-                    updatedAt: new Date(obligation.updated_at)
-                  }}
+                  obligation={obligation}
                   onClick={() => navigate(`/obligaciones/${obligation.id}`)}
                 />
               </div>
