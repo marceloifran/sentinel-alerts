@@ -198,6 +198,7 @@ const Dashboard = () => {
                 title="¡Todo al día!"
                 description="No hay obligaciones vencidas ni próximas a vencer"
                 icon={<CheckCircle className="w-12 h-12 text-status-success" />}
+                showButton={false}
               />
             ) : (
               <div className="space-y-4">

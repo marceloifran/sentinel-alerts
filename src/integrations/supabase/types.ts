@@ -14,6 +14,50 @@ export type Database = {
   }
   public: {
     Tables: {
+      email_notifications: {
+        Row: {
+          created_at: string
+          email_to: string
+          error_message: string | null
+          id: string
+          notification_type: string
+          obligation_id: string
+          sent_at: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          email_to: string
+          error_message?: string | null
+          id?: string
+          notification_type: string
+          obligation_id: string
+          sent_at?: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          email_to?: string
+          error_message?: string | null
+          id?: string
+          notification_type?: string
+          obligation_id?: string
+          sent_at?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_notifications_obligation_id_fkey"
+            columns: ["obligation_id"]
+            isOneToOne: false
+            referencedRelation: "obligations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       obligation_files: {
         Row: {
           created_at: string
