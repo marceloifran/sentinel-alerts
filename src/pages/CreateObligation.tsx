@@ -30,6 +30,7 @@ const CreateObligation = () => {
   const [category, setCategory] = useState<ObligationCategory | "">("");
   const [dueDate, setDueDate] = useState<Date>();
   const [responsible, setResponsible] = useState("");
+  const [recurrence, setRecurrence] = useState<'none' | 'monthly' | 'annual'>('none');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [responsibles, setResponsibles] = useState<{ id: string; name: string; email: string }[]>([]);
   const [loadingResponsibles, setLoadingResponsibles] = useState(true);
@@ -82,8 +83,9 @@ const CreateObligation = () => {
         name,
         category: category as ObligationCategory,
         due_date: format(dueDate, 'yyyy-MM-dd'),
-        responsible_id: responsible
-      }, user.id);
+        responsible_id: responsible,
+        recurrence
+      } as any, user.id);
 
       toast.success("Obligación creada exitosamente");
       navigate('/dashboard');
@@ -188,6 +190,39 @@ const CreateObligation = () => {
                   />
                 </PopoverContent>
               </Popover>
+            </div>
+
+            {/* Recurrence */}
+            <div className="space-y-2">
+              <Label>Recurrencia</Label>
+              <Select value={recurrence} onValueChange={(value: 'none' | 'monthly' | 'annual') => setRecurrence(value)}>
+                <SelectTrigger className="h-12">
+                  <SelectValue placeholder="Selecciona recurrencia" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">
+                    <div className="flex items-center gap-2">
+                      <span>🔹</span>
+                      <span>Sin recurrencia</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="monthly">
+                    <div className="flex items-center gap-2">
+                      <span>🔄</span>
+                      <span>Mensual</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="annual">
+                    <div className="flex items-center gap-2">
+                      <span>📅</span>
+                      <span>Anual</span>
+                    </div>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                Las obligaciones recurrentes pueden renovarse automáticamente
+              </p>
             </div>
 
             {/* Responsible */}

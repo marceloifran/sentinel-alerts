@@ -18,6 +18,9 @@ import {
   getObligationFiles,
   updateObligationStatus,
   updateObligationNotes,
+  updateObligationDueDate,
+  renewObligation,
+  updateObligationRecurrence,
   uploadObligationFile,
   deleteObligationFile,
   getSignedFileUrl,
@@ -26,13 +29,16 @@ import {
   ObligationFile,
   categoryLabels,
   statusLabels,
+  recurrenceLabels,
   ObligationStatus
 } from "@/services/obligationService";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { CategoryIcon } from "@/components/CategoryIcon";
 import { useAuth } from "@/contexts/AuthContext";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { ArrowLeft, Calendar, User, Clock, FileUp, Trash2, Download, File, Loader2 } from "lucide-react";
+import { ArrowLeft, Calendar, User, Clock, FileUp, Trash2, Download, File, Loader2, RefreshCw, CalendarIcon } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -51,6 +57,9 @@ const ObligationDetail = () => {
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
   const [isSavingNote, setIsSavingNote] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [isRenewing, setIsRenewing] = useState(false);
+  const [isChangingDate, setIsChangingDate] = useState(false);
+  const [newDueDate, setNewDueDate] = useState<Date>();
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -117,6 +126,60 @@ const ObligationDetail = () => {
       toast.error("Error al actualizar el estado");
     } finally {
       setIsUpdatingStatus(false);
+    }
+  };
+
+  const handleRenewObligation = async () => {
+    if (!obligation || !user || obligation.recurrence === 'none') return;
+
+    setIsRenewing(true);
+    try {
+      const newDate = await renewObligation(
+        obligation.id,
+        obligation.recurrence as 'monthly' | 'annual',
+        obligation.due_date,
+        user.id
+      );
+      
+      toast.success(`Obligación renovada. Nueva fecha: ${format(new Date(newDate), "d 'de' MMMM, yyyy", { locale: es })}`);
+      await loadData();
+    } catch (error) {
+      console.error('Error renewing obligation:', error);
+      toast.error("Error al renovar la obligación");
+    } finally {
+      setIsRenewing(false);
+    }
+  };
+
+  const handleChangeDueDate = async () => {
+    if (!obligation || !user || !newDueDate) return;
+
+    setIsChangingDate(true);
+    try {
+      const formattedDate = format(newDueDate, 'yyyy-MM-dd');
+      await updateObligationDueDate(obligation.id, formattedDate, user.id);
+      
+      toast.success(`Fecha actualizada a ${format(newDueDate, "d 'de' MMMM, yyyy", { locale: es })}`);
+      setNewDueDate(undefined);
+      await loadData();
+    } catch (error) {
+      console.error('Error changing due date:', error);
+      toast.error("Error al cambiar la fecha");
+    } finally {
+      setIsChangingDate(false);
+    }
+  };
+
+  const handleRecurrenceChange = async (value: 'none' | 'monthly' | 'annual') => {
+    if (!obligation) return;
+
+    try {
+      await updateObligationRecurrence(obligation.id, value);
+      setObligation({ ...obligation, recurrence: value });
+      toast.success(`Recurrencia actualizada a "${recurrenceLabels[value]}"`);
+    } catch (error) {
+      console.error('Error updating recurrence:', error);
+      toast.error("Error al actualizar recurrencia");
     }
   };
 
@@ -312,6 +375,120 @@ const ObligationDetail = () => {
                 <div>
                   <p className="text-xs text-muted-foreground">Responsable</p>
                   <p className="font-medium text-foreground">{obligation.responsible_name}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Date Management & Recurrence */}
+          <div className="card-elevated p-6">
+            <h2 className="font-semibold text-foreground mb-4 flex items-center gap-2">
+              <RefreshCw className="w-5 h-5" />
+              Fecha y Recurrencia
+            </h2>
+            
+            <div className="space-y-4">
+              {/* Recurrence Badge */}
+              <div className="flex items-center justify-between p-3 bg-secondary/50 rounded-lg">
+                <div>
+                  <p className="text-sm font-medium text-foreground">Tipo de recurrencia</p>
+                  <p className="text-xs text-muted-foreground">
+                    {obligation.recurrence === 'none' 
+                      ? 'Esta obligación no se renueva automáticamente'
+                      : `Se puede renovar ${obligation.recurrence === 'monthly' ? 'cada mes' : 'cada año'}`
+                    }
+                  </p>
+                </div>
+                <Select
+                  value={obligation.recurrence || 'none'}
+                  onValueChange={(value: 'none' | 'monthly' | 'annual') => handleRecurrenceChange(value)}
+                >
+                  <SelectTrigger className="w-40">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">
+                      <div className="flex items-center gap-2">
+                        <span>🔹</span>
+                        Sin recurrencia
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="monthly">
+                      <div className="flex items-center gap-2">
+                        <span>🔄</span>
+                        Mensual
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="annual">
+                      <div className="flex items-center gap-2">
+                        <span>📅</span>
+                        Anual
+                      </div>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Renew Button (only if recurrent) */}
+              {obligation.recurrence && obligation.recurrence !== 'none' && (
+                <Button
+                  onClick={handleRenewObligation}
+                  disabled={isRenewing}
+                  className="w-full"
+                  variant="default"
+                >
+                  {isRenewing ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Renovando...
+                    </>
+                  ) : (
+                    <>
+                      <RefreshCw className="w-4 h-4 mr-2" />
+                      Renovar obligación ({obligation.recurrence === 'monthly' ? '+1 mes' : '+1 año'})
+                    </>
+                  )}
+                </Button>
+              )}
+
+              {/* Manual Date Change */}
+              <div className="border-t border-border pt-4">
+                <p className="text-sm font-medium text-foreground mb-2">Cambiar fecha manualmente</p>
+                <div className="flex gap-2">
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "flex-1 justify-start text-left font-normal",
+                          !newDueDate && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {newDueDate ? format(newDueDate, "PPP", { locale: es }) : "Seleccionar nueva fecha"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <CalendarComponent
+                        mode="single"
+                        selected={newDueDate}
+                        onSelect={setNewDueDate}
+                        initialFocus
+                        className="pointer-events-auto"
+                      />
+                    </PopoverContent>
+                  </Popover>
+                  <Button
+                    onClick={handleChangeDueDate}
+                    disabled={!newDueDate || isChangingDate}
+                    variant="secondary"
+                  >
+                    {isChangingDate ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      "Aplicar"
+                    )}
+                  </Button>
                 </div>
               </div>
             </div>

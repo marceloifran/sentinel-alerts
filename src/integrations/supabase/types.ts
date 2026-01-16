@@ -152,6 +152,7 @@ export type Database = {
           id: string
           name: string
           notes: string | null
+          recurrence: string | null
           responsible_id: string
           status: Database["public"]["Enums"]["obligation_status"]
           updated_at: string
@@ -164,6 +165,7 @@ export type Database = {
           id?: string
           name: string
           notes?: string | null
+          recurrence?: string | null
           responsible_id: string
           status?: Database["public"]["Enums"]["obligation_status"]
           updated_at?: string
@@ -176,6 +178,7 @@ export type Database = {
           id?: string
           name?: string
           notes?: string | null
+          recurrence?: string | null
           responsible_id?: string
           status?: Database["public"]["Enums"]["obligation_status"]
           updated_at?: string
