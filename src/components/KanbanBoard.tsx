@@ -56,6 +56,20 @@ const KanbanBoard = ({ obligations, onUpdate }: KanbanBoardProps) => {
         const newStatus = over.id as ObligationStatus;
         if (obligation.status === newStatus) return;
 
+        const daysUntilDue = Math.ceil(
+            (new Date(obligation.due_date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)
+        );
+
+        if (daysUntilDue < 0 && (newStatus === 'al_dia' || newStatus === 'por_vencer')) {
+            toast.error("No puedes marcar como 'Al día' o 'Por Vencer' una obligación que ya venció.");
+            return;
+        }
+
+        if (daysUntilDue >= 0 && newStatus === 'vencida') {
+            toast.error("No puedes marcar como 'Vencida' una obligación que aún no ha vencido.");
+            return;
+        }
+
         if (!user) {
             toast.error("Debes iniciar sesión");
             return;

@@ -104,6 +104,20 @@ const ObligationDetail = () => {
   const handleStatusChange = async (newStatus: ObligationStatus) => {
     if (!obligation || !user || newStatus === status) return;
 
+    const daysUntilDue = Math.ceil(
+      (new Date(obligation.due_date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)
+    );
+
+    if (daysUntilDue < 0 && (newStatus === 'al_dia' || newStatus === 'por_vencer')) {
+      toast.error("No puedes marcar como 'Al día' o 'Por Vencer' una obligación que ya venció.");
+      return;
+    }
+
+    if (daysUntilDue >= 0 && newStatus === 'vencida') {
+      toast.error("No puedes marcar como 'Vencida' una obligación que aún no ha vencido.");
+      return;
+    }
+
     setIsUpdatingStatus(true);
     try {
       await updateObligationStatus(obligation.id, newStatus, status, user.id);
@@ -140,7 +154,7 @@ const ObligationDetail = () => {
         obligation.due_date,
         user.id
       );
-      
+
       toast.success(`Obligación renovada. Nueva fecha: ${format(new Date(newDate), "d 'de' MMMM, yyyy", { locale: es })}`);
       await loadData();
     } catch (error) {
@@ -158,7 +172,7 @@ const ObligationDetail = () => {
     try {
       const formattedDate = format(newDueDate, 'yyyy-MM-dd');
       await updateObligationDueDate(obligation.id, formattedDate, user.id);
-      
+
       toast.success(`Fecha actualizada a ${format(newDueDate, "d 'de' MMMM, yyyy", { locale: es })}`);
       setNewDueDate(undefined);
       await loadData();
@@ -386,14 +400,14 @@ const ObligationDetail = () => {
               <RefreshCw className="w-5 h-5" />
               Fecha y Recurrencia
             </h2>
-            
+
             <div className="space-y-4">
               {/* Recurrence Badge */}
               <div className="flex items-center justify-between p-3 bg-secondary/50 rounded-lg">
                 <div>
                   <p className="text-sm font-medium text-foreground">Tipo de recurrencia</p>
                   <p className="text-xs text-muted-foreground">
-                    {obligation.recurrence === 'none' 
+                    {obligation.recurrence === 'none'
                       ? 'Esta obligación no se renueva automáticamente'
                       : `Se puede renovar ${obligation.recurrence === 'monthly' ? 'cada mes' : 'cada año'}`
                     }
