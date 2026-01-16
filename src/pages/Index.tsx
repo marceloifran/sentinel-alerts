@@ -67,7 +67,7 @@ const Index = () => {
       <header className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 sticky top-0 bg-background/80 backdrop-blur-lg z-50 border-b border-border/40">
         <nav className="flex items-center justify-between">
           <div className="flex items-center gap-3 animate-fade-in">
-            <img src="/logo.png" alt="IfsinRem Logo" className="w-12 h-12 object-contain" />
+            <img src="/logo.png" alt="IfsinRem Logo" className="w-12 h-12 object-contain rounded-xl" />
             <span className="text-xl font-bold text-foreground">IfsinRem</span>
           </div>
           <div className="flex items-center gap-3 animate-fade-in">

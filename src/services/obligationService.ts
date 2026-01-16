@@ -207,12 +207,12 @@ export async function updateObligationDueDate(
   userId: string
 ): Promise<void> {
   const newStatus = calculateStatus(newDueDate);
-  
+
   const { error: updateError } = await supabase
     .from('obligations')
-    .update({ 
+    .update({
       due_date: newDueDate,
-      status: newStatus 
+      status: newStatus
     })
     .eq('id', obligationId);
 
@@ -240,7 +240,7 @@ export async function renewObligation(
 ): Promise<string> {
   const currentDate = new Date(currentDueDate);
   let newDate: Date;
-  
+
   if (recurrence === 'monthly') {
     newDate = new Date(currentDate);
     newDate.setMonth(newDate.getMonth() + 1);
@@ -248,15 +248,15 @@ export async function renewObligation(
     newDate = new Date(currentDate);
     newDate.setFullYear(newDate.getFullYear() + 1);
   }
-  
+
   const newDueDate = newDate.toISOString().split('T')[0];
   const newStatus = calculateStatus(newDueDate);
-  
+
   const { error: updateError } = await supabase
     .from('obligations')
-    .update({ 
+    .update({
       due_date: newDueDate,
-      status: newStatus 
+      status: newStatus
     })
     .eq('id', obligationId);
 
@@ -274,7 +274,7 @@ export async function renewObligation(
     });
 
   if (historyError) throw historyError;
-  
+
   return newDueDate;
 }
 
