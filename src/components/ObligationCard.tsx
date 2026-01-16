@@ -1,10 +1,11 @@
 import { cn } from "@/lib/utils";
-import { categoryLabels, Obligation } from "@/services/obligationService";
+import { categoryLabels, Obligation, recurrenceLabels } from "@/services/obligationService";
 import { CategoryIcon } from "./CategoryIcon";
 import StatusBadge from "./StatusBadge";
-import { Calendar, User } from "lucide-react";
+import { Calendar, User, RefreshCw } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
+import { Badge } from "@/components/ui/badge";
 
 interface ObligationCardProps {
   obligation: Obligation;
@@ -52,6 +53,12 @@ const ObligationCard = ({ obligation, onClick }: ObligationCardProps) => {
             <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
               {categoryLabels[obligation.category]}
             </span>
+            {obligation.recurrence && obligation.recurrence !== 'none' && (
+              <Badge variant="outline" className="text-xs flex items-center gap-1">
+                <RefreshCw className="w-3 h-3" />
+                {recurrenceLabels[obligation.recurrence]}
+              </Badge>
+            )}
           </div>
 
           <h3 className="font-semibold text-foreground truncate mb-3">

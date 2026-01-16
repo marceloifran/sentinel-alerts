@@ -9,9 +9,16 @@ type ObligationCategory = Database['public']['Enums']['obligation_category'];
 type ObligationFileRow = Database['public']['Tables']['obligation_files']['Row'];
 type ObligationHistoryRow = Database['public']['Tables']['obligation_history']['Row'];
 
-export interface Obligation extends ObligationRow {
+export interface Obligation extends Omit<ObligationRow, 'recurrence'> {
   responsible_name?: string;
+  recurrence: 'none' | 'monthly' | 'annual';
 }
+
+export const recurrenceLabels: Record<string, string> = {
+  none: 'Sin recurrencia',
+  monthly: 'Mensual',
+  annual: 'Anual',
+};
 
 export interface ObligationFile extends ObligationFileRow { }
 
@@ -75,6 +82,7 @@ export async function getObligations(): Promise<Obligation[]> {
   // Enrich obligations with responsible names
   return obligations.map(obligation => ({
     ...obligation,
+    recurrence: (obligation.recurrence || 'none') as 'none' | 'monthly' | 'annual',
     responsible_name: profileMap.get(obligation.responsible_id) || 'Sin asignar'
   }));
 }
@@ -98,6 +106,7 @@ export async function getObligation(id: string): Promise<Obligation | null> {
 
   return {
     ...data,
+    recurrence: (data.recurrence || 'none') as 'none' | 'monthly' | 'annual',
     responsible_name: profile?.name || 'Sin asignar'
   };
 }
@@ -145,7 +154,10 @@ export async function createObligation(
     // No lanzamos error para no interrumpir la creación de la obligación
   }
 
-  return data;
+  return {
+    ...data,
+    recurrence: (data.recurrence || 'none') as 'none' | 'monthly' | 'annual'
+  };
 }
 
 export async function updateObligationStatus(
@@ -184,6 +196,95 @@ export async function updateObligationNotes(
   const { error } = await supabase
     .from('obligations')
     .update({ notes })
+    .eq('id', obligationId);
+
+  if (error) throw error;
+}
+
+export async function updateObligationDueDate(
+  obligationId: string,
+  newDueDate: string,
+  userId: string
+): Promise<void> {
+  const newStatus = calculateStatus(newDueDate);
+  
+  const { error: updateError } = await supabase
+    .from('obligations')
+    .update({ 
+      due_date: newDueDate,
+      status: newStatus 
+    })
+    .eq('id', obligationId);
+
+  if (updateError) throw updateError;
+
+  // Add history entry for date change
+  const { error: historyError } = await supabase
+    .from('obligation_history')
+    .insert({
+      obligation_id: obligationId,
+      previous_status: null,
+      new_status: newStatus,
+      changed_by: userId,
+      note: `Fecha de vencimiento actualizada a ${newDueDate}`
+    });
+
+  if (historyError) throw historyError;
+}
+
+export async function renewObligation(
+  obligationId: string,
+  recurrence: 'monthly' | 'annual',
+  currentDueDate: string,
+  userId: string
+): Promise<string> {
+  const currentDate = new Date(currentDueDate);
+  let newDate: Date;
+  
+  if (recurrence === 'monthly') {
+    newDate = new Date(currentDate);
+    newDate.setMonth(newDate.getMonth() + 1);
+  } else {
+    newDate = new Date(currentDate);
+    newDate.setFullYear(newDate.getFullYear() + 1);
+  }
+  
+  const newDueDate = newDate.toISOString().split('T')[0];
+  const newStatus = calculateStatus(newDueDate);
+  
+  const { error: updateError } = await supabase
+    .from('obligations')
+    .update({ 
+      due_date: newDueDate,
+      status: newStatus 
+    })
+    .eq('id', obligationId);
+
+  if (updateError) throw updateError;
+
+  // Add history entry for renewal
+  const { error: historyError } = await supabase
+    .from('obligation_history')
+    .insert({
+      obligation_id: obligationId,
+      previous_status: null,
+      new_status: newStatus,
+      changed_by: userId,
+      note: `Obligación renovada (${recurrence === 'monthly' ? 'mensual' : 'anual'}). Nueva fecha: ${newDueDate}`
+    });
+
+  if (historyError) throw historyError;
+  
+  return newDueDate;
+}
+
+export async function updateObligationRecurrence(
+  obligationId: string,
+  recurrence: 'none' | 'monthly' | 'annual'
+): Promise<void> {
+  const { error } = await supabase
+    .from('obligations')
+    .update({ recurrence } as any)
     .eq('id', obligationId);
 
   if (error) throw error;
