@@ -7,7 +7,7 @@ interface AuthContextType {
   session: Session | null;
   isLoading: boolean;
   isAdmin: boolean;
-  profile: { id: string; name: string; email: string } | null;
+  profile: { id: string; name: string; email: string; phone: string | null; whatsapp_enabled: boolean } | null;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signUp: (email: string, password: string, name: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
@@ -20,7 +20,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
-  const [profile, setProfile] = useState<{ id: string; name: string; email: string } | null>(null);
+  const [profile, setProfile] = useState<{ id: string; name: string; email: string; phone: string | null; whatsapp_enabled: boolean } | null>(null);
 
   useEffect(() => {
     // Set up auth state listener FIRST
@@ -68,7 +68,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setProfile({
           id: profileData.id,
           name: profileData.name,
-          email: profileData.email
+          email: profileData.email,
+          phone: (profileData as any).phone || null,
+          whatsapp_enabled: (profileData as any).whatsapp_enabled || false
         });
       }
 
