@@ -21,7 +21,7 @@ const UserSettings = () => {
     const [currentPassword, setCurrentPassword] = useState('');
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
-    const [isSendingTest, setIsSendingTest] = useState(false);
+    
 
     useEffect(() => {
         if (profile) {
@@ -58,37 +58,6 @@ const UserSettings = () => {
         }
     };
 
-    const handleSendTestWhatsApp = async () => {
-        if (!phone.trim()) {
-            toast.error('Ingresa un número de teléfono primero');
-            return;
-        }
-
-        try {
-            setIsSendingTest(true);
-            const { data, error } = await supabase.functions.invoke('send-whatsapp', {
-                body: {
-                    to: phone.trim(),
-                    userName: name || 'Usuario',
-                    obligationName: 'Obligación de prueba',
-                    daysUntilDue: 7,
-                    dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-                },
-            });
-
-            if (error) throw error;
-            if (data?.success) {
-                toast.success('Mensaje de prueba enviado por WhatsApp');
-            } else {
-                throw new Error(data?.error || 'Error desconocido');
-            }
-        } catch (error) {
-            console.error('Error sending test WhatsApp:', error);
-            toast.error('Error al enviar mensaje de prueba');
-        } finally {
-            setIsSendingTest(false);
-        }
-    };
 
     const handleChangePassword = async () => {
         if (!newPassword || !confirmPassword) {
@@ -250,25 +219,14 @@ const UserSettings = () => {
                                 />
                             </div>
 
-                            <div className="flex gap-2">
-                                <Button
-                                    onClick={handleUpdateProfile}
-                                    disabled={isLoading}
-                                    className="gap-2"
-                                >
-                                    <Save className="w-4 h-4" />
-                                    Guardar configuración
-                                </Button>
-                                <Button
-                                    onClick={handleSendTestWhatsApp}
-                                    disabled={isSendingTest || !phone.trim()}
-                                    variant="outline"
-                                    className="gap-2"
-                                >
-                                    <MessageCircle className="w-4 h-4" />
-                                    {isSendingTest ? 'Enviando...' : 'Enviar prueba'}
-                                </Button>
-                            </div>
+                            <Button
+                                onClick={handleUpdateProfile}
+                                disabled={isLoading}
+                                className="gap-2"
+                            >
+                                <Save className="w-4 h-4" />
+                                Guardar configuración
+                            </Button>
                         </div>
                     </Card>
 
