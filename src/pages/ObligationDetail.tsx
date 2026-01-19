@@ -403,8 +403,8 @@ const ObligationDetail = () => {
 
             <div className="space-y-4">
               {/* Recurrence Badge */}
-              <div className="flex items-center justify-between p-3 bg-secondary/50 rounded-lg">
-                <div>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 bg-secondary/50 rounded-lg">
+                <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-foreground">Tipo de recurrencia</p>
                   <p className="text-xs text-muted-foreground">
                     {obligation.recurrence === 'none'
@@ -417,28 +417,13 @@ const ObligationDetail = () => {
                   value={obligation.recurrence || 'none'}
                   onValueChange={(value: 'none' | 'monthly' | 'annual') => handleRecurrenceChange(value)}
                 >
-                  <SelectTrigger className="w-40">
+                  <SelectTrigger className="w-full sm:w-44 shrink-0">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">
-                      <div className="flex items-center gap-2">
-                        <span>🔹</span>
-                        Sin recurrencia
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="monthly">
-                      <div className="flex items-center gap-2">
-                        <span>🔄</span>
-                        Mensual
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="annual">
-                      <div className="flex items-center gap-2">
-                        <span>📅</span>
-                        Anual
-                      </div>
-                    </SelectItem>
+                    <SelectItem value="none">Sin recurrencia</SelectItem>
+                    <SelectItem value="monthly">Mensual</SelectItem>
+                    <SelectItem value="annual">Anual</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
