@@ -192,6 +192,7 @@ export type Database = {
           id: string
           name: string
           phone: string | null
+          sector: string | null
           updated_at: string
           whatsapp_enabled: boolean | null
         }
@@ -201,6 +202,7 @@ export type Database = {
           id: string
           name: string
           phone?: string | null
+          sector?: string | null
           updated_at?: string
           whatsapp_enabled?: boolean | null
         }
@@ -210,6 +212,7 @@ export type Database = {
           id?: string
           name?: string
           phone?: string | null
+          sector?: string | null
           updated_at?: string
           whatsapp_enabled?: boolean | null
         }
