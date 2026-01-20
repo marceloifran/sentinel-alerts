@@ -123,6 +123,27 @@ const Index = () => {
           </div>
         </section>
 
+        {/* Qué es IfsinRem */}
+        <section className="py-16 sm:py-20 border-b border-border/40">
+          <div className="max-w-3xl mx-auto text-center">
+            <h2 className="text-2xl sm:text-3xl font-bold text-foreground mb-6 animate-fade-in">
+              Qué es IfsinRem
+            </h2>
+            <p className="text-base sm:text-lg text-muted-foreground leading-relaxed mb-8 animate-slide-up">
+              IfsinRem es un sistema diseñado para resolver un problema silencioso pero crítico en todas las organizaciones: los errores no suelen ocurrir por hacer mal las cosas, sino por olvidarse. Habilitaciones, seguros, renovaciones y vencimientos hoy se gestionan con Excel, mails o memoria, lo que genera multas, estrés y pérdida de confianza cuando algo se pasa. IfsinRem centraliza esas obligaciones, asigna responsables claros y avisa automáticamente antes de que el problema aparezca, sin depender de configuraciones complejas ni de "acordarse". No es un gestor de tareas ni un calendario más, es un sistema de prevención operativa que convierte el cumplimiento en algo confiable.
+            </p>
+            <Button
+              variant="outline"
+              size="lg"
+              onClick={openCalendly}
+              className="h-12 px-8 text-base hover:scale-105 transition-transform animate-slide-up"
+              style={{ animationDelay: '100ms' }}
+            >
+              Hablar 5 minutos
+            </Button>
+          </div>
+        </section>
+
         {/* Features */}
         <section className="py-16 sm:py-24">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
