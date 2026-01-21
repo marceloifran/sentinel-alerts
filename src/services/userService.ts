@@ -23,19 +23,45 @@ export const roleIcons: Record<AppRole, any> = {
 };
 
 export async function getAllUsers(): Promise<UserWithRole[]> {
-    // Get all profiles
+    // Get current user ID
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return [];
+
+    // Get invitations made by the current user that have been accepted
+    const { data: invitations, error: invitationsError } = await supabase
+        .from('user_invitations')
+        .select('invited_user_id, invited_email')
+        .eq('invited_by', user.id)
+        .eq('status', 'accepted')
+        .not('invited_user_id', 'is', null);
+
+    if (invitationsError) throw invitationsError;
+
+    // Get the invited user IDs
+    const invitedUserIds = (invitations || [])
+        .map(inv => inv.invited_user_id)
+        .filter((id): id is string => id !== null);
+
+    // Always include the current user
+    const allUserIds = [...new Set([user.id, ...invitedUserIds])];
+
+    if (allUserIds.length === 0) return [];
+
+    // Get profiles for these users
     const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
         .select('id, email, name, created_at')
+        .in('id', allUserIds)
         .order('created_at', { ascending: false });
 
     if (profilesError) throw profilesError;
     if (!profiles || profiles.length === 0) return [];
 
-    // Get all user roles
+    // Get all user roles for these users
     const { data: roles, error: rolesError } = await supabase
         .from('user_roles')
-        .select('user_id, role');
+        .select('user_id, role')
+        .in('user_id', allUserIds);
 
     if (rolesError) throw rolesError;
 
@@ -49,6 +75,25 @@ export async function getAllUsers(): Promise<UserWithRole[]> {
         name: profile.name,
         role: roleMap.get(profile.id) || 'responsable',
         created_at: profile.created_at,
+    }));
+}
+
+export async function getPendingInvitations(): Promise<{ email: string; created_at: string }[]> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return [];
+
+    const { data, error } = await supabase
+        .from('user_invitations')
+        .select('invited_email, created_at')
+        .eq('invited_by', user.id)
+        .eq('status', 'pending')
+        .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    
+    return (data || []).map(inv => ({
+        email: inv.invited_email,
+        created_at: inv.created_at
     }));
 }
 
@@ -120,6 +165,11 @@ export async function inviteUser(
     name: string,
     role: AppRole
 ): Promise<{ success: boolean; message: string }> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+        return { success: false, message: 'No estás autenticado' };
+    }
+
     // Check if user already exists
     const { data: existingUser } = await supabase
         .from('profiles')
@@ -134,11 +184,42 @@ export async function inviteUser(
         };
     }
 
-    // In a real app, you would send an invitation email here
-    // For now, we'll return a success message with instructions
+    // Check if invitation already exists
+    const { data: existingInvitation } = await supabase
+        .from('user_invitations')
+        .select('id')
+        .eq('invited_email', email)
+        .eq('invited_by', user.id)
+        .eq('status', 'pending')
+        .maybeSingle();
+
+    if (existingInvitation) {
+        return {
+            success: false,
+            message: 'Ya existe una invitación pendiente para este email',
+        };
+    }
+
+    // Create the invitation
+    const { error } = await supabase
+        .from('user_invitations')
+        .insert({
+            invited_by: user.id,
+            invited_email: email,
+            status: 'pending'
+        });
+
+    if (error) {
+        console.error('Error creating invitation:', error);
+        return {
+            success: false,
+            message: 'Error al crear la invitación',
+        };
+    }
+
     return {
         success: true,
-        message: `Invitación lista para ${email}. El usuario debe registrarse con este email.`,
+        message: `Invitación enviada a ${email}. El usuario debe registrarse con este email para unirse.`,
     };
 }
 

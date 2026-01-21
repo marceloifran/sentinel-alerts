@@ -4,6 +4,7 @@ import Header from "@/components/Header";
 import UserTable from "@/components/UserTable";
 import InviteUserDialog from "@/components/InviteUserDialog";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import {
     Select,
     SelectContent,
@@ -12,14 +13,15 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { useAuth } from "@/contexts/AuthContext";
-import { getAllUsers, UserWithRole, AppRole } from "@/services/userService";
-import { Search, ArrowLeft, Loader2, Users, Shield, Eye } from "lucide-react";
+import { getAllUsers, getPendingInvitations, UserWithRole, AppRole } from "@/services/userService";
+import { Search, ArrowLeft, Loader2, Users, Shield, Eye, Clock, Mail } from "lucide-react";
 import { toast } from "sonner";
 
 const UserManagement = () => {
     const navigate = useNavigate();
     const { user, profile, isAdmin, isLoading: authLoading, signOut } = useAuth();
     const [users, setUsers] = useState<UserWithRole[]>([]);
+    const [pendingInvitations, setPendingInvitations] = useState<{ email: string; created_at: string }[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState("");
     const [roleFilter, setRoleFilter] = useState<string>("all");
@@ -43,8 +45,12 @@ const UserManagement = () => {
     const loadUsers = async () => {
         try {
             setIsLoading(true);
-            const data = await getAllUsers();
-            setUsers(data);
+            const [usersData, invitationsData] = await Promise.all([
+                getAllUsers(),
+                getPendingInvitations()
+            ]);
+            setUsers(usersData);
+            setPendingInvitations(invitationsData);
         } catch (error) {
             console.error('Error loading users:', error);
             toast.error("Error al cargar los usuarios");
@@ -147,10 +153,37 @@ const UserManagement = () => {
                     </div>
                 </div>
 
+                {/* Pending Invitations */}
+                {pendingInvitations.length > 0 && (
+                    <div className="card-elevated p-4 mb-6 animate-fade-in">
+                        <div className="flex items-center gap-2 mb-3">
+                            <Clock className="w-4 h-4 text-muted-foreground" />
+                            <h3 className="text-sm font-medium text-foreground">Invitaciones pendientes</h3>
+                            <Badge variant="secondary">{pendingInvitations.length}</Badge>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                            {pendingInvitations.map((inv, i) => (
+                                <div key={i} className="flex items-center gap-2 px-3 py-1.5 bg-muted rounded-full text-sm">
+                                    <Mail className="w-3 h-3 text-muted-foreground" />
+                                    <span className="text-muted-foreground">{inv.email}</span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
                 {/* Users table */}
                 {isLoading ? (
                     <div className="flex items-center justify-center py-16">
                         <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                    </div>
+                ) : users.length === 0 ? (
+                    <div className="card-elevated p-8 text-center animate-fade-in">
+                        <Users className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                        <h3 className="text-lg font-semibold text-foreground mb-2">No hay usuarios aún</h3>
+                        <p className="text-muted-foreground mb-4">
+                            Invita usuarios para que se unan a tu equipo
+                        </p>
                     </div>
                 ) : (
                     <UserTable users={filteredUsers} onRoleChanged={loadUsers} />
