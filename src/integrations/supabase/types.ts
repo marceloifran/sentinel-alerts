@@ -190,8 +190,11 @@ export type Database = {
           created_at: string
           email: string
           id: string
+          max_obligations: number
+          max_users: number
           name: string
           phone: string | null
+          plan: Database["public"]["Enums"]["user_plan"]
           sector: string | null
           updated_at: string
           whatsapp_enabled: boolean | null
@@ -200,8 +203,11 @@ export type Database = {
           created_at?: string
           email: string
           id: string
+          max_obligations?: number
+          max_users?: number
           name: string
           phone?: string | null
+          plan?: Database["public"]["Enums"]["user_plan"]
           sector?: string | null
           updated_at?: string
           whatsapp_enabled?: boolean | null
@@ -210,8 +216,11 @@ export type Database = {
           created_at?: string
           email?: string
           id?: string
+          max_obligations?: number
+          max_users?: number
           name?: string
           phone?: string | null
+          plan?: Database["public"]["Enums"]["user_plan"]
           sector?: string | null
           updated_at?: string
           whatsapp_enabled?: boolean | null
@@ -257,6 +266,7 @@ export type Database = {
       app_role: "admin" | "responsable"
       obligation_category: "legal" | "fiscal" | "seguridad" | "operativa"
       obligation_status: "al_dia" | "por_vencer" | "vencida"
+      user_plan: "starter" | "professional" | "enterprise"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -387,6 +397,7 @@ export const Constants = {
       app_role: ["admin", "responsable"],
       obligation_category: ["legal", "fiscal", "seguridad", "operativa"],
       obligation_status: ["al_dia", "por_vencer", "vencida"],
+      user_plan: ["starter", "professional", "enterprise"],
     },
   },
 } as const
