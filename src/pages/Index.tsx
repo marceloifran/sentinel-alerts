@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Shield, Bell, Users, CheckCircle, Calendar, Check, Sparkles } from "lucide-react";
+import { ArrowRight, Shield, Bell, Users, CheckCircle, Calendar, Check, Sparkles, XCircle } from "lucide-react";
 
 const Index = () => {
   const navigate = useNavigate();
@@ -123,29 +123,87 @@ const Index = () => {
           </div>
         </section>
 
-        {/* Qué es IfsinRem */}
-        <section className="py-16 sm:py-20 border-b border-border/40">
-          <div className="max-w-3xl mx-auto text-center">
-            <h2 className="text-2xl sm:text-3xl font-bold text-foreground mb-6 animate-fade-in">
-              Qué es IfsinRem
+        {/* Por qué IfsinRem - Ventajas */}
+        <section className="py-16 sm:py-24 border-b border-border/40">
+          <div className="text-center mb-12 animate-fade-in">
+            <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
+              ¿Por qué usar IfsinRem?
             </h2>
-            <p className="text-base sm:text-lg text-muted-foreground leading-relaxed mb-8 animate-slide-up">
-              IfsinRem es un sistema diseñado para resolver un problema silencioso pero crítico en todas las organizaciones: los errores no suelen ocurrir por hacer mal las cosas, sino por olvidarse. Habilitaciones, seguros, renovaciones y vencimientos hoy se gestionan con Excel, mails o memoria, lo que genera multas, estrés y pérdida de confianza cuando algo se pasa. IfsinRem centraliza esas obligaciones, asigna responsables claros y avisa automáticamente antes de que el problema aparezca, sin depender de configuraciones complejas ni de "acordarse". No es un gestor de tareas ni un calendario más, es un sistema de prevención operativa que convierte el cumplimiento en algo confiable.
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              La diferencia entre "acordarse" y tener un sistema que te cuida
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-5xl mx-auto">
+            {/* Método tradicional */}
+            <div className="card-elevated p-6 sm:p-8 border-status-danger/30 bg-status-danger-bg/30 animate-slide-up">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-10 h-10 rounded-full bg-status-danger/20 flex items-center justify-center">
+                  <XCircle className="w-5 h-5 text-status-danger" />
+                </div>
+                <h3 className="text-xl font-semibold text-foreground">Método tradicional</h3>
+              </div>
+              <ul className="space-y-3">
+                {[
+                  "Depender de la memoria o un recordatorio manual",
+                  "Excel o planillas que nadie actualiza",
+                  "Mails que se pierden o se olvidan",
+                  "Estrés constante por no saber qué se vence",
+                  "Multas y problemas cuando algo se pasa",
+                  "Responsabilidades difusas entre el equipo"
+                ].map((item, i) => (
+                  <li key={i} className="flex items-start gap-3 text-muted-foreground">
+                    <XCircle className="w-4 h-4 text-status-danger flex-shrink-0 mt-0.5" />
+                    <span className="text-sm">{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Con IfsinRem */}
+            <div className="card-elevated p-6 sm:p-8 border-status-success/30 bg-status-success-bg/30 animate-slide-up" style={{ animationDelay: '100ms' }}>
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-10 h-10 rounded-full bg-status-success/20 flex items-center justify-center">
+                  <CheckCircle className="w-5 h-5 text-status-success" />
+                </div>
+                <h3 className="text-xl font-semibold text-foreground">Con IfsinRem</h3>
+              </div>
+              <ul className="space-y-3">
+                {[
+                  "Sistema automático que avisa antes de cada vencimiento",
+                  "Todo centralizado en un solo lugar visible",
+                  "Recordatorios por email y WhatsApp que no fallan",
+                  "Tranquilidad de saber exactamente qué está al día",
+                  "Prevención en lugar de reacción tardía",
+                  "Cada obligación tiene un responsable claro"
+                ].map((item, i) => (
+                  <li key={i} className="flex items-start gap-3 text-muted-foreground">
+                    <CheckCircle className="w-4 h-4 text-status-success flex-shrink-0 mt-0.5" />
+                    <span className="text-sm">{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+
+          <div className="text-center mt-10 animate-slide-up" style={{ animationDelay: '200ms' }}>
+            <p className="text-muted-foreground mb-6 max-w-xl mx-auto">
+              No es un gestor de tareas ni un calendario más. Es un sistema de prevención operativa.
             </p>
             <Button
               variant="outline"
               size="lg"
               onClick={openCalendly}
-              className="h-12 px-8 text-base hover:scale-105 transition-transform animate-slide-up"
-              style={{ animationDelay: '100ms' }}
+              className="h-12 px-8 text-base hover:scale-105 transition-transform gap-2"
             >
-              Hablar 5 minutos
+              <Calendar className="w-4 h-4" />
+              Ver cómo funciona
             </Button>
           </div>
         </section>
 
         {/* Features */}
-        <section className="py-16 sm:py-24">
+        <section id="pricing" className="py-16 sm:py-24">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
             <div className="card-elevated p-6 sm:p-8 animate-slide-up hover:scale-105 transition-all duration-300 hover:shadow-xl" style={{ animationDelay: '0ms' }}>
               <div className="w-12 h-12 rounded-xl bg-status-success-bg flex items-center justify-center mb-5 animate-bounce-slow">
