@@ -8,9 +8,11 @@ import CalendarView from "@/components/CalendarView";
 import EmptyState from "@/components/EmptyState";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
-import { getObligations, Obligation, statusLabels, categoryLabels } from "@/services/obligationService";
-import { CheckCircle, AlertTriangle, XCircle, Loader2, List, Calendar as CalendarIcon, Shield, Eye } from "lucide-react";
+import { getObligations, getResponsibles, Obligation } from "@/services/obligationService";
+import { CheckCircle, AlertTriangle, XCircle, Loader2, List, Calendar as CalendarIcon, Shield, Eye, Sparkles } from "lucide-react";
 import { toast } from "sonner";
+import { AIAssistantButton } from "@/components/ai/AIAssistantButton";
+import { SmartObligationLoader } from "@/components/ai/SmartObligationLoader";
 
 type ViewMode = 'list' | 'calendar';
 
@@ -20,6 +22,8 @@ const Dashboard = () => {
   const [obligations, setObligations] = useState<Obligation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [viewMode, setViewMode] = useState<ViewMode>('list');
+  const [responsibles, setResponsibles] = useState<{ id: string; name: string; email: string }[]>([]);
+  const [showSmartLoader, setShowSmartLoader] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -30,8 +34,11 @@ const Dashboard = () => {
   useEffect(() => {
     if (user) {
       loadObligations();
+      if (isAdmin) {
+        loadResponsibles();
+      }
     }
-  }, [user]);
+  }, [user, isAdmin]);
 
   // Reload obligations when window regains focus (e.g., after creating an obligation)
   useEffect(() => {
@@ -55,6 +62,15 @@ const Dashboard = () => {
       toast.error("Error al cargar las obligaciones");
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const loadResponsibles = async () => {
+    try {
+      const data = await getResponsibles();
+      setResponsibles(data);
+    } catch (error) {
+      console.error('Error loading responsibles:', error);
     }
   };
 
@@ -153,12 +169,23 @@ const Dashboard = () => {
           />
         </div>
 
-        {/* View Toggle */}
-        <div className="flex items-center justify-between mb-6">
+        {/* View Toggle and Smart Loader */}
+        <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
           <h2 className="text-2xl font-semibold text-foreground">
             {viewMode === 'list' ? 'Obligaciones críticas' : 'Vista de calendario'}
           </h2>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            {isAdmin && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowSmartLoader(true)}
+                className="gap-2"
+              >
+                <Sparkles className="w-4 h-4" />
+                Carga inteligente
+              </Button>
+            )}
             <Button
               variant={viewMode === 'list' ? 'default' : 'outline'}
               size="sm"
@@ -214,6 +241,21 @@ const Dashboard = () => {
           </>
         )}
       </main>
+
+      {/* AI Assistant floating button */}
+      <AIAssistantButton />
+
+      {/* Smart Obligation Loader */}
+      {isAdmin && (
+        <SmartObligationLoader
+          open={showSmartLoader}
+          onOpenChange={setShowSmartLoader}
+          responsibles={responsibles}
+          onObligationsCreated={loadObligations}
+          existingObligations={obligations.map(o => ({ name: o.name }))}
+          userId={user.id}
+        />
+      )}
     </div>
   );
 };
