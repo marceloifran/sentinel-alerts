@@ -56,10 +56,16 @@ export function calculateStatus(dueDate: string): ObligationStatus {
 }
 
 export async function getObligations(): Promise<Obligation[]> {
-  // First, get all obligations
+  // Get current user
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) throw new Error('Usuario no autenticado');
+
+  // Get only obligations created by current user
   const { data: obligations, error: obligationsError } = await supabase
     .from('obligations')
     .select('*')
+    .eq('created_by', user.id)
     .order('due_date', { ascending: true });
 
   if (obligationsError) throw obligationsError;
