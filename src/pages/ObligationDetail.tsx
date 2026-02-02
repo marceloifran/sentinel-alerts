@@ -23,6 +23,7 @@ import {
   updateObligationRecurrence,
   uploadObligationFile,
   deleteObligationFile,
+  deleteObligation,
   getSignedFileUrl,
   Obligation,
   ObligationHistory,
@@ -33,6 +34,16 @@ import {
   ObligationStatus
 } from "@/services/obligationService";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { CategoryIcon } from "@/components/CategoryIcon";
 import { useAuth } from "@/contexts/AuthContext";
@@ -60,6 +71,8 @@ const ObligationDetail = () => {
   const [isRenewing, setIsRenewing] = useState(false);
   const [isChangingDate, setIsChangingDate] = useState(false);
   const [newDueDate, setNewDueDate] = useState<Date>();
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -285,6 +298,23 @@ const ObligationDetail = () => {
     }
   };
 
+  const handleDeleteObligation = async () => {
+    if (!obligation) return;
+
+    setIsDeleting(true);
+    try {
+      await deleteObligation(obligation.id);
+      toast.success("Obligación eliminada exitosamente");
+      navigate('/dashboard');
+    } catch (error) {
+      console.error('Error deleting obligation:', error);
+      toast.error("Error al eliminar la obligación");
+    } finally {
+      setIsDeleting(false);
+      setShowDeleteDialog(false);
+    }
+  };
+
   const handleLogout = async () => {
     await signOut();
     navigate('/');
@@ -327,13 +357,24 @@ const ObligationDetail = () => {
       />
 
       <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 max-w-3xl">
-        <button
-          onClick={() => navigate('/dashboard')}
-          className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-6"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Volver al dashboard
-        </button>
+        <div className="flex items-center justify-between mb-6">
+          <button
+            onClick={() => navigate('/dashboard')}
+            className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Volver al dashboard
+          </button>
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={() => setShowDeleteDialog(true)}
+            className="flex items-center gap-2"
+          >
+            <Trash2 className="w-4 h-4" />
+            Eliminar
+          </Button>
+        </div>
 
         <div className="space-y-6 animate-fade-in">
           {/* Main Card */}
@@ -677,6 +718,36 @@ const ObligationDetail = () => {
           </div>
         </div>
       </main>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Eliminar obligación?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción no se puede deshacer. Se eliminará permanentemente la obligación
+              "{obligation?.name}" junto con todos sus archivos, notas e historial.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteObligation}
+              disabled={isDeleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Eliminando...
+                </>
+              ) : (
+                "Eliminar"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

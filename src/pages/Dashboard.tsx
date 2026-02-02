@@ -250,7 +250,6 @@ const Dashboard = () => {
         <SmartObligationLoader
           open={showSmartLoader}
           onOpenChange={setShowSmartLoader}
-          responsibles={responsibles}
           onObligationsCreated={loadObligations}
           existingObligations={obligations.map(o => ({ name: o.name }))}
           userId={user.id}

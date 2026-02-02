@@ -146,7 +146,7 @@ export async function createObligation(
 
     if (profile) {
       responsibleName = profile.name;
-      
+
       // Crear automáticamente la notificación para el creador
       await supabase
         .from('obligation_notifications' as any)
@@ -446,12 +446,70 @@ export async function deleteObligationFile(fileId: string, filePath: string): Pr
   if (storageError) throw storageError;
 
   // Delete from database
-  const { error } = await supabase
+  const { error: dbError } = await supabase
     .from('obligation_files')
     .delete()
     .eq('id', fileId);
 
-  if (error) throw error;
+  if (dbError) throw dbError;
+}
+
+export async function deleteObligation(obligationId: string): Promise<void> {
+  // 1. Get all files associated with this obligation
+  const { data: files, error: filesError } = await supabase
+    .from('obligation_files')
+    .select('id, file_path')
+    .eq('obligation_id', obligationId);
+
+  if (filesError) throw filesError;
+
+  // 2. Delete all files from storage
+  if (files && files.length > 0) {
+    const filePaths = files.map(f => f.file_path);
+    const { error: storageError } = await supabase.storage
+      .from('obligation-files')
+      .remove(filePaths);
+
+    if (storageError) {
+      console.error('Error deleting files from storage:', storageError);
+      // Continue anyway - we'll delete the DB records
+    }
+  }
+
+  // 3. Delete file records from database
+  const { error: deleteFilesError } = await supabase
+    .from('obligation_files')
+    .delete()
+    .eq('obligation_id', obligationId);
+
+  if (deleteFilesError) throw deleteFilesError;
+
+  // 4. Delete notification records (if table exists)
+  try {
+    await supabase
+      .from('email_notifications' as any)
+      .delete()
+      .eq('obligation_id', obligationId);
+  } catch (error) {
+    console.error('Error deleting notifications:', error);
+    // Continue anyway
+  }
+
+  // 5. Delete history records
+  const { error: deleteHistoryError } = await supabase
+    .from('obligation_history')
+    .delete()
+    .eq('obligation_id', obligationId);
+
+  if (deleteHistoryError) throw deleteHistoryError;
+
+  // 6. Finally, delete the obligation itself
+  const { error: deleteObligationError } = await supabase
+    .from('obligations')
+    .delete()
+    .eq('id', obligationId);
+
+  if (deleteObligationError) throw deleteObligationError;
 }
 
 export function getFileUrl(filePath: string): string {

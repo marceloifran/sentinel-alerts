@@ -56,13 +56,11 @@ interface ParsedObligation {
   confidence: number;
   warnings: string[];
   selected: boolean;
-  responsible_id?: string;
 }
 
 interface SmartObligationLoaderProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  responsibles: { id: string; name: string; email: string }[];
   onObligationsCreated: () => void;
   existingObligations: { name: string }[];
   userId: string;
@@ -71,7 +69,6 @@ interface SmartObligationLoaderProps {
 export function SmartObligationLoader({
   open,
   onOpenChange,
-  responsibles,
   onObligationsCreated,
   existingObligations,
   userId,
@@ -97,21 +94,21 @@ export function SmartObligationLoader({
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
-    
+
     for (const file of files) {
       if (!ACCEPTED_FILE_TYPES.includes(file.type)) {
         toast.error(`Tipo de archivo no soportado: ${file.name}`);
         continue;
       }
-      
+
       if (file.size > MAX_FILE_SIZE) {
         toast.error(`Archivo muy grande (máx 10MB): ${file.name}`);
         continue;
       }
 
       const base64 = await fileToBase64(file);
-      const preview = file.type.startsWith("image/") 
-        ? URL.createObjectURL(file) 
+      const preview = file.type.startsWith("image/")
+        ? URL.createObjectURL(file)
         : undefined;
 
       setUploadedFiles(prev => [...prev, { file, preview, base64 }]);
@@ -157,7 +154,7 @@ export function SmartObligationLoader({
 
     try {
       const { data: session } = await supabase.auth.getSession();
-      
+
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/parse-obligations`,
         {
@@ -194,7 +191,6 @@ export function SmartObligationLoader({
         data.obligations.map((o: ParsedObligation) => ({
           ...o,
           selected: true,
-          responsible_id: responsibles[0]?.id || "",
         }))
       );
       setSummary(data.summary);
@@ -215,11 +211,7 @@ export function SmartObligationLoader({
       return;
     }
 
-    const invalidObligations = selectedObligations.filter((o) => !o.responsible_id);
-    if (invalidObligations.length > 0) {
-      toast.error("Asigna un responsable a todas las obligaciones");
-      return;
-    }
+
 
     setStep("creating");
 
@@ -230,7 +222,7 @@ export function SmartObligationLoader({
           category: obl.category,
           due_date: obl.due_date,
           recurrence: obl.recurrence,
-          responsible_id: obl.responsible_id!,
+          responsible_id: userId,
           created_by: userId,
           status: calculateStatus(obl.due_date),
         });
@@ -320,7 +312,7 @@ export function SmartObligationLoader({
             {/* File upload section */}
             <div className="space-y-3">
               <Label>Subir archivos (PDF, imágenes)</Label>
-              
+
               <input
                 ref={fileInputRef}
                 type="file"
@@ -395,8 +387,8 @@ export function SmartObligationLoader({
               <Button variant="outline" onClick={handleClose}>
                 Cancelar
               </Button>
-              <Button 
-                onClick={handleAnalyze} 
+              <Button
+                onClick={handleAnalyze}
                 disabled={isAnalyzing || (!inputText.trim() && uploadedFiles.length === 0)}
               >
                 {isAnalyzing ? (
@@ -459,7 +451,6 @@ export function SmartObligationLoader({
                       {editingIndex === index ? (
                         <ObligationEditor
                           obligation={obl}
-                          responsibles={responsibles}
                           onUpdate={(updates) => updateObligation(index, updates)}
                           onClose={() => setEditingIndex(null)}
                         />
@@ -505,25 +496,7 @@ export function SmartObligationLoader({
                             )}
                           </div>
 
-                          <div>
-                            <Select
-                              value={obl.responsible_id || ""}
-                              onValueChange={(value) =>
-                                updateObligation(index, { responsible_id: value })
-                              }
-                            >
-                              <SelectTrigger className="h-8">
-                                <SelectValue placeholder="Asignar responsable" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {responsibles.map((r) => (
-                                  <SelectItem key={r.id} value={r.id}>
-                                    {r.name}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
+
 
                           {obl.warnings.length > 0 && (
                             <div className="space-y-1">
@@ -548,8 +521,8 @@ export function SmartObligationLoader({
                                   obl.confidence >= 0.8
                                     ? "bg-status-success"
                                     : obl.confidence >= 0.5
-                                    ? "bg-status-warning"
-                                    : "bg-status-danger"
+                                      ? "bg-status-warning"
+                                      : "bg-status-danger"
                                 )}
                                 style={{ width: `${obl.confidence * 100}%` }}
                               />
@@ -592,17 +565,15 @@ export function SmartObligationLoader({
 
 interface ObligationEditorProps {
   obligation: ParsedObligation;
-  responsibles: { id: string; name: string; email: string }[];
   onUpdate: (updates: Partial<ParsedObligation>) => void;
   onClose: () => void;
 }
 
-function ObligationEditor({ obligation, responsibles, onUpdate, onClose }: ObligationEditorProps) {
+function ObligationEditor({ obligation, onUpdate, onClose }: ObligationEditorProps) {
   const [name, setName] = useState(obligation.name);
   const [category, setCategory] = useState(obligation.category);
   const [dueDate, setDueDate] = useState<Date | undefined>(new Date(obligation.due_date));
   const [recurrence, setRecurrence] = useState(obligation.recurrence);
-  const [responsibleId, setResponsibleId] = useState(obligation.responsible_id || "");
 
   const handleSave = () => {
     onUpdate({
@@ -610,7 +581,6 @@ function ObligationEditor({ obligation, responsibles, onUpdate, onClose }: Oblig
       category,
       due_date: dueDate ? format(dueDate, "yyyy-MM-dd") : obligation.due_date,
       recurrence,
-      responsible_id: responsibleId,
     });
     onClose();
   };
@@ -664,18 +634,7 @@ function ObligationEditor({ obligation, responsibles, onUpdate, onClose }: Oblig
         </PopoverContent>
       </Popover>
 
-      <Select value={responsibleId} onValueChange={setResponsibleId}>
-        <SelectTrigger>
-          <SelectValue placeholder="Responsable" />
-        </SelectTrigger>
-        <SelectContent>
-          {responsibles.map((r) => (
-            <SelectItem key={r.id} value={r.id}>
-              {r.name}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+
 
       <div className="flex justify-end gap-2">
         <Button variant="ghost" size="sm" onClick={onClose}>

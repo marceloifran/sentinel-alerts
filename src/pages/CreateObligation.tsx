@@ -19,7 +19,7 @@ import { es } from "date-fns/locale";
 import { CalendarIcon, ArrowLeft, Loader2 } from "lucide-react";
 import { categoryLabels, ObligationCategory } from "@/services/obligationService";
 import { CategoryIcon } from "@/components/CategoryIcon";
-import { createObligation, getResponsibles } from "@/services/obligationService";
+import { createObligation } from "@/services/obligationService";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 
@@ -29,11 +29,8 @@ const CreateObligation = () => {
   const [name, setName] = useState("");
   const [category, setCategory] = useState<ObligationCategory | "">("");
   const [dueDate, setDueDate] = useState<Date>();
-  const [responsible, setResponsible] = useState("");
   const [recurrence, setRecurrence] = useState<'none' | 'monthly' | 'annual'>('none');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [responsibles, setResponsibles] = useState<{ id: string; name: string; email: string }[]>([]);
-  const [loadingResponsibles, setLoadingResponsibles] = useState(true);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -45,28 +42,12 @@ const CreateObligation = () => {
     }
   }, [user, authLoading, isAdmin, navigate]);
 
-  useEffect(() => {
-    if (user && isAdmin) {
-      loadResponsibles();
-    }
-  }, [user, isAdmin]);
 
-  const loadResponsibles = async () => {
-    try {
-      const data = await getResponsibles();
-      setResponsibles(data);
-    } catch (error) {
-      console.error('Error loading responsibles:', error);
-      toast.error("Error al cargar los responsables");
-    } finally {
-      setLoadingResponsibles(false);
-    }
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!name || !category || !dueDate || !responsible) {
+    if (!name || !category || !dueDate) {
       toast.error("Por favor completa todos los campos");
       return;
     }
@@ -83,7 +64,7 @@ const CreateObligation = () => {
         name,
         category: category as ObligationCategory,
         due_date: format(dueDate, 'yyyy-MM-dd'),
-        responsible_id: responsible,
+        responsible_id: user.id,
         recurrence
       } as any, user.id);
 
@@ -102,7 +83,7 @@ const CreateObligation = () => {
     navigate('/');
   };
 
-  if (authLoading || loadingResponsibles) {
+  if (authLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -225,26 +206,17 @@ const CreateObligation = () => {
               </p>
             </div>
 
-            {/* Responsible */}
+            {/* Responsible - Auto-assigned */}
             <div className="space-y-2">
               <Label>Responsable</Label>
-              <Select value={responsible} onValueChange={setResponsible}>
-                <SelectTrigger className="h-12">
-                  <SelectValue placeholder="Asignar a..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {responsibles.map((user) => (
-                    <SelectItem key={user.id} value={user.id}>
-                      {user.name} ({user.email})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {responsibles.length === 0 && (
-                <p className="text-sm text-muted-foreground">
-                  No hay usuarios registrados aún
-                </p>
-              )}
+              <div className="h-12 px-3 py-2 bg-secondary/50 rounded-md border border-input flex items-center">
+                <span className="text-sm text-foreground">
+                  {profile?.name || user.email} (tú)
+                </span>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Las obligaciones se asignan automáticamente a ti
+              </p>
             </div>
 
             {/* Submit */}
