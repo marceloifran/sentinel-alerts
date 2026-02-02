@@ -11,10 +11,11 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { User, Mail, Lock, Save, ArrowLeft, Phone, MessageCircle } from 'lucide-react';
 import PlanCard, { PlanType } from '@/components/PlanCard';
+import { GoogleCalendarIntegration } from '@/components/integrations/GoogleCalendarIntegration';
 
 const UserSettings = () => {
     const navigate = useNavigate();
-    const { user, profile, signOut } = useAuth();
+    const { user, profile, signOut, isAdmin } = useAuth();
     const [isLoading, setIsLoading] = useState(false);
     const [name, setName] = useState(profile?.name || '');
     const [phone, setPhone] = useState(profile?.phone || '');
@@ -302,6 +303,9 @@ const UserSettings = () => {
                             </Button>
                         </div>
                     </Card>
+
+                    {/* Google Calendar Integration */}
+                    <GoogleCalendarIntegration isAdmin={isAdmin} />
 
                     {/* Plan Information */}
                     <PlanCard 

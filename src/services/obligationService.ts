@@ -1,9 +1,9 @@
 import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
+import { syncObligationToCalendar } from './googleCalendarService';
 
 type ObligationRow = Database['public']['Tables']['obligations']['Row'];
 type ObligationInsert = Database['public']['Tables']['obligations']['Insert'];
-type ObligationUpdate = Database['public']['Tables']['obligations']['Update'];
 type ObligationStatus = Database['public']['Enums']['obligation_status'];
 type ObligationCategory = Database['public']['Enums']['obligation_category'];
 type ObligationFileRow = Database['public']['Tables']['obligation_files']['Row'];
@@ -135,15 +135,19 @@ export async function createObligation(
 
   if (error) throw error;
 
-  // Crear automáticamente la notificación para el creador
+  // Get responsible name for sync
+  let responsibleName = 'Sin asignar';
   try {
     const { data: profile } = await supabase
       .from('profiles')
       .select('email, name')
-      .eq('id', userId)
+      .eq('id', obligation.responsible_id)
       .maybeSingle();
 
     if (profile) {
+      responsibleName = profile.name;
+      
+      // Crear automáticamente la notificación para el creador
       await supabase
         .from('obligation_notifications' as any)
         .insert({
@@ -157,7 +161,21 @@ export async function createObligation(
     }
   } catch (notificationError) {
     console.error('Error creando notificación automática:', notificationError);
-    // No lanzamos error para no interrumpir la creación de la obligación
+  }
+
+  // Sync to Google Calendar (if connected and enabled)
+  try {
+    await syncObligationToCalendar({
+      id: data.id,
+      name: data.name,
+      due_date: data.due_date,
+      status: data.status,
+      responsible_name: responsibleName,
+      notes: data.notes || undefined,
+    });
+  } catch (syncError) {
+    console.error('Error syncing to Google Calendar:', syncError);
+    // Don't fail obligation creation if sync fails
   }
 
   return {
@@ -193,6 +211,23 @@ export async function updateObligationStatus(
     });
 
   if (historyError) throw historyError;
+
+  // Sync updated status to Google Calendar
+  try {
+    const obligation = await getObligation(obligationId);
+    if (obligation) {
+      await syncObligationToCalendar({
+        id: obligation.id,
+        name: obligation.name,
+        due_date: obligation.due_date,
+        status: newStatus,
+        responsible_name: obligation.responsible_name,
+        notes: obligation.notes || undefined,
+      });
+    }
+  } catch (syncError) {
+    console.error('Error syncing status to Google Calendar:', syncError);
+  }
 }
 
 export async function updateObligationNotes(
@@ -236,6 +271,23 @@ export async function updateObligationDueDate(
     });
 
   if (historyError) throw historyError;
+
+  // Sync updated date to Google Calendar
+  try {
+    const obligation = await getObligation(obligationId);
+    if (obligation) {
+      await syncObligationToCalendar({
+        id: obligation.id,
+        name: obligation.name,
+        due_date: newDueDate,
+        status: newStatus,
+        responsible_name: obligation.responsible_name,
+        notes: obligation.notes || undefined,
+      });
+    }
+  } catch (syncError) {
+    console.error('Error syncing date to Google Calendar:', syncError);
+  }
 }
 
 export async function renewObligation(
@@ -280,6 +332,23 @@ export async function renewObligation(
     });
 
   if (historyError) throw historyError;
+
+  // Sync renewed date to Google Calendar
+  try {
+    const obligation = await getObligation(obligationId);
+    if (obligation) {
+      await syncObligationToCalendar({
+        id: obligation.id,
+        name: obligation.name,
+        due_date: newDueDate,
+        status: newStatus,
+        responsible_name: obligation.responsible_name,
+        notes: obligation.notes || undefined,
+      });
+    }
+  } catch (syncError) {
+    console.error('Error syncing renewal to Google Calendar:', syncError);
+  }
 
   return newDueDate;
 }
