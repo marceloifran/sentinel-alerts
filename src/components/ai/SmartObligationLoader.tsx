@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -32,11 +32,20 @@ import {
   Trash2,
   Edit,
   FileText,
+  Upload,
+  X,
+  FileIcon,
 } from "lucide-react";
 import { CategoryIcon } from "@/components/CategoryIcon";
 import { categoryLabels, ObligationCategory } from "@/services/obligationService";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+
+interface UploadedFile {
+  file: File;
+  preview?: string;
+  base64?: string;
+}
 
 interface ParsedObligation {
   name: string;
@@ -73,10 +82,74 @@ export function SmartObligationLoader({
   const [parsedObligations, setParsedObligations] = useState<ParsedObligation[]>([]);
   const [summary, setSummary] = useState("");
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const ACCEPTED_FILE_TYPES = [
+    "application/pdf",
+    "image/png",
+    "image/jpeg",
+    "image/jpg",
+    "image/webp",
+    "image/gif",
+  ];
+  const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    
+    for (const file of files) {
+      if (!ACCEPTED_FILE_TYPES.includes(file.type)) {
+        toast.error(`Tipo de archivo no soportado: ${file.name}`);
+        continue;
+      }
+      
+      if (file.size > MAX_FILE_SIZE) {
+        toast.error(`Archivo muy grande (máx 10MB): ${file.name}`);
+        continue;
+      }
+
+      const base64 = await fileToBase64(file);
+      const preview = file.type.startsWith("image/") 
+        ? URL.createObjectURL(file) 
+        : undefined;
+
+      setUploadedFiles(prev => [...prev, { file, preview, base64 }]);
+    }
+
+    // Reset input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  const fileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => {
+        const result = reader.result as string;
+        // Remove the data:mime/type;base64, prefix
+        const base64 = result.split(",")[1];
+        resolve(base64);
+      };
+      reader.onerror = (error) => reject(error);
+    });
+  };
+
+  const removeFile = (index: number) => {
+    setUploadedFiles(prev => {
+      const file = prev[index];
+      if (file.preview) {
+        URL.revokeObjectURL(file.preview);
+      }
+      return prev.filter((_, i) => i !== index);
+    });
+  };
 
   const handleAnalyze = async () => {
-    if (!inputText.trim()) {
-      toast.error("Ingresa texto para analizar");
+    if (!inputText.trim() && uploadedFiles.length === 0) {
+      toast.error("Ingresa texto o sube archivos para analizar");
       return;
     }
 
@@ -96,6 +169,11 @@ export function SmartObligationLoader({
           body: JSON.stringify({
             text: inputText,
             existingObligations,
+            files: uploadedFiles.map(f => ({
+              name: f.file.name,
+              type: f.file.type,
+              base64: f.base64,
+            })),
           }),
         }
       );
@@ -189,6 +267,11 @@ export function SmartObligationLoader({
     setParsedObligations([]);
     setSummary("");
     setEditingIndex(null);
+    // Clean up file previews
+    uploadedFiles.forEach(f => {
+      if (f.preview) URL.revokeObjectURL(f.preview);
+    });
+    setUploadedFiles([]);
     onOpenChange(false);
   };
 
@@ -230,20 +313,92 @@ export function SmartObligationLoader({
                 placeholder={`Ejemplos:\n• Seguro vence 15/03, habilitación municipal 01/04\n• Renovar matafuegos cada 12 meses\n• Vence el contrato de alquiler el 1 de junio de 2025`}
                 value={inputText}
                 onChange={(e) => setInputText(e.target.value)}
-                className="min-h-[200px]"
+                className="min-h-[150px]"
               />
             </div>
 
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <FileText className="w-4 h-4" />
-              <span>Próximamente: subir PDF, imágenes y archivos</span>
+            {/* File upload section */}
+            <div className="space-y-3">
+              <Label>Subir archivos (PDF, imágenes)</Label>
+              
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".pdf,.png,.jpg,.jpeg,.webp,.gif"
+                multiple
+                onChange={handleFileSelect}
+                className="hidden"
+              />
+
+              <div
+                onClick={() => fileInputRef.current?.click()}
+                className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6 text-center cursor-pointer hover:border-primary/50 hover:bg-muted/50 transition-colors"
+              >
+                <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
+                <p className="text-sm text-muted-foreground">
+                  Clic para subir o arrastra archivos aquí
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  PDF, PNG, JPG, WEBP (máx. 10MB)
+                </p>
+              </div>
+
+              {/* Uploaded files preview */}
+              {uploadedFiles.length > 0 && (
+                <div className="space-y-2">
+                  {uploadedFiles.map((uploadedFile, index) => (
+                    <div
+                      key={index}
+                      className="flex items-center gap-3 p-2 bg-muted/50 rounded-lg"
+                    >
+                      {uploadedFile.preview ? (
+                        <img
+                          src={uploadedFile.preview}
+                          alt={uploadedFile.file.name}
+                          className="w-10 h-10 object-cover rounded"
+                        />
+                      ) : uploadedFile.file.type === "application/pdf" ? (
+                        <div className="w-10 h-10 bg-destructive/10 rounded flex items-center justify-center">
+                          <FileText className="w-5 h-5 text-destructive" />
+                        </div>
+                      ) : (
+                        <div className="w-10 h-10 bg-muted rounded flex items-center justify-center">
+                          <FileIcon className="w-5 h-5 text-muted-foreground" />
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">
+                          {uploadedFile.file.name}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {(uploadedFile.file.size / 1024).toFixed(1)} KB
+                        </p>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          removeFile(index);
+                        }}
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div className="flex justify-end gap-2">
               <Button variant="outline" onClick={handleClose}>
                 Cancelar
               </Button>
-              <Button onClick={handleAnalyze} disabled={isAnalyzing || !inputText.trim()}>
+              <Button 
+                onClick={handleAnalyze} 
+                disabled={isAnalyzing || (!inputText.trim() && uploadedFiles.length === 0)}
+              >
                 {isAnalyzing ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />

@@ -15,17 +15,26 @@ interface ParsedObligation {
   warnings: string[];
 }
 
+interface FileInput {
+  name: string;
+  type: string;
+  base64: string;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { text, existingObligations } = await req.json();
+    const { text, existingObligations, files } = await req.json();
 
-    if (!text || typeof text !== "string") {
+    const hasText = text && typeof text === "string" && text.trim().length > 0;
+    const hasFiles = files && Array.isArray(files) && files.length > 0;
+
+    if (!hasText && !hasFiles) {
       return new Response(
-        JSON.stringify({ error: "Se requiere texto para analizar" }),
+        JSON.stringify({ error: "Se requiere texto o archivos para analizar" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -66,6 +75,60 @@ Reglas:
    - La periodicidad parece inconsistente con el tipo de obligación
 7. confidence: 0.0 a 1.0 basado en qué tan claro es el texto`;
 
+    // Build user message content (text + images/PDFs)
+    const userContent: Array<{ type: string; text?: string; image_url?: { url: string } }> = [];
+
+    // Add text content if present
+    if (hasText) {
+      userContent.push({
+        type: "text",
+        text: `Analiza el siguiente texto y extrae las obligaciones:\n\n${text}`,
+      });
+    }
+
+    // Add files as images (works with PDFs too for vision models)
+    if (hasFiles) {
+      const filesList = files as FileInput[];
+      
+      // Add a text description of what we're analyzing
+      if (!hasText) {
+        userContent.push({
+          type: "text",
+          text: `Analiza los siguientes ${filesList.length} archivo(s) y extrae todas las obligaciones que encuentres (fechas, vencimientos, renovaciones, etc.):`,
+        });
+      } else {
+        userContent.push({
+          type: "text",
+          text: `\n\nAdemás, analiza los siguientes ${filesList.length} archivo(s) adjuntos:`,
+        });
+      }
+
+      for (const file of filesList) {
+        // For PDFs, we'll convert to a format the model can understand
+        if (file.type === "application/pdf") {
+          userContent.push({
+            type: "text",
+            text: `[Archivo PDF: ${file.name}]`,
+          });
+          // Send PDF as image (Gemini can process PDFs via data URL)
+          userContent.push({
+            type: "image_url",
+            image_url: {
+              url: `data:${file.type};base64,${file.base64}`,
+            },
+          });
+        } else {
+          // For images
+          userContent.push({
+            type: "image_url",
+            image_url: {
+              url: `data:${file.type};base64,${file.base64}`,
+            },
+          });
+        }
+      }
+    }
+
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -73,10 +136,10 @@ Reglas:
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model: "google/gemini-2.5-flash",
         messages: [
           { role: "system", content: systemPrompt },
-          { role: "user", content: `Analiza el siguiente texto y extrae las obligaciones:\n\n${text}` },
+          { role: "user", content: userContent },
         ],
         tools: [
           {
