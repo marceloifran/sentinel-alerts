@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
 import ObligationCard from "@/components/ObligationCard";
@@ -14,72 +14,30 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useAuth } from "@/contexts/AuthContext";
-import { getObligations, Obligation, categoryLabels, statusLabels } from "@/services/obligationService";
-import { Search, Filter, ArrowLeft, Loader2, LayoutGrid, List, RefreshCw } from "lucide-react";
+import { useObligations } from "@/hooks/useObligations";
+import { categoryLabels, statusLabels } from "@/services/obligationService";
+import { Search, Filter, ArrowLeft, LayoutGrid, List, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
+import { ObligationListSkeleton } from "@/components/skeletons/Skeletons";
+import { ErrorState } from "@/components/ErrorState";
 
 const AllObligations = () => {
   const navigate = useNavigate();
   const { user, profile, isAdmin, isLoading: authLoading, signOut } = useAuth();
-  const [obligations, setObligations] = useState<Obligation[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [viewMode, setViewMode] = useState<"list" | "kanban">("list");
-  const [isRefreshing, setIsRefreshing] = useState(false);
 
+  // React Query hook
+  const { data: obligations = [], isLoading, error, refetch } = useObligations();
+
+  // Redirect si no está autenticado
   useEffect(() => {
     if (!authLoading && !user) {
       navigate('/auth');
     }
   }, [user, authLoading, navigate]);
-
-  useEffect(() => {
-    if (user) {
-      loadObligations();
-    }
-  }, [user]);
-
-  // Reload obligations when window regains focus
-  useEffect(() => {
-    const handleFocus = () => {
-      if (user) {
-        loadObligations();
-      }
-    };
-
-    window.addEventListener('focus', handleFocus);
-    return () => window.removeEventListener('focus', handleFocus);
-  }, [user]);
-
-
-  const loadObligations = async () => {
-    try {
-      setIsLoading(true);
-      const data = await getObligations();
-      setObligations(data);
-    } catch (error) {
-      console.error('Error loading obligations:', error);
-      toast.error("Error al cargar las obligaciones");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleRefresh = async () => {
-    try {
-      setIsRefreshing(true);
-      const data = await getObligations();
-      setObligations(data);
-      toast.success("Obligaciones actualizadas");
-    } catch (error) {
-      console.error('Error refreshing obligations:', error);
-      toast.error("Error al actualizar las obligaciones");
-    } finally {
-      setIsRefreshing(false);
-    }
-  };
 
   const filteredObligations = useMemo(() => {
     return obligations.filter(o => {
@@ -91,15 +49,42 @@ const AllObligations = () => {
     });
   }, [obligations, searchTerm, categoryFilter, statusFilter]);
 
+  const handleRefresh = async () => {
+    await refetch();
+    toast.success("Obligaciones actualizadas");
+  };
+
   const handleLogout = async () => {
     await signOut();
     navigate('/');
   };
 
-  if (authLoading) {
+  // Loading state
+  if (authLoading || isLoading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      <div className="min-h-screen bg-background">
+        <Header
+          userName={profile?.name || user?.email || 'Usuario'}
+          onLogout={handleLogout}
+          isAdmin={isAdmin}
+        />
+        <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <ObligationListSkeleton />
+        </main>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header
+          userName={profile?.name || user?.email || 'Usuario'}
+          onLogout={handleLogout}
+          isAdmin={isAdmin}
+        />
+        <ErrorState error={error as Error} onRetry={() => refetch()} />
       </div>
     );
   }
@@ -136,10 +121,9 @@ const AllObligations = () => {
               variant="outline"
               size="icon"
               onClick={handleRefresh}
-              disabled={isRefreshing}
               className="shrink-0"
             >
-              <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+              <RefreshCw className="w-4 h-4" />
             </Button>
 
             <div className="flex items-center gap-1 bg-muted p-1 rounded-lg">
@@ -207,11 +191,7 @@ const AllObligations = () => {
         </div>
 
         {/* Obligations display */}
-        {isLoading ? (
-          <div className="flex items-center justify-center py-16">
-            <Loader2 className="w-8 h-8 animate-spin text-primary" />
-          </div>
-        ) : filteredObligations.length === 0 ? (
+        {filteredObligations.length === 0 ? (
           obligations.length === 0 ? (
             <EmptyState />
           ) : (
@@ -222,7 +202,7 @@ const AllObligations = () => {
         ) : viewMode === "kanban" ? (
           <KanbanBoard
             obligations={filteredObligations}
-            onUpdate={loadObligations}
+            onUpdate={() => refetch()}
           />
         ) : (
           <div className="space-y-3">

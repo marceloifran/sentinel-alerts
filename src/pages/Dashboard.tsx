@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
 import StatusCard from "@/components/StatusCard";
@@ -8,71 +8,30 @@ import CalendarView from "@/components/CalendarView";
 import EmptyState from "@/components/EmptyState";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
-import { getObligations, getResponsibles, Obligation } from "@/services/obligationService";
-import { CheckCircle, AlertTriangle, XCircle, Loader2, List, Calendar as CalendarIcon, Shield, Eye, Sparkles } from "lucide-react";
-import { toast } from "sonner";
+import { useObligations, useResponsibles } from "@/hooks/useObligations";
+import { CheckCircle, AlertTriangle, XCircle, List, Calendar as CalendarIcon, Shield, Eye, Sparkles } from "lucide-react";
 import { AIAssistantButton } from "@/components/ai/AIAssistantButton";
 import { SmartObligationLoader } from "@/components/ai/SmartObligationLoader";
+import { DashboardSkeleton } from "@/components/skeletons/Skeletons";
+import { ErrorState } from "@/components/ErrorState";
 
 type ViewMode = 'list' | 'calendar';
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const { user, profile, isAdmin, isLoading: authLoading, signOut } = useAuth();
-  const [obligations, setObligations] = useState<Obligation[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [viewMode, setViewMode] = useState<ViewMode>('list');
-  const [responsibles, setResponsibles] = useState<{ id: string; name: string; email: string }[]>([]);
   const [showSmartLoader, setShowSmartLoader] = useState(false);
 
-  useEffect(() => {
-    if (!authLoading && !user) {
-      navigate('/auth');
-    }
-  }, [user, authLoading, navigate]);
+  // Usar React Query hooks
+  const { data: obligations = [], isLoading, error, refetch } = useObligations();
+  const { data: responsibles = [] } = useResponsibles(isAdmin);
 
-  useEffect(() => {
-    if (user) {
-      loadObligations();
-      if (isAdmin) {
-        loadResponsibles();
-      }
-    }
-  }, [user, isAdmin]);
-
-  // Reload obligations when window regains focus (e.g., after creating an obligation)
-  useEffect(() => {
-    const handleFocus = () => {
-      if (user) {
-        loadObligations();
-      }
-    };
-
-    window.addEventListener('focus', handleFocus);
-    return () => window.removeEventListener('focus', handleFocus);
-  }, [user]);
-
-  const loadObligations = async () => {
-    try {
-      setIsLoading(true);
-      const data = await getObligations();
-      setObligations(data);
-    } catch (error) {
-      console.error('Error loading obligations:', error);
-      toast.error("Error al cargar las obligaciones");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const loadResponsibles = async () => {
-    try {
-      const data = await getResponsibles();
-      setResponsibles(data);
-    } catch (error) {
-      console.error('Error loading responsibles:', error);
-    }
-  };
+  // Redirect si no está autenticado
+  if (!authLoading && !user) {
+    navigate('/auth');
+    return null;
+  }
 
   const stats = useMemo(() => {
     const overdue = obligations.filter(o => o.status === 'vencida').length;
@@ -94,14 +53,29 @@ const Dashboard = () => {
     navigate('/');
   };
 
-  const handleSelectObligation = (obligation: Obligation) => {
+  const handleSelectObligation = (obligation: any) => {
     navigate(`/obligaciones/${obligation.id}`);
   };
 
-  if (authLoading) {
+  const handleObligationsCreated = () => {
+    refetch(); // Refetch manual si es necesario
+  };
+
+  // Loading state
+  if (authLoading || isLoading) {
+    return <DashboardSkeleton />;
+  }
+
+  // Error state
+  if (error) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      <div className="min-h-screen bg-background">
+        <Header
+          userName={profile?.name || user?.email || 'Usuario'}
+          onLogout={handleLogout}
+          isAdmin={isAdmin}
+        />
+        <ErrorState error={error as Error} onRetry={() => refetch()} />
       </div>
     );
   }
@@ -208,11 +182,7 @@ const Dashboard = () => {
         </div>
 
         {/* Content based on view mode */}
-        {isLoading ? (
-          <div className="flex items-center justify-center py-16">
-            <Loader2 className="w-8 h-8 animate-spin text-primary" />
-          </div>
-        ) : viewMode === 'calendar' ? (
+        {viewMode === 'calendar' ? (
           <CalendarView
             obligations={obligations}
             onSelectObligation={handleSelectObligation}
@@ -250,7 +220,7 @@ const Dashboard = () => {
         <SmartObligationLoader
           open={showSmartLoader}
           onOpenChange={setShowSmartLoader}
-          onObligationsCreated={loadObligations}
+          onObligationsCreated={handleObligationsCreated}
           existingObligations={obligations.map(o => ({ name: o.name }))}
           userId={user.id}
         />

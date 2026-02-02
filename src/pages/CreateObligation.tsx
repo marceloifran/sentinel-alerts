@@ -19,7 +19,7 @@ import { es } from "date-fns/locale";
 import { CalendarIcon, ArrowLeft, Loader2 } from "lucide-react";
 import { categoryLabels, ObligationCategory } from "@/services/obligationService";
 import { CategoryIcon } from "@/components/CategoryIcon";
-import { createObligation } from "@/services/obligationService";
+import { useCreateObligation } from "@/hooks/useObligations";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 
@@ -30,7 +30,9 @@ const CreateObligation = () => {
   const [category, setCategory] = useState<ObligationCategory | "">("");
   const [dueDate, setDueDate] = useState<Date>();
   const [recurrence, setRecurrence] = useState<'none' | 'monthly' | 'annual'>('none');
-  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // React Query mutation
+  const createMutation = useCreateObligation();
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -41,8 +43,6 @@ const CreateObligation = () => {
       navigate('/dashboard');
     }
   }, [user, authLoading, isAdmin, navigate]);
-
-
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -57,24 +57,22 @@ const CreateObligation = () => {
       return;
     }
 
-    setIsSubmitting(true);
-
     try {
-      await createObligation({
-        name,
-        category: category as ObligationCategory,
-        due_date: format(dueDate, 'yyyy-MM-dd'),
-        responsible_id: user.id,
-        recurrence
-      } as any, user.id);
+      await createMutation.mutateAsync({
+        obligation: {
+          name,
+          category: category as ObligationCategory,
+          due_date: format(dueDate, 'yyyy-MM-dd'),
+          responsible_id: user.id,
+          recurrence
+        } as any,
+        userId: user.id
+      });
 
-      toast.success("Obligación creada exitosamente");
       navigate('/dashboard');
     } catch (error) {
+      // Error already handled by mutation
       console.error('Error creating obligation:', error);
-      toast.error("Error al crear la obligación");
-    } finally {
-      setIsSubmitting(false);
     }
   };
 

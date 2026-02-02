@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import Header from "@/components/Header";
 import StatusBadge from "@/components/StatusBadge";
@@ -13,25 +13,25 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  getObligation,
-  getObligationHistory,
-  getObligationFiles,
-  updateObligationStatus,
-  updateObligationNotes,
-  updateObligationDueDate,
-  renewObligation,
-  updateObligationRecurrence,
-  uploadObligationFile,
-  deleteObligationFile,
-  deleteObligation,
+  useObligation,
+  useObligationHistory,
+  useObligationFiles,
+  useUpdateObligationStatus,
+  useUpdateObligationNotes,
+  useUpdateObligationDueDate,
+  useRenewObligation,
+  useUploadObligationFile,
+  useDeleteObligationFile,
+  useDeleteObligation,
+} from "@/hooks/useObligations";
+import {
   getSignedFileUrl,
-  Obligation,
-  ObligationHistory,
-  ObligationFile,
   categoryLabels,
   statusLabels,
   recurrenceLabels,
-  ObligationStatus
+  ObligationStatus,
+  updateObligationRecurrence,
+  renewObligation as renewObligationService,
 } from "@/services/obligationService";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
@@ -52,6 +52,8 @@ import { es } from "date-fns/locale";
 import { ArrowLeft, Calendar, User, Clock, FileUp, Trash2, Download, File, Loader2, RefreshCw, CalendarIcon } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { PageSkeleton } from "@/components/skeletons/Skeletons";
+import { ErrorState, NotFoundState } from "@/components/ErrorState";
 
 const ObligationDetail = () => {
   const navigate = useNavigate();
@@ -59,11 +61,22 @@ const ObligationDetail = () => {
   const { user, profile, isAdmin, isLoading: authLoading, signOut } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [obligation, setObligation] = useState<Obligation | null>(null);
-  const [history, setHistory] = useState<ObligationHistory[]>([]);
-  const [files, setFiles] = useState<ObligationFile[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [status, setStatus] = useState<ObligationStatus>('al_dia');
+  // React Query hooks
+  const { data: obligation, isLoading: obligationLoading, error: obligationError, refetch: refetchObligation } = useObligation(id);
+  const { data: history = [], refetch: refetchHistory } = useObligationHistory(id);
+  const { data: files = [], refetch: refetchFiles } = useObligationFiles(id);
+
+  // Mutations
+  const updateStatusMutation = useUpdateObligationStatus();
+  const updateNotesMutation = useUpdateObligationNotes();
+  const updateDueDateMutation = useUpdateObligationDueDate();
+  const renewMutation = useRenewObligation();
+  const uploadFileMutation = useUploadObligationFile();
+  const deleteFileMutation = useDeleteObligationFile();
+  const deleteObligationMutation = useDeleteObligation();
+
+  // Local state
+  const [status, setStatus] = useState<ObligationStatus>(obligation?.status || 'al_dia');
   const [note, setNote] = useState("");
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
   const [isSavingNote, setIsSavingNote] = useState(false);
@@ -74,45 +87,67 @@ const ObligationDetail = () => {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
+  // Redirect si no está autenticado
   useEffect(() => {
     if (!authLoading && !user) {
       navigate('/auth');
     }
   }, [user, authLoading, navigate]);
 
+  // Update local state when obligation loads
   useEffect(() => {
-    if (user && id) {
-      loadData();
+    if (obligation) {
+      setStatus(obligation.status);
     }
-  }, [user, id]);
+  }, [obligation]);
 
-  const loadData = async () => {
-    try {
-      setIsLoading(true);
-      const [obligationData, historyData, filesData] = await Promise.all([
-        getObligation(id!),
-        getObligationHistory(id!),
-        getObligationFiles(id!)
-      ]);
+  const isLoading = authLoading || obligationLoading;
 
-      if (!obligationData) {
-        toast.error("Obligación no encontrada");
-        navigate('/dashboard');
-        return;
-      }
+  // Loading state
+  if (isLoading) {
+    return <PageSkeleton />;
+  }
 
-      setObligation(obligationData);
-      setStatus(obligationData.status);
-      setHistory(historyData);
-      setFiles(filesData);
-    } catch (error) {
-      console.error('Error loading obligation:', error);
-      toast.error("Error al cargar la obligación");
-      navigate('/dashboard');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  // Error state
+  if (obligationError) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header
+          userName={profile?.name || user?.email || 'Usuario'}
+          onLogout={async () => {
+            await signOut();
+            navigate('/');
+          }}
+          isAdmin={isAdmin}
+        />
+        <ErrorState
+          error={obligationError as Error}
+          onRetry={() => navigate('/dashboard')}
+        />
+      </div>
+    );
+  }
+
+  // Not found state
+  if (!obligation) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header
+          userName={profile?.name || user?.email || 'Usuario'}
+          onLogout={async () => {
+            await signOut();
+            navigate('/');
+          }}
+          isAdmin={isAdmin}
+        />
+        <NotFoundState
+          title="Obligación no encontrada"
+          description="La obligación que buscas no existe o fue eliminada"
+          onGoBack={() => navigate('/dashboard')}
+        />
+      </div>
+    );
+  }
 
   const handleStatusChange = async (newStatus: ObligationStatus) => {
     if (!obligation || !user || newStatus === status) return;
@@ -133,7 +168,11 @@ const ObligationDetail = () => {
 
     setIsUpdatingStatus(true);
     try {
-      await updateObligationStatus(obligation.id, newStatus, status, user.id);
+      await updateStatusMutation.mutateAsync({
+        id: obligation.id,
+        status: newStatus,
+        userId: user.id,
+      });
       setStatus(newStatus);
 
       // Confirmación emocional cuando se cambia a "Al día"
@@ -145,12 +184,9 @@ const ObligationDetail = () => {
         toast.success(`Estado actualizado a "${statusLabels[newStatus]}"`);
       }
 
-      // Reload history
-      const historyData = await getObligationHistory(obligation.id);
-      setHistory(historyData);
+      refetchHistory();
     } catch (error) {
       console.error('Error updating status:', error);
-      toast.error("Error al actualizar el estado");
     } finally {
       setIsUpdatingStatus(false);
     }
@@ -161,7 +197,7 @@ const ObligationDetail = () => {
 
     setIsRenewing(true);
     try {
-      const newDate = await renewObligation(
+      const newDate = await renewObligationService(
         obligation.id,
         obligation.recurrence as 'monthly' | 'annual',
         obligation.due_date,
@@ -169,7 +205,8 @@ const ObligationDetail = () => {
       );
 
       toast.success(`Obligación renovada. Nueva fecha: ${format(new Date(newDate), "d 'de' MMMM, yyyy", { locale: es })}`);
-      await loadData();
+      refetchObligation();
+      refetchHistory();
     } catch (error) {
       console.error('Error renewing obligation:', error);
       toast.error("Error al renovar la obligación");
@@ -184,117 +221,107 @@ const ObligationDetail = () => {
     setIsChangingDate(true);
     try {
       const formattedDate = format(newDueDate, 'yyyy-MM-dd');
-      await updateObligationDueDate(obligation.id, formattedDate, user.id);
+      await updateDueDateMutation.mutateAsync({
+        id: obligation.id,
+        dueDate: formattedDate,
+        userId: user.id,
+      });
 
       toast.success(`Fecha actualizada a ${format(newDueDate, "d 'de' MMMM, yyyy", { locale: es })}`);
       setNewDueDate(undefined);
-      await loadData();
+      refetchObligation();
+      refetchHistory();
     } catch (error) {
       console.error('Error changing due date:', error);
-      toast.error("Error al cambiar la fecha");
     } finally {
       setIsChangingDate(false);
     }
   };
 
   const handleRecurrenceChange = async (value: 'none' | 'monthly' | 'annual') => {
-    if (!obligation) return;
+    if (!obligation || !user) return;
 
     try {
       await updateObligationRecurrence(obligation.id, value);
-      setObligation({ ...obligation, recurrence: value });
       toast.success(`Recurrencia actualizada a "${recurrenceLabels[value]}"`);
+      refetchObligation();
     } catch (error) {
       console.error('Error updating recurrence:', error);
-      toast.error("Error al actualizar recurrencia");
+      toast.error("Error al actualizar la recurrencia");
     }
   };
 
-  const getHumanMessage = (days: number, currentStatus: ObligationStatus): string => {
-    if (currentStatus === 'al_dia') {
-      return "Todavía estás a tiempo";
-    }
-    if (days < 0) {
-      return "Esta obligación está vencida";
-    }
-    if (days === 0) {
-      return "Atención: vence hoy";
-    }
-    if (days <= 30) {
-      return "Atención: vence pronto";
-    }
-    return "Todavía estás a tiempo";
-  };
-
-  const handleAddNote = async () => {
-    if (!note.trim() || !obligation) {
-      toast.error("Escribe una nota antes de guardar");
-      return;
-    }
+  const handleSaveNote = async () => {
+    if (!obligation || !user || !note.trim()) return;
 
     setIsSavingNote(true);
     try {
-      const existingNotes = obligation.notes || '';
-      const timestamp = format(new Date(), "d MMM yyyy, HH:mm", { locale: es });
-      const newNote = `[${timestamp}] ${profile?.name || 'Usuario'}: ${note}`;
-      const updatedNotes = existingNotes ? `${existingNotes}\n\n${newNote}` : newNote;
+      await updateNotesMutation.mutateAsync({
+        id: obligation.id,
+        notes: note,
+        userId: user.id,
+      });
 
-      await updateObligationNotes(obligation.id, updatedNotes);
-      setObligation({ ...obligation, notes: updatedNotes });
       setNote("");
-      toast.success("Nota agregada");
+      refetchHistory();
     } catch (error) {
-      console.error('Error adding note:', error);
-      toast.error("Error al agregar la nota");
+      console.error('Error saving note:', error);
     } finally {
       setIsSavingNote(false);
     }
   };
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
     if (!file || !obligation || !user) return;
-
-    // Validate file size (max 10MB)
-    if (file.size > 10 * 1024 * 1024) {
-      toast.error("El archivo es demasiado grande (máximo 10MB)");
-      return;
-    }
 
     setIsUploading(true);
     try {
-      const uploadedFile = await uploadObligationFile(obligation.id, file, user.id);
-      setFiles([uploadedFile, ...files]);
-      toast.success("Archivo subido exitosamente");
-    } catch (error) {
-      console.error('Error uploading file:', error);
-      toast.error("Error al subir el archivo");
-    } finally {
-      setIsUploading(false);
+      await uploadFileMutation.mutateAsync({
+        obligationId: obligation.id,
+        file,
+        userId: user.id,
+      });
+
+      refetchFiles();
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
-    }
-  };
-
-  const handleDownloadFile = async (file: ObligationFile) => {
-    try {
-      const url = await getSignedFileUrl(file.file_path);
-      window.open(url, '_blank');
     } catch (error) {
-      console.error('Error getting file URL:', error);
-      toast.error("Error al descargar el archivo");
+      console.error('Error uploading file:', error);
+    } finally {
+      setIsUploading(false);
     }
   };
 
-  const handleDeleteFile = async (file: ObligationFile) => {
+  const handleDeleteFile = async (fileId: string, filePath: string) => {
+    if (!obligation) return;
+
     try {
-      await deleteObligationFile(file.id, file.file_path);
-      setFiles(files.filter(f => f.id !== file.id));
-      toast.success("Archivo eliminado");
+      await deleteFileMutation.mutateAsync({
+        fileId,
+        filePath,
+        obligationId: obligation.id,
+      });
+
+      refetchFiles();
     } catch (error) {
       console.error('Error deleting file:', error);
-      toast.error("Error al eliminar el archivo");
+    }
+  };
+
+  const handleDownloadFile = async (filePath: string, fileName: string) => {
+    try {
+      const signedUrl = await getSignedFileUrl(filePath);
+      const link = document.createElement('a');
+      link.href = signedUrl;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (error) {
+      console.error('Error downloading file:', error);
+      toast.error("Error al descargar el archivo");
     }
   };
 
@@ -303,13 +330,10 @@ const ObligationDetail = () => {
 
     setIsDeleting(true);
     try {
-      await deleteObligation(obligation.id);
-      toast.success("Obligación eliminada exitosamente");
+      await deleteObligationMutation.mutateAsync(obligation.id);
       navigate('/dashboard');
     } catch (error) {
       console.error('Error deleting obligation:', error);
-      toast.error("Error al eliminar la obligación");
-    } finally {
       setIsDeleting(false);
       setShowDeleteDialog(false);
     }
@@ -320,33 +344,7 @@ const ObligationDetail = () => {
     navigate('/');
   };
 
-  const formatFileSize = (bytes: number): string => {
-    if (bytes < 1024) return `${bytes} B`;
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-  };
-
-  const getFileIcon = (fileType: string): string => {
-    if (fileType.startsWith('image/')) return '🖼️';
-    if (fileType === 'application/pdf') return '📄';
-    if (fileType.includes('word')) return '📝';
-    if (fileType.includes('excel') || fileType.includes('spreadsheet')) return '📊';
-    return '📎';
-  };
-
-  if (authLoading || isLoading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-
-  if (!user || !obligation) return null;
-
-  const daysUntilDue = Math.ceil(
-    (new Date(obligation.due_date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)
-  );
+  if (!user) return null;
 
   return (
     <div className="min-h-screen bg-background">
@@ -356,377 +354,317 @@ const ObligationDetail = () => {
         isAdmin={isAdmin}
       />
 
-      <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 max-w-3xl">
-        <div className="flex items-center justify-between mb-6">
-          <button
-            onClick={() => navigate('/dashboard')}
-            className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Volver al dashboard
-          </button>
-          <Button
-            variant="destructive"
-            size="sm"
-            onClick={() => setShowDeleteDialog(true)}
-            className="flex items-center gap-2"
-          >
-            <Trash2 className="w-4 h-4" />
-            Eliminar
-          </Button>
-        </div>
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Back button */}
+        <Button
+          variant="ghost"
+          onClick={() => navigate('/dashboard')}
+          className="mb-6 gap-2"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Volver al Dashboard
+        </Button>
 
-        <div className="space-y-6 animate-fade-in">
-          {/* Main Card */}
-          <div className="card-elevated p-6 sm:p-8">
-            {/* Estado prominente en la parte superior */}
-            <div className="flex items-center justify-center mb-6 pb-6 border-b border-border">
-              <StatusBadge status={status} size="lg" />
+        {/* Header with title and delete button */}
+        <div className="flex items-start justify-between mb-6">
+          <div className="flex items-start gap-4">
+            <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+              <CategoryIcon category={obligation.category} className="w-6 h-6" />
             </div>
-
-            <div className="flex flex-col gap-4 mb-6">
-              <div className="flex items-center gap-2 mb-2">
-                <CategoryIcon category={obligation.category} className="w-6 h-6" />
-                <span className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
-                  {categoryLabels[obligation.category]}
-                </span>
-              </div>
-              <h1 className="text-2xl font-bold text-foreground">{obligation.name}</h1>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 bg-secondary/50 rounded-xl">
-              <div className="flex items-center gap-3">
-                <Calendar className="w-5 h-5 text-muted-foreground" />
-                <div className="flex-1">
-                  <p className="text-xs text-muted-foreground">Vencimiento</p>
-                  <p className="font-medium text-foreground">
-                    {format(new Date(obligation.due_date), "d 'de' MMMM, yyyy", { locale: es })}
-                  </p>
-                  <p className={cn(
-                    "text-xs font-medium mt-1",
-                    daysUntilDue < 0 && "text-status-danger",
-                    daysUntilDue >= 0 && daysUntilDue <= 30 && "text-status-warning",
-                    daysUntilDue > 30 && "text-status-success"
-                  )}>
-                    {daysUntilDue < 0
-                      ? `Vencida hace ${Math.abs(daysUntilDue)} días`
-                      : daysUntilDue === 0
-                        ? "Vence hoy"
-                        : `${daysUntilDue} días restantes`
-                    }
-                  </p>
-                  <p className={cn(
-                    "text-sm font-semibold mt-2",
-                    daysUntilDue < 0 && "text-status-danger",
-                    daysUntilDue >= 0 && daysUntilDue <= 30 && "text-status-warning",
-                    daysUntilDue > 30 && "text-status-success"
-                  )}>
-                    {getHumanMessage(daysUntilDue, status)}
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center gap-3">
-                <User className="w-5 h-5 text-muted-foreground" />
-                <div>
-                  <p className="text-xs text-muted-foreground">Responsable</p>
-                  <p className="font-medium text-foreground">{obligation.responsible_name}</p>
-                </div>
-              </div>
+            <div>
+              <h1 className="text-3xl font-bold text-foreground mb-2">
+                {obligation.name}
+              </h1>
+              <p className="text-muted-foreground">
+                {categoryLabels[obligation.category]}
+              </p>
             </div>
           </div>
 
-          {/* Date Management & Recurrence */}
-          <div className="card-elevated p-6">
-            <h2 className="font-semibold text-foreground mb-4 flex items-center gap-2">
-              <RefreshCw className="w-5 h-5" />
-              Fecha y Recurrencia
-            </h2>
+          {isAdmin && (
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() => setShowDeleteDialog(true)}
+              className="gap-2"
+            >
+              <Trash2 className="w-4 h-4" />
+              Eliminar
+            </Button>
+          )}
+        </div>
 
-            <div className="space-y-4">
-              {/* Recurrence Badge */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 bg-secondary/50 rounded-lg">
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-foreground">Tipo de recurrencia</p>
-                  <p className="text-xs text-muted-foreground">
-                    {obligation.recurrence === 'none'
-                      ? 'Esta obligación no se renueva automáticamente'
-                      : `Se puede renovar ${obligation.recurrence === 'monthly' ? 'cada mes' : 'cada año'}`
-                    }
-                  </p>
-                </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Main content */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Status card */}
+            <div className="card-elevated p-6">
+              <h2 className="text-lg font-semibold mb-4">Estado</h2>
+              <div className="flex items-center gap-4">
+                <StatusBadge status={status} />
                 <Select
-                  value={obligation.recurrence || 'none'}
-                  onValueChange={(value: 'none' | 'monthly' | 'annual') => handleRecurrenceChange(value)}
+                  value={status}
+                  onValueChange={(value) => handleStatusChange(value as ObligationStatus)}
+                  disabled={isUpdatingStatus}
                 >
-                  <SelectTrigger className="w-full sm:w-44 shrink-0">
+                  <SelectTrigger className="w-[200px]">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">Sin recurrencia</SelectItem>
-                    <SelectItem value="monthly">Mensual</SelectItem>
-                    <SelectItem value="annual">Anual</SelectItem>
+                    <SelectItem value="al_dia">Al día</SelectItem>
+                    <SelectItem value="por_vencer">Por vencer</SelectItem>
+                    <SelectItem value="vencida">Vencida</SelectItem>
                   </SelectContent>
                 </Select>
+                {isUpdatingStatus && <Loader2 className="w-4 h-4 animate-spin" />}
               </div>
+            </div>
 
-              {/* Renew Button (only if recurrent) */}
-              {obligation.recurrence && obligation.recurrence !== 'none' && (
-                <Button
-                  onClick={handleRenewObligation}
-                  disabled={isRenewing}
-                  className="w-full"
-                  variant="default"
-                >
-                  {isRenewing ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Renovando...
-                    </>
-                  ) : (
-                    <>
-                      <RefreshCw className="w-4 h-4 mr-2" />
-                      Renovar obligación ({obligation.recurrence === 'monthly' ? '+1 mes' : '+1 año'})
-                    </>
-                  )}
-                </Button>
-              )}
+            {/* Details card */}
+            <div className="card-elevated p-6 space-y-4">
+              <h2 className="text-lg font-semibold">Detalles</h2>
 
-              {/* Manual Date Change */}
-              <div className="border-t border-border pt-4">
-                <p className="text-sm font-medium text-foreground mb-2">Cambiar fecha manualmente</p>
-                <div className="flex gap-2">
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className={cn(
-                          "flex-1 justify-start text-left font-normal",
-                          !newDueDate && "text-muted-foreground"
-                        )}
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {newDueDate ? format(newDueDate, "PPP", { locale: es }) : "Seleccionar nueva fecha"}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <CalendarComponent
-                        mode="single"
-                        selected={newDueDate}
-                        onSelect={setNewDueDate}
-                        initialFocus
-                        className="pointer-events-auto"
-                      />
-                    </PopoverContent>
-                  </Popover>
-                  <Button
-                    onClick={handleChangeDueDate}
-                    disabled={!newDueDate || isChangingDate}
-                    variant="secondary"
-                  >
-                    {isChangingDate ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      "Aplicar"
-                    )}
-                  </Button>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="flex items-center gap-3">
+                  <Calendar className="w-5 h-5 text-muted-foreground" />
+                  <div>
+                    <p className="text-sm text-muted-foreground">Fecha de vencimiento</p>
+                    <p className="font-medium">
+                      {format(new Date(obligation.due_date), "d 'de' MMMM, yyyy", { locale: es })}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <User className="w-5 h-5 text-muted-foreground" />
+                  <div>
+                    <p className="text-sm text-muted-foreground">Responsable</p>
+                    <p className="font-medium">{obligation.responsible_name || 'Sin asignar'}</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <Clock className="w-5 h-5 text-muted-foreground" />
+                  <div>
+                    <p className="text-sm text-muted-foreground">Recurrencia</p>
+                    <Select
+                      value={obligation.recurrence}
+                      onValueChange={handleRecurrenceChange}
+                    >
+                      <SelectTrigger className="w-[180px]">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">Sin recurrencia</SelectItem>
+                        <SelectItem value="monthly">Mensual</SelectItem>
+                        <SelectItem value="annual">Anual</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
               </div>
+
+              {/* Actions */}
+              <div className="flex flex-wrap gap-2 pt-4 border-t">
+                {obligation.recurrence !== 'none' && (
+                  <Button
+                    onClick={handleRenewObligation}
+                    disabled={isRenewing}
+                    variant="outline"
+                    className="gap-2"
+                  >
+                    {isRenewing ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <RefreshCw className="w-4 h-4" />
+                    )}
+                    Renovar obligación
+                  </Button>
+                )}
+
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className="gap-2">
+                      <CalendarIcon className="w-4 h-4" />
+                      Cambiar fecha
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <CalendarComponent
+                      mode="single"
+                      selected={newDueDate}
+                      onSelect={setNewDueDate}
+                      initialFocus
+                    />
+                    <div className="p-3 border-t">
+                      <Button
+                        onClick={handleChangeDueDate}
+                        disabled={!newDueDate || isChangingDate}
+                        className="w-full"
+                      >
+                        {isChangingDate ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          'Confirmar'
+                        )}
+                      </Button>
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              </div>
             </div>
-          </div>
 
-          {/* Change Status */}
-          <div className="card-elevated p-6">
-            <h2 className="font-semibold text-foreground mb-4">Cambiar estado</h2>
-            <Select
-              value={status}
-              onValueChange={(value: ObligationStatus) => handleStatusChange(value)}
-              disabled={isUpdatingStatus}
-            >
-              <SelectTrigger className="h-12">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="al_dia">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-status-success" />
-                    Al día
-                  </div>
-                </SelectItem>
-                <SelectItem value="por_vencer">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-status-warning" />
-                    Por vencer
-                  </div>
-                </SelectItem>
-                <SelectItem value="vencida">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-status-danger" />
-                    Vencida
-                  </div>
-                </SelectItem>
-              </SelectContent>
-            </Select>
-            {isUpdatingStatus && (
-              <p className="text-sm text-muted-foreground mt-2">Actualizando...</p>
-            )}
-          </div>
-
-          {/* Notes */}
-          <div className="card-elevated p-6">
-            <h2 className="font-semibold text-foreground mb-4">Notas</h2>
-
+            {/* Notes section */}
             {obligation.notes && (
-              <div className="bg-secondary/50 rounded-lg p-4 mb-4 text-sm whitespace-pre-wrap">
-                {obligation.notes}
+              <div className="card-elevated p-6">
+                <h2 className="text-lg font-semibold mb-4">Notas</h2>
+                <p className="text-muted-foreground whitespace-pre-wrap">
+                  {obligation.notes}
+                </p>
               </div>
             )}
 
-            <div className="space-y-3">
-              <Textarea
-                placeholder="Escribe una nota sobre esta obligación..."
-                value={note}
-                onChange={(e) => setNote(e.target.value)}
-                rows={3}
-              />
-              <Button
-                onClick={handleAddNote}
-                variant="secondary"
-                disabled={isSavingNote}
-              >
-                {isSavingNote ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Guardando...
-                  </>
-                ) : (
-                  "Agregar nota"
-                )}
-              </Button>
+            {/* Add note */}
+            <div className="card-elevated p-6">
+              <h2 className="text-lg font-semibold mb-4">Agregar nota</h2>
+              <div className="space-y-3">
+                <Textarea
+                  value={note}
+                  onChange={(e) => setNote(e.target.value)}
+                  placeholder="Escribe una nota..."
+                  rows={3}
+                />
+                <Button
+                  onClick={handleSaveNote}
+                  disabled={!note.trim() || isSavingNote}
+                  className="gap-2"
+                >
+                  {isSavingNote ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    'Guardar nota'
+                  )}
+                </Button>
+              </div>
             </div>
-          </div>
 
-          {/* Files */}
-          <div className="card-elevated p-6">
-            <h2 className="font-semibold text-foreground mb-4">Archivos de evidencia</h2>
+            {/* Files */}
+            <div className="card-elevated p-6">
+              <h2 className="text-lg font-semibold mb-4">Archivos adjuntos</h2>
 
-            {/* Uploaded files list */}
-            {files.length > 0 && (
-              <div className="space-y-2 mb-4">
+              <div className="space-y-3">
                 {files.map((file) => (
                   <div
                     key={file.id}
-                    className="flex items-center justify-between p-3 bg-secondary/50 rounded-lg"
+                    className="flex items-center justify-between p-3 bg-muted rounded-lg"
                   >
-                    <div className="flex items-center gap-3 min-w-0">
-                      <span className="text-xl">{getFileIcon(file.file_type)}</span>
-                      <div className="min-w-0">
-                        <p className="font-medium text-foreground truncate">{file.file_name}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {formatFileSize(file.file_size)} • {format(new Date(file.created_at), "d MMM yyyy", { locale: es })}
+                    <div className="flex items-center gap-3">
+                      <File className="w-5 h-5 text-muted-foreground" />
+                      <div>
+                        <p className="font-medium">{file.file_name}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {format(new Date(file.created_at), "d 'de' MMMM, yyyy", { locale: es })}
                         </p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex gap-2">
                       <Button
                         variant="ghost"
-                        size="icon"
-                        onClick={() => handleDownloadFile(file)}
+                        size="sm"
+                        onClick={() => handleDownloadFile(file.file_path, file.file_name)}
                       >
                         <Download className="w-4 h-4" />
                       </Button>
                       <Button
                         variant="ghost"
-                        size="icon"
-                        onClick={() => handleDeleteFile(file)}
-                        className="text-destructive hover:text-destructive"
+                        size="sm"
+                        onClick={() => handleDeleteFile(file.id, file.file_path)}
                       >
                         <Trash2 className="w-4 h-4" />
                       </Button>
                     </div>
                   </div>
                 ))}
-              </div>
-            )}
 
-            {/* Upload area */}
-            <label className={cn(
-              "flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-border rounded-xl cursor-pointer",
-              "hover:border-primary/50 hover:bg-accent/50 transition-colors",
-              isUploading && "pointer-events-none opacity-50"
-            )}>
-              {isUploading ? (
-                <Loader2 className="w-8 h-8 text-muted-foreground animate-spin" />
-              ) : (
-                <>
-                  <FileUp className="w-8 h-8 text-muted-foreground mb-2" />
-                  <span className="text-sm text-muted-foreground">Click para subir archivo</span>
-                  <span className="text-xs text-muted-foreground mt-1">PDF, JPG, PNG, Word, Excel (max 10MB)</span>
-                </>
-              )}
-              <input
-                ref={fileInputRef}
-                type="file"
-                className="hidden"
-                onChange={handleFileUpload}
-                accept=".pdf,.jpg,.jpeg,.png,.gif,.webp,.doc,.docx,.xls,.xlsx,.txt,.csv"
-              />
-            </label>
+                {files.length === 0 && (
+                  <p className="text-muted-foreground text-center py-4">
+                    No hay archivos adjuntos
+                  </p>
+                )}
+
+                <div className="pt-3 border-t">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    onChange={handleFileUpload}
+                    className="hidden"
+                  />
+                  <Button
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isUploading}
+                    variant="outline"
+                    className="w-full gap-2"
+                  >
+                    {isUploading ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <FileUp className="w-4 h-4" />
+                    )}
+                    Subir archivo
+                  </Button>
+                </div>
+              </div>
+            </div>
           </div>
 
-          {/* Email Notifications */}
-          <div className="card-elevated p-6">
+          {/* Sidebar */}
+          <div className="space-y-6">
+            {/* Notifications */}
             <NotificationManager
               obligationId={obligation.id}
-              userEmail={user.email || ''}
+              userEmail={user?.email || ''}
               obligationName={obligation.name}
               dueDate={obligation.due_date}
-              daysUntilDue={daysUntilDue}
+              daysUntilDue={Math.ceil((new Date(obligation.due_date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))}
             />
-          </div>
 
-          {/* History */}
-          <div className="card-elevated p-6">
-            <h2 className="font-semibold text-foreground mb-4">Historial de cambios</h2>
-            {history.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No hay cambios registrados aún</p>
-            ) : (
-              <div className="space-y-4">
+            {/* History */}
+            <div className="card-elevated p-6">
+              <h2 className="text-lg font-semibold mb-4">Historial</h2>
+              <div className="space-y-3">
                 {history.map((entry) => (
-                  <div key={entry.id} className="flex items-start gap-3">
-                    <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center flex-shrink-0">
-                      <Clock className="w-4 h-4 text-muted-foreground" />
-                    </div>
-                    <div>
-                      <p className="text-sm text-foreground">
-                        <span className="font-medium">{entry.changed_by_name}</span> cambió el estado
-                        {entry.previous_status && (
-                          <> de <span className="font-medium">{statusLabels[entry.previous_status]}</span></>
-                        )}
-                        {' '}a <span className="font-medium">{statusLabels[entry.new_status]}</span>
-                      </p>
-                      {entry.note && (
-                        <p className="text-sm text-muted-foreground mt-1">{entry.note}</p>
-                      )}
-                      <p className="text-xs text-muted-foreground">
-                        {format(new Date(entry.created_at), "d MMM yyyy, HH:mm", { locale: es })}
-                      </p>
-                    </div>
+                  <div key={entry.id} className="pb-3 border-b last:border-0">
+                    <p className="text-sm font-medium">
+                      {entry.previous_status && entry.new_status
+                        ? `Cambió de ${statusLabels[entry.previous_status]} a ${statusLabels[entry.new_status]}`
+                        : 'Cambio registrado'}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {entry.changed_by_name} •{' '}
+                      {format(new Date(entry.created_at), "d 'de' MMM, HH:mm", { locale: es })}
+                    </p>
                   </div>
                 ))}
+
+                {history.length === 0 && (
+                  <p className="text-muted-foreground text-sm text-center py-4">
+                    Sin historial
+                  </p>
+                )}
               </div>
-            )}
+            </div>
           </div>
         </div>
-      </main>
+      </div>
 
-      {/* Delete Confirmation Dialog */}
+      {/* Delete confirmation dialog */}
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>¿Eliminar obligación?</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta acción no se puede deshacer. Se eliminará permanentemente la obligación
-              "{obligation?.name}" junto con todos sus archivos, notas e historial.
+              Esta acción no se puede deshacer. Se eliminarán todos los archivos,
+              notificaciones e historial asociados a esta obligación.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -738,11 +676,11 @@ const ObligationDetail = () => {
             >
               {isDeleting ? (
                 <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
                   Eliminando...
                 </>
               ) : (
-                "Eliminar"
+                'Eliminar'
               )}
             </AlertDialogAction>
           </AlertDialogFooter>
