@@ -58,6 +58,42 @@ export type Database = {
           },
         ]
       }
+      google_calendar_integrations: {
+        Row: {
+          access_token: string
+          created_at: string | null
+          id: string
+          refresh_token: string
+          selected_calendar_id: string | null
+          sync_enabled: boolean | null
+          token_expires_at: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          access_token: string
+          created_at?: string | null
+          id?: string
+          refresh_token: string
+          selected_calendar_id?: string | null
+          sync_enabled?: boolean | null
+          token_expires_at: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          access_token?: string
+          created_at?: string | null
+          id?: string
+          refresh_token?: string
+          selected_calendar_id?: string | null
+          sync_enabled?: boolean | null
+          token_expires_at?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       obligation_files: {
         Row: {
           created_at: string
@@ -149,6 +185,7 @@ export type Database = {
           created_at: string
           created_by: string
           due_date: string
+          google_event_id: string | null
           id: string
           name: string
           notes: string | null
@@ -162,6 +199,7 @@ export type Database = {
           created_at?: string
           created_by: string
           due_date: string
+          google_event_id?: string | null
           id?: string
           name: string
           notes?: string | null
@@ -175,6 +213,7 @@ export type Database = {
           created_at?: string
           created_by?: string
           due_date?: string
+          google_event_id?: string | null
           id?: string
           name?: string
           notes?: string | null
