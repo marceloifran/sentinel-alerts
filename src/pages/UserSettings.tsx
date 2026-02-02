@@ -11,7 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { User, Mail, Lock, Save, ArrowLeft, Phone, MessageCircle } from 'lucide-react';
 import PlanCard, { PlanType } from '@/components/PlanCard';
-import { GoogleCalendarIntegration } from '@/components/integrations/GoogleCalendarIntegration';
+
 
 const UserSettings = () => {
     const navigate = useNavigate();
@@ -44,7 +44,7 @@ const UserSettings = () => {
                     .select('plan, max_obligations, max_users')
                     .eq('id', user.id)
                     .single();
-                
+
                 if (data) {
                     setUserPlan({
                         plan: (data.plan as PlanType) || 'starter',
@@ -67,7 +67,7 @@ const UserSettings = () => {
             setIsLoading(true);
             const { error } = await supabase
                 .from('profiles')
-                .update({ 
+                .update({
                     name: name.trim(),
                     phone: phone.trim() || null,
                     whatsapp_enabled: whatsappEnabled
@@ -304,11 +304,10 @@ const UserSettings = () => {
                         </div>
                     </Card>
 
-                    {/* Google Calendar Integration */}
-                    <GoogleCalendarIntegration isAdmin={isAdmin} />
+
 
                     {/* Plan Information */}
-                    <PlanCard 
+                    <PlanCard
                         currentPlan={userPlan.plan}
                         maxObligations={userPlan.max_obligations}
                         maxUsers={userPlan.max_users}

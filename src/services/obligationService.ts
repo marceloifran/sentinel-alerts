@@ -1,6 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
-import { syncObligationToCalendar } from './googleCalendarService';
+
 
 type ObligationRow = Database['public']['Tables']['obligations']['Row'];
 type ObligationInsert = Database['public']['Tables']['obligations']['Insert'];
@@ -163,21 +163,6 @@ export async function createObligation(
     console.error('Error creando notificación automática:', notificationError);
   }
 
-  // Sync to Google Calendar (if connected and enabled)
-  try {
-    await syncObligationToCalendar({
-      id: data.id,
-      name: data.name,
-      due_date: data.due_date,
-      status: data.status,
-      responsible_name: responsibleName,
-      notes: data.notes || undefined,
-    });
-  } catch (syncError) {
-    console.error('Error syncing to Google Calendar:', syncError);
-    // Don't fail obligation creation if sync fails
-  }
-
   return {
     ...data,
     recurrence: (data.recurrence || 'none') as 'none' | 'monthly' | 'annual'
@@ -211,23 +196,6 @@ export async function updateObligationStatus(
     });
 
   if (historyError) throw historyError;
-
-  // Sync updated status to Google Calendar
-  try {
-    const obligation = await getObligation(obligationId);
-    if (obligation) {
-      await syncObligationToCalendar({
-        id: obligation.id,
-        name: obligation.name,
-        due_date: obligation.due_date,
-        status: newStatus,
-        responsible_name: obligation.responsible_name,
-        notes: obligation.notes || undefined,
-      });
-    }
-  } catch (syncError) {
-    console.error('Error syncing status to Google Calendar:', syncError);
-  }
 }
 
 export async function updateObligationNotes(
@@ -271,23 +239,6 @@ export async function updateObligationDueDate(
     });
 
   if (historyError) throw historyError;
-
-  // Sync updated date to Google Calendar
-  try {
-    const obligation = await getObligation(obligationId);
-    if (obligation) {
-      await syncObligationToCalendar({
-        id: obligation.id,
-        name: obligation.name,
-        due_date: newDueDate,
-        status: newStatus,
-        responsible_name: obligation.responsible_name,
-        notes: obligation.notes || undefined,
-      });
-    }
-  } catch (syncError) {
-    console.error('Error syncing date to Google Calendar:', syncError);
-  }
 }
 
 export async function renewObligation(
@@ -332,23 +283,6 @@ export async function renewObligation(
     });
 
   if (historyError) throw historyError;
-
-  // Sync renewed date to Google Calendar
-  try {
-    const obligation = await getObligation(obligationId);
-    if (obligation) {
-      await syncObligationToCalendar({
-        id: obligation.id,
-        name: obligation.name,
-        due_date: newDueDate,
-        status: newStatus,
-        responsible_name: obligation.responsible_name,
-        notes: obligation.notes || undefined,
-      });
-    }
-  } catch (syncError) {
-    console.error('Error syncing renewal to Google Calendar:', syncError);
-  }
 
   return newDueDate;
 }
