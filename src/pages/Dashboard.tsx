@@ -74,6 +74,7 @@ const Dashboard = () => {
           userName={profile?.name || user?.email || 'Usuario'}
           onLogout={handleLogout}
           isAdmin={isAdmin}
+          userPlan={profile?.plan}
         />
         <ErrorState error={error as Error} onRetry={() => refetch()} />
       </div>
@@ -88,6 +89,7 @@ const Dashboard = () => {
         userName={profile?.name || user.email || 'Usuario'}
         onLogout={handleLogout}
         isAdmin={isAdmin}
+        userPlan={profile?.plan}
       />
 
       <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">

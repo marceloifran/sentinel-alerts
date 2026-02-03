@@ -81,9 +81,34 @@ export function useCreateObligation() {
             queryClient.invalidateQueries({ queryKey: ['obligations'] });
             toast.success('Obligación creada exitosamente');
         },
-        onError: (error) => {
+        onError: (error: any) => {
             console.error('Error creating obligation:', error);
-            toast.error('Error al crear la obligación');
+
+            // Extract error message from Supabase/PostgreSQL error
+            let errorMessage = 'Error al crear la obligación';
+
+            // Supabase returns PostgreSQL errors in error.message
+            if (error?.message) {
+                const message = error.message;
+
+                // If it's a PostgreSQL error with our custom message, extract it
+                if (message.includes('Has alcanzado el límite')) {
+                    // Extract just the user-friendly part (before technical details)
+                    const match = message.match(/(Has alcanzado el límite de \d+ obligaciones de tu plan \w+\. Actualiza tu plan para crear más obligaciones\.)/);
+                    errorMessage = match ? match[1] : message;
+                } else {
+                    errorMessage = message;
+                }
+            } else if (error?.error?.message) {
+                errorMessage = error.error.message;
+            } else if (typeof error === 'string') {
+                errorMessage = error;
+            }
+
+            // Display the error to the user
+            toast.error(errorMessage, {
+                duration: 6000, // Show for 6 seconds
+            });
         },
     });
 }

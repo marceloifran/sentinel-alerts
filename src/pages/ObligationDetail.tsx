@@ -119,6 +119,7 @@ const ObligationDetail = () => {
             navigate('/');
           }}
           isAdmin={isAdmin}
+          userPlan={profile?.plan}
         />
         <ErrorState
           error={obligationError as Error}
@@ -139,6 +140,7 @@ const ObligationDetail = () => {
             navigate('/');
           }}
           isAdmin={isAdmin}
+          userPlan={profile?.plan}
         />
         <NotFoundState
           title="Obligación no encontrada"
@@ -352,6 +354,7 @@ const ObligationDetail = () => {
         userName={profile?.name || user.email || 'Usuario'}
         onLogout={handleLogout}
         isAdmin={isAdmin}
+        userPlan={profile?.plan}
       />
 
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">

@@ -121,15 +121,15 @@ export async function createObligation(
   obligation: Omit<ObligationInsert, 'created_by' | 'status'>,
   userId: string
 ): Promise<Obligation> {
-  // Check plan limits before creating
+  // Check plan limits before creating (backup check - main enforcement is at DB level)
   const { data: profile } = await supabase
     .from('profiles')
-    .select('max_obligations')
+    .select('max_obligations, plan')
     .eq('id', userId)
     .single();
 
   if (profile && profile.max_obligations !== -1) {
-    // Count current obligations for this user
+    // Count current user's obligations (each user has their own plan limit)
     const { count } = await supabase
       .from('obligations')
       .select('*', { count: 'exact', head: true })

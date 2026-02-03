@@ -34,13 +34,18 @@ const UserManagement = () => {
             toast.error("Solo los administradores pueden acceder a esta página");
             navigate('/dashboard');
         }
-    }, [user, authLoading, isAdmin, navigate]);
+        // Starter plan only allows 1 user, so hide user management
+        if (!authLoading && user && profile?.plan === 'starter') {
+            toast.error("El plan Starter no incluye gestión de usuarios. Actualiza tu plan para invitar más usuarios.");
+            navigate('/dashboard');
+        }
+    }, [user, authLoading, isAdmin, profile, navigate]);
 
     useEffect(() => {
-        if (user && isAdmin) {
+        if (user && isAdmin && profile?.plan !== 'starter') {
             loadUsers();
         }
-    }, [user, isAdmin]);
+    }, [user, isAdmin, profile]);
 
     const loadUsers = async () => {
         try {
@@ -90,6 +95,7 @@ const UserManagement = () => {
                 userName={profile?.name || user.email || 'Usuario'}
                 onLogout={handleLogout}
                 isAdmin={isAdmin}
+                userPlan={profile?.plan}
             />
 
             <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">

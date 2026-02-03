@@ -211,8 +211,6 @@ export function SmartObligationLoader({
       return;
     }
 
-
-
     setStep("creating");
 
     try {
@@ -227,7 +225,24 @@ export function SmartObligationLoader({
           status: calculateStatus(obl.due_date),
         });
 
-        if (error) throw error;
+        if (error) {
+          // Extract user-friendly error message from PostgreSQL
+          let errorMessage = "Error al crear las obligaciones";
+
+          if (error.message) {
+            const message = error.message;
+
+            // If it's a plan limit error, extract the clean message
+            if (message.includes('Has alcanzado el límite')) {
+              const match = message.match(/(Has alcanzado el límite de \d+ obligaciones de tu plan \w+\. Actualiza tu plan para crear más obligaciones\.)/);
+              errorMessage = match ? match[1] : message;
+            } else {
+              errorMessage = message;
+            }
+          }
+
+          throw new Error(errorMessage);
+        }
       }
 
       toast.success(`${selectedObligations.length} obligación(es) creada(s)`);
@@ -235,7 +250,13 @@ export function SmartObligationLoader({
       handleClose();
     } catch (error) {
       console.error("Error creating obligations:", error);
-      toast.error("Error al crear las obligaciones");
+
+      // Show the specific error message
+      const errorMessage = error instanceof Error ? error.message : "Error al crear las obligaciones";
+      toast.error(errorMessage, {
+        duration: 6000, // Show for 6 seconds
+      });
+
       setStep("preview");
     }
   };

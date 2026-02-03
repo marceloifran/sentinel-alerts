@@ -6,9 +6,10 @@ interface HeaderProps {
   userName?: string;
   onLogout?: () => void;
   isAdmin?: boolean;
+  userPlan?: string;
 }
 
-const Header = ({ userName = "Usuario", onLogout, isAdmin = false }: HeaderProps) => {
+const Header = ({ userName = "Usuario", onLogout, isAdmin = false, userPlan }: HeaderProps) => {
   const navigate = useNavigate();
   const location = useLocation();
   const isDashboard = location.pathname === "/dashboard";
@@ -24,7 +25,8 @@ const Header = ({ userName = "Usuario", onLogout, isAdmin = false }: HeaderProps
       label: 'Obligaciones',
       icon: ClipboardList,
     },
-    ...(isAdmin ? [{
+    // Only show Users for admins with non-Starter plans
+    ...(isAdmin && userPlan !== 'starter' ? [{
       path: '/usuarios',
       label: 'Usuarios',
       icon: Users,

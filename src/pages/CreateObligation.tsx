@@ -97,6 +97,7 @@ const CreateObligation = () => {
         userName={profile?.name || user.email || 'Usuario'}
         onLogout={handleLogout}
         isAdmin={isAdmin}
+        userPlan={profile?.plan}
       />
 
       <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 max-w-2xl">
