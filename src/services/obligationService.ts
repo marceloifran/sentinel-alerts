@@ -121,6 +121,25 @@ export async function createObligation(
   obligation: Omit<ObligationInsert, 'created_by' | 'status'>,
   userId: string
 ): Promise<Obligation> {
+  // Check plan limits before creating
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('max_obligations')
+    .eq('id', userId)
+    .single();
+
+  if (profile && profile.max_obligations !== -1) {
+    // Count current obligations for this user
+    const { count } = await supabase
+      .from('obligations')
+      .select('*', { count: 'exact', head: true })
+      .eq('created_by', userId);
+
+    if (count !== null && count >= profile.max_obligations) {
+      throw new Error(`Has alcanzado el límite de ${profile.max_obligations} obligaciones de tu plan. Actualiza tu plan para crear más.`);
+    }
+  }
+
   const status = calculateStatus(obligation.due_date);
 
   const { data, error } = await supabase

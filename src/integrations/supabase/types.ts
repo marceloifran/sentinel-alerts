@@ -266,6 +266,51 @@ export type Database = {
         }
         Relationships: []
       }
+      subscriptions: {
+        Row: {
+          cancelled_at: string | null
+          created_at: string
+          current_period_end: string | null
+          current_period_start: string | null
+          id: string
+          mercadopago_preapproval_id: string | null
+          mercadopago_subscription_id: string | null
+          plan: Database["public"]["Enums"]["user_plan"]
+          price_monthly: number
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          cancelled_at?: string | null
+          created_at?: string
+          current_period_end?: string | null
+          current_period_start?: string | null
+          id?: string
+          mercadopago_preapproval_id?: string | null
+          mercadopago_subscription_id?: string | null
+          plan?: Database["public"]["Enums"]["user_plan"]
+          price_monthly: number
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          cancelled_at?: string | null
+          created_at?: string
+          current_period_end?: string | null
+          current_period_start?: string | null
+          id?: string
+          mercadopago_preapproval_id?: string | null
+          mercadopago_subscription_id?: string | null
+          plan?: Database["public"]["Enums"]["user_plan"]
+          price_monthly?: number
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_invitations: {
         Row: {
           accepted_at: string | null

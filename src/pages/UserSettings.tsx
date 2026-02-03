@@ -10,7 +10,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { User, Mail, Lock, Save, ArrowLeft, Phone, MessageCircle } from 'lucide-react';
-import PlanCard, { PlanType } from '@/components/PlanCard';
+import { SubscriptionCard } from '@/components/subscription/SubscriptionCard';
 
 
 const UserSettings = () => {
@@ -22,11 +22,6 @@ const UserSettings = () => {
     const [whatsappEnabled, setWhatsappEnabled] = useState(profile?.whatsapp_enabled || false);
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
-    const [userPlan, setUserPlan] = useState<{ plan: PlanType; max_obligations: number; max_users: number }>({
-        plan: 'starter',
-        max_obligations: 10,
-        max_users: 1
-    });
 
     useEffect(() => {
         if (profile) {
@@ -35,27 +30,6 @@ const UserSettings = () => {
             setWhatsappEnabled(profile.whatsapp_enabled || false);
         }
     }, [profile]);
-
-    useEffect(() => {
-        const fetchPlan = async () => {
-            if (user?.id) {
-                const { data } = await supabase
-                    .from('profiles')
-                    .select('plan, max_obligations, max_users')
-                    .eq('id', user.id)
-                    .single();
-
-                if (data) {
-                    setUserPlan({
-                        plan: (data.plan as PlanType) || 'starter',
-                        max_obligations: data.max_obligations ?? 10,
-                        max_users: data.max_users ?? 1
-                    });
-                }
-            }
-        };
-        fetchPlan();
-    }, [user]);
 
     const handleUpdateProfile = async () => {
         if (!name.trim()) {
@@ -306,12 +280,8 @@ const UserSettings = () => {
 
 
 
-                    {/* Plan Information */}
-                    <PlanCard
-                        currentPlan={userPlan.plan}
-                        maxObligations={userPlan.max_obligations}
-                        maxUsers={userPlan.max_users}
-                    />
+                    {/* Subscription Management */}
+                    <SubscriptionCard />
 
                     {/* Account Info */}
                     <Card className="p-6">
