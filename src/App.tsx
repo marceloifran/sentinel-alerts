@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { LanguageProvider } from "@/contexts/LanguageContext";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
@@ -18,25 +19,27 @@ const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <AuthProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner position="top-center" />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/obligaciones" element={<AllObligations />} />
-            <Route path="/obligaciones/nueva" element={<CreateObligation />} />
-            <Route path="/obligaciones/:id" element={<ObligationDetail />} />
-            <Route path="/usuarios" element={<UserManagement />} />
-            <Route path="/configuracion" element={<UserSettings />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
-    </AuthProvider>
+    <LanguageProvider>
+      <AuthProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner position="top-center" />
+          <BrowserRouter>
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/auth" element={<Auth />} />
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/obligaciones" element={<AllObligations />} />
+              <Route path="/obligaciones/nueva" element={<CreateObligation />} />
+              <Route path="/obligaciones/:id" element={<ObligationDetail />} />
+              <Route path="/usuarios" element={<UserManagement />} />
+              <Route path="/configuracion" element={<UserSettings />} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </TooltipProvider>
+      </AuthProvider>
+    </LanguageProvider>
   </QueryClientProvider>
 );
 
