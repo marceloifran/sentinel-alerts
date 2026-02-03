@@ -134,8 +134,8 @@ export function useUpdateObligationNotes() {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: ({ id, notes, userId }: { id: string; notes: string; userId: string }) =>
-            updateObligationNotes(id, notes, userId),
+        mutationFn: ({ id, notes }: { id: string; notes: string }) =>
+            updateObligationNotes(id, notes),
         onSuccess: (data, { id }) => {
             queryClient.invalidateQueries({ queryKey: ['obligation', id] });
             queryClient.invalidateQueries({ queryKey: ['obligation-history', id] });
