@@ -171,6 +171,7 @@ const ObligationDetail = () => {
       await updateStatusMutation.mutateAsync({
         id: obligation.id,
         status: newStatus,
+        previousStatus: obligation.status,
         userId: user.id,
       });
       setStatus(newStatus);
