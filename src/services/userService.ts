@@ -170,6 +170,31 @@ export async function inviteUser(
         return { success: false, message: 'No estás autenticado' };
     }
 
+    // Check plan limits before inviting
+    const { data: profile } = await supabase
+        .from('profiles')
+        .select('max_users')
+        .eq('id', user.id)
+        .single();
+
+    if (profile && profile.max_users !== -1) {
+        // Count current team members (accepted invitations + current user)
+        const { count: acceptedCount } = await supabase
+            .from('user_invitations')
+            .select('*', { count: 'exact', head: true })
+            .eq('invited_by', user.id)
+            .eq('status', 'accepted');
+
+        const currentTeamSize = (acceptedCount || 0) + 1; // +1 for the admin themselves
+
+        if (currentTeamSize >= profile.max_users) {
+            return {
+                success: false,
+                message: `Has alcanzado el límite de ${profile.max_users} usuarios de tu plan. Actualiza tu plan para invitar más usuarios.`,
+            };
+        }
+    }
+
     // Check if user already exists
     const { data: existingUser } = await supabase
         .from('profiles')

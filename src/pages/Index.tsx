@@ -27,7 +27,8 @@ const Index = () => {
     },
     {
       name: "Professional",
-      price: "Consultar",
+      price: "$30.000",
+      priceNote: "/mes",
       description: "Para equipos en crecimiento",
       features: [
         "Obligaciones ilimitadas",
@@ -38,13 +39,14 @@ const Index = () => {
         "Soporte prioritario",
         "Reportes y analytics"
       ],
-      cta: "Agendar demo",
+      cta: "Suscribirse",
       highlighted: true,
-      action: openCalendly
+      action: () => navigate('/auth')
     },
     {
       name: "Enterprise",
-      price: "Personalizado",
+      price: "$55.000",
+      priceNote: "/mes",
       description: "Solución a medida",
       features: [
         "Todo en Professional",
@@ -55,9 +57,9 @@ const Index = () => {
         "SLA garantizado",
         "Consultoría incluida"
       ],
-      cta: "Contactar ventas",
+      cta: "Suscribirse",
       highlighted: false,
-      action: openCalendly
+      action: () => navigate('/auth')
     }
   ];
 
@@ -277,10 +279,12 @@ const Index = () => {
                 <div className="text-center mb-6">
                   <h3 className="text-2xl font-bold text-foreground mb-2">{plan.name}</h3>
                   <p className="text-muted-foreground text-sm mb-4">{plan.description}</p>
-                  <div className="text-4xl font-bold text-foreground mb-1">{plan.price}</div>
-                  {plan.price !== "Gratis" && (
-                    <p className="text-sm text-muted-foreground">por mes</p>
-                  )}
+                  <div className="text-4xl font-bold text-foreground mb-1">
+                    {plan.price}
+                    {'priceNote' in plan && plan.priceNote && (
+                      <span className="text-base font-normal text-muted-foreground">{plan.priceNote}</span>
+                    )}
+                  </div>
                 </div>
 
                 <ul className="space-y-3 mb-8">

@@ -7,7 +7,7 @@ interface AuthContextType {
   session: Session | null;
   isLoading: boolean;
   isAdmin: boolean;
-  profile: { id: string; name: string; email: string; phone: string | null; whatsapp_enabled: boolean } | null;
+  profile: { id: string; name: string; email: string; phone: string | null; whatsapp_enabled: boolean; plan: 'starter' | 'professional' | 'enterprise'; max_obligations: number; max_users: number } | null;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signUp: (email: string, password: string, name: string, phone?: string, sector?: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
@@ -20,7 +20,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
-  const [profile, setProfile] = useState<{ id: string; name: string; email: string; phone: string | null; whatsapp_enabled: boolean } | null>(null);
+  const [profile, setProfile] = useState<{ id: string; name: string; email: string; phone: string | null; whatsapp_enabled: boolean; plan: 'starter' | 'professional' | 'enterprise'; max_obligations: number; max_users: number } | null>(null);
 
   useEffect(() => {
     // Set up auth state listener FIRST
@@ -70,7 +70,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           name: profileData.name,
           email: profileData.email,
           phone: (profileData as any).phone || null,
-          whatsapp_enabled: (profileData as any).whatsapp_enabled || false
+          whatsapp_enabled: (profileData as any).whatsapp_enabled || false,
+          plan: profileData.plan || 'starter',
+          max_obligations: profileData.max_obligations ?? 10,
+          max_users: profileData.max_users ?? 1,
         });
       }
 
