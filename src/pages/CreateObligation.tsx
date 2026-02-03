@@ -230,9 +230,9 @@ const CreateObligation = () => {
               <Button
                 type="submit"
                 className="flex-1"
-                disabled={isSubmitting}
+                disabled={createMutation.isPending}
               >
-                {isSubmitting ? (
+                {createMutation.isPending ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                     Guardando...

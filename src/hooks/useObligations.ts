@@ -173,8 +173,8 @@ export function useRenewObligation() {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: ({ id, userId }: { id: string; userId: string }) =>
-            renewObligation(id, userId),
+        mutationFn: ({ id, recurrence, currentDueDate, userId }: { id: string; recurrence: 'monthly' | 'annual'; currentDueDate: string; userId: string }) =>
+            renewObligation(id, recurrence, currentDueDate, userId),
         onSuccess: (data, { id }) => {
             queryClient.invalidateQueries({ queryKey: ['obligation', id] });
             queryClient.invalidateQueries({ queryKey: ['obligations'] });
