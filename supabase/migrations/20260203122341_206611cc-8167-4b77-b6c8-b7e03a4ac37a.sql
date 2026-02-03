@@ -56,10 +56,10 @@ BEGIN
     SET 
       plan = NEW.plan,
       max_obligations = CASE 
-        WHEN NEW.plan = 'starter' THEN 10
-        WHEN NEW.plan = 'professional' THEN -1  -- unlimited
+        WHEN NEW.plan = 'starter' THEN 5
+        WHEN NEW.plan = 'professional' THEN 25
         WHEN NEW.plan = 'enterprise' THEN -1    -- unlimited
-        ELSE 10
+        ELSE 5
       END,
       max_users = CASE 
         WHEN NEW.plan = 'starter' THEN 1
@@ -75,7 +75,7 @@ BEGIN
     UPDATE public.profiles
     SET 
       plan = 'starter',
-      max_obligations = 10,
+      max_obligations = 5,
       max_users = 1
     WHERE id = NEW.user_id;
   END IF;

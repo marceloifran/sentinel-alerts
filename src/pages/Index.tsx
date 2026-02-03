@@ -15,7 +15,7 @@ const Index = () => {
       price: "Gratis",
       description: "Perfecto para empezar",
       features: [
-        "Hasta 10 obligaciones",
+        "Hasta 5 obligaciones",
         "1 usuario",
         "Recordatorios por email",
         "Vista de calendario",
@@ -31,8 +31,9 @@ const Index = () => {
       priceNote: "/mes",
       description: "Para equipos en crecimiento",
       features: [
-        "Obligaciones ilimitadas",
+        "Hasta 25 obligaciones",
         "Hasta 10 usuarios",
+        "Recordatorios por email y WhatsApp",
         "Notificaciones personalizadas",
         "Gestión de archivos",
         "Roles y permisos",

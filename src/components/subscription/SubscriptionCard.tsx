@@ -34,7 +34,7 @@ const PLANS = {
     icon: Rocket,
     color: 'bg-muted',
     features: [
-      'Hasta 10 obligaciones',
+      'Hasta 5 obligaciones',
       '1 usuario',
       'Recordatorios por email',
       'Vista de calendario',
@@ -49,8 +49,9 @@ const PLANS = {
     color: 'bg-primary/10',
     popular: true,
     features: [
-      'Obligaciones ilimitadas',
+      'Hasta 25 obligaciones',
       'Hasta 10 usuarios',
+      'Recordatorios por email y WhatsApp',
       'Notificaciones personalizadas',
       'Gestión de archivos',
       'Roles y permisos',
@@ -92,7 +93,7 @@ export function SubscriptionCard() {
 
   const loadSubscription = async () => {
     if (!user) return;
-    
+
     try {
       setIsLoading(true);
       const sub = await getSubscription();
@@ -113,7 +114,7 @@ export function SubscriptionCard() {
     try {
       setIsSubscribing(plan);
       const { initPoint } = await createSubscription(plan, user.email);
-      
+
       // Redirect to Mercado Pago checkout
       window.location.href = initPoint;
     } catch (error) {
@@ -161,7 +162,7 @@ export function SubscriptionCard() {
     );
   }
 
-  const hasActiveSubscription = subscription && 
+  const hasActiveSubscription = subscription &&
     (subscription.status === 'authorized' || subscription.status === 'active');
 
   return (
@@ -212,7 +213,7 @@ export function SubscriptionCard() {
               </span>
             </div>
           )}
-          
+
           {hasActiveSubscription && (
             <AlertDialog>
               <AlertDialogTrigger asChild>
@@ -225,8 +226,8 @@ export function SubscriptionCard() {
                 <AlertDialogHeader>
                   <AlertDialogTitle>¿Cancelar suscripción?</AlertDialogTitle>
                   <AlertDialogDescription>
-                    Tu suscripción se cancelará al final del período actual. 
-                    Volverás al plan Starter con límites de 10 obligaciones y 1 usuario.
+                    Tu suscripción se cancelará al final del período actual.
+                    Volverás al plan Starter con límites de 5 obligaciones y 1 usuario.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
@@ -257,39 +258,38 @@ export function SubscriptionCard() {
         <h3 className="text-sm font-medium text-foreground">
           {hasActiveSubscription ? 'Cambiar de plan' : 'Elige tu plan'}
         </h3>
-        
+
         <div className="grid gap-4 md:grid-cols-3">
           {(Object.keys(PLANS) as Array<keyof typeof PLANS>).map((planKey) => {
             const plan = PLANS[planKey];
             const Icon = plan.icon;
             const isCurrentPlan = currentPlan === planKey;
-            const canUpgrade = planKey !== 'starter' && !isCurrentPlan && 
+            const canUpgrade = planKey !== 'starter' && !isCurrentPlan &&
               (planKey === 'enterprise' || (planKey === 'professional' && currentPlan !== 'enterprise'));
 
             return (
               <div
                 key={planKey}
-                className={`relative p-4 rounded-lg border-2 transition-all ${
-                  isCurrentPlan 
-                    ? 'border-primary bg-primary/5' 
-                    : 'border-border hover:border-primary/50'
-                }`}
+                className={`relative p-4 rounded-lg border-2 transition-all ${isCurrentPlan
+                  ? 'border-primary bg-primary/5'
+                  : 'border-border hover:border-primary/50'
+                  }`}
               >
                 {'popular' in plan && plan.popular && (
                   <div className="absolute -top-3 left-1/2 -translate-x-1/2">
                     <Badge className="bg-primary text-primary-foreground">Popular</Badge>
                   </div>
                 )}
-                
+
                 <div className="flex items-center gap-2 mb-2">
                   <div className={`w-8 h-8 rounded-full ${plan.color} flex items-center justify-center`}>
                     <Icon className="w-4 h-4 text-primary" />
                   </div>
                   <span className="font-semibold">{plan.name}</span>
                 </div>
-                
+
                 <p className="text-xs text-muted-foreground mb-3">{plan.description}</p>
-                
+
                 <div className="mb-3">
                   {plan.price === 0 ? (
                     <span className="text-2xl font-bold">Gratis</span>
@@ -300,7 +300,7 @@ export function SubscriptionCard() {
                     </>
                   )}
                 </div>
-                
+
                 <ul className="space-y-1 mb-4">
                   {plan.features.slice(0, 4).map((feature, i) => (
                     <li key={i} className="flex items-center gap-1.5 text-xs text-muted-foreground">
@@ -309,7 +309,7 @@ export function SubscriptionCard() {
                     </li>
                   ))}
                 </ul>
-                
+
                 {isCurrentPlan ? (
                   <Button variant="outline" className="w-full" disabled>
                     Plan actual

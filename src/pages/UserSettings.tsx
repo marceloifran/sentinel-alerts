@@ -171,63 +171,65 @@ const UserSettings = () => {
                         </div>
                     </Card>
 
-                    {/* WhatsApp Notifications */}
-                    <Card className="p-6">
-                        <div className="flex items-center gap-3 mb-6">
-                            <div className="w-10 h-10 rounded-full bg-green-500/10 flex items-center justify-center">
-                                <MessageCircle className="w-5 h-5 text-green-500" />
+                    {/* WhatsApp Notifications - Only for Professional and Enterprise plans */}
+                    {profile?.plan !== 'starter' && (
+                        <Card className="p-6">
+                            <div className="flex items-center gap-3 mb-6">
+                                <div className="w-10 h-10 rounded-full bg-green-500/10 flex items-center justify-center">
+                                    <MessageCircle className="w-5 h-5 text-green-500" />
+                                </div>
+                                <div>
+                                    <h2 className="text-xl font-semibold text-foreground">Notificaciones por WhatsApp</h2>
+                                    <p className="text-sm text-muted-foreground">Recibe recordatorios en tu WhatsApp</p>
+                                </div>
                             </div>
-                            <div>
-                                <h2 className="text-xl font-semibold text-foreground">Notificaciones por WhatsApp</h2>
-                                <p className="text-sm text-muted-foreground">Recibe recordatorios en tu WhatsApp</p>
-                            </div>
-                        </div>
 
-                        <div className="space-y-4">
-                            <div>
-                                <Label htmlFor="phone">Número de Teléfono</Label>
-                                <div className="flex items-center gap-2 mt-1.5">
-                                    <Phone className="w-4 h-4 text-muted-foreground" />
-                                    <Input
-                                        id="phone"
-                                        type="tel"
-                                        value={phone}
-                                        onChange={(e) => setPhone(e.target.value)}
-                                        placeholder="Ej: 1123456789 (sin 0 ni 15)"
-                                        className="flex-1"
+                            <div className="space-y-4">
+                                <div>
+                                    <Label htmlFor="phone">Número de Teléfono</Label>
+                                    <div className="flex items-center gap-2 mt-1.5">
+                                        <Phone className="w-4 h-4 text-muted-foreground" />
+                                        <Input
+                                            id="phone"
+                                            type="tel"
+                                            value={phone}
+                                            onChange={(e) => setPhone(e.target.value)}
+                                            placeholder="Ej: 1123456789 (sin 0 ni 15)"
+                                            className="flex-1"
+                                        />
+                                    </div>
+                                    <p className="text-xs text-muted-foreground mt-1">
+                                        Ingresa tu número sin el 0 inicial ni el 15. Ejemplo: 1123456789
+                                    </p>
+                                </div>
+
+                                <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
+                                    <div className="flex items-center gap-3">
+                                        <MessageCircle className="w-5 h-5 text-green-500" />
+                                        <div>
+                                            <p className="font-medium text-sm">Activar notificaciones WhatsApp</p>
+                                            <p className="text-xs text-muted-foreground">
+                                                Recibirás recordatorios de vencimientos
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <Switch
+                                        checked={whatsappEnabled}
+                                        onCheckedChange={setWhatsappEnabled}
                                     />
                                 </div>
-                                <p className="text-xs text-muted-foreground mt-1">
-                                    Ingresa tu número sin el 0 inicial ni el 15. Ejemplo: 1123456789
-                                </p>
-                            </div>
 
-                            <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
-                                <div className="flex items-center gap-3">
-                                    <MessageCircle className="w-5 h-5 text-green-500" />
-                                    <div>
-                                        <p className="font-medium text-sm">Activar notificaciones WhatsApp</p>
-                                        <p className="text-xs text-muted-foreground">
-                                            Recibirás recordatorios de vencimientos
-                                        </p>
-                                    </div>
-                                </div>
-                                <Switch
-                                    checked={whatsappEnabled}
-                                    onCheckedChange={setWhatsappEnabled}
-                                />
+                                <Button
+                                    onClick={handleUpdateProfile}
+                                    disabled={isLoading}
+                                    className="gap-2"
+                                >
+                                    <Save className="w-4 h-4" />
+                                    Guardar configuración
+                                </Button>
                             </div>
-
-                            <Button
-                                onClick={handleUpdateProfile}
-                                disabled={isLoading}
-                                className="gap-2"
-                            >
-                                <Save className="w-4 h-4" />
-                                Guardar configuración
-                            </Button>
-                        </div>
-                    </Card>
+                        </Card>
+                    )}
 
                     {/* Change Password */}
                     <Card className="p-6">

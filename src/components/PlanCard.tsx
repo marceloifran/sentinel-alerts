@@ -20,7 +20,7 @@ const planDetails = {
     icon: Rocket,
     color: 'bg-muted',
     features: [
-      'Hasta 10 obligaciones',
+      'Hasta 5 obligaciones',
       '1 usuario',
       'Recordatorios por email',
       'Vista de calendario',
@@ -33,8 +33,9 @@ const planDetails = {
     icon: Crown,
     color: 'bg-primary/10',
     features: [
-      'Obligaciones ilimitadas',
+      'Hasta 25 obligaciones',
       'Hasta 10 usuarios',
+      'Recordatorios por email y WhatsApp',
       'Notificaciones personalizadas',
       'Gestión de archivos',
       'Roles y permisos',
@@ -116,9 +117,9 @@ const PlanCard = ({ currentPlan, maxObligations, maxUsers, showUpgrade = true }:
       </div>
 
       {showUpgrade && currentPlan !== 'enterprise' && (
-        <Button 
-          onClick={handleUpgrade} 
-          variant="outline" 
+        <Button
+          onClick={handleUpgrade}
+          variant="outline"
           className="w-full gap-2"
         >
           <ArrowUpRight className="w-4 h-4" />

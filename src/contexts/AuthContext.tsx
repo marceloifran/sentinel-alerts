@@ -72,7 +72,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           phone: (profileData as any).phone || null,
           whatsapp_enabled: (profileData as any).whatsapp_enabled || false,
           plan: profileData.plan || 'starter',
-          max_obligations: profileData.max_obligations ?? 10,
+          max_obligations: profileData.max_obligations ?? 5,
           max_users: profileData.max_users ?? 1,
         });
       }
