@@ -93,8 +93,8 @@ export function useUpdateObligationStatus() {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: ({ id, status, userId }: { id: string; status: ObligationStatus; userId: string }) =>
-            updateObligationStatus(id, status, userId),
+        mutationFn: ({ id, status, previousStatus, userId, note }: { id: string; status: ObligationStatus; previousStatus: ObligationStatus; userId: string; note?: string }) =>
+            updateObligationStatus(id, status, previousStatus, userId, note),
         onMutate: async ({ id, status }) => {
             // Cancelar queries en progreso
             await queryClient.cancelQueries({ queryKey: ['obligation', id] });
@@ -134,8 +134,8 @@ export function useUpdateObligationNotes() {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: ({ id, notes, userId }: { id: string; notes: string; userId: string }) =>
-            updateObligationNotes(id, notes, userId),
+        mutationFn: ({ id, notes }: { id: string; notes: string }) =>
+            updateObligationNotes(id, notes),
         onSuccess: (data, { id }) => {
             queryClient.invalidateQueries({ queryKey: ['obligation', id] });
             queryClient.invalidateQueries({ queryKey: ['obligation-history', id] });
@@ -173,8 +173,8 @@ export function useRenewObligation() {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: ({ id, userId }: { id: string; userId: string }) =>
-            renewObligation(id, userId),
+        mutationFn: ({ id, recurrence, currentDueDate, userId }: { id: string; recurrence: 'monthly' | 'annual'; currentDueDate: string; userId: string }) =>
+            renewObligation(id, recurrence, currentDueDate, userId),
         onSuccess: (data, { id }) => {
             queryClient.invalidateQueries({ queryKey: ['obligation', id] });
             queryClient.invalidateQueries({ queryKey: ['obligations'] });
