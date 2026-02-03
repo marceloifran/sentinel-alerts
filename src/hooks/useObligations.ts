@@ -93,8 +93,8 @@ export function useUpdateObligationStatus() {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: ({ id, status, userId }: { id: string; status: ObligationStatus; userId: string }) =>
-            updateObligationStatus(id, status, userId),
+        mutationFn: ({ id, status, previousStatus, userId, note }: { id: string; status: ObligationStatus; previousStatus: ObligationStatus; userId: string; note?: string }) =>
+            updateObligationStatus(id, status, previousStatus, userId, note),
         onMutate: async ({ id, status }) => {
             // Cancelar queries en progreso
             await queryClient.cancelQueries({ queryKey: ['obligation', id] });
