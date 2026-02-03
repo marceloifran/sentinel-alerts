@@ -260,7 +260,6 @@ const ObligationDetail = () => {
       await updateNotesMutation.mutateAsync({
         id: obligation.id,
         notes: note,
-        userId: user.id,
       });
 
       setNote("");
