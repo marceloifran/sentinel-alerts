@@ -8,7 +8,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Bot, Send, Loader2, Sparkles } from "lucide-react";
+import { Bot, Send, Loader2, Sparkles, Zap } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
@@ -40,42 +40,50 @@ export function AIAssistantButton() {
     }
   }, [open]);
 
-  const handleSend = async () => {
-    if (!input.trim() || isLoading) return;
+  const sendToAgent = async (allMessages: Message[]) => {
+    const { data: session } = await supabase.auth.getSession();
+    if (!session?.session?.access_token) {
+      toast.error("Debes iniciar sesión");
+      return null;
+    }
 
-    const userMessage = input.trim();
+    const response = await fetch(
+      `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-assistant`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.session.access_token}`,
+        },
+        body: JSON.stringify({
+          messages: allMessages.map((m) => ({ role: m.role, content: m.content })),
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || "Error al consultar");
+    }
+
+    return response.json();
+  };
+
+  const handleSend = async (overrideInput?: string) => {
+    const text = (overrideInput ?? input).trim();
+    if (!text || isLoading) return;
+
     setInput("");
-    setMessages((prev) => [...prev, { role: "user", content: userMessage }]);
+    const userMsg: Message = { role: "user", content: text };
+    const updatedMessages = [...messages, userMsg];
+    setMessages(updatedMessages);
     setIsLoading(true);
 
     try {
-      const { data: session } = await supabase.auth.getSession();
-
-      if (!session?.session?.access_token) {
-        toast.error("Debes iniciar sesión");
-        setIsLoading(false);
-        return;
+      const data = await sendToAgent(updatedMessages);
+      if (data) {
+        setMessages((prev) => [...prev, { role: "assistant", content: data.response }]);
       }
-
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-assistant`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${session.session.access_token}`,
-          },
-          body: JSON.stringify({ message: userMessage }),
-        }
-      );
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Error al consultar");
-      }
-
-      const data = await response.json();
-      setMessages((prev) => [...prev, { role: "assistant", content: data.response }]);
     } catch (error) {
       console.error("AI Assistant error:", error);
       toast.error(error instanceof Error ? error.message : "Error al consultar");
@@ -96,13 +104,12 @@ export function AIAssistantButton() {
   };
 
   const quickQuestions = [
-    "¿Qué tengo vencido?",
-    "¿Qué vence esta semana?",
-    "¿Cuál es lo más crítico?",
-    "Resumen de mi estado",
+    { label: "📋 ¿Qué tengo vencido?", message: "¿Qué tengo vencido?" },
+    { label: "📅 ¿Qué vence esta semana?", message: "¿Qué vence esta semana?" },
+    { label: "🔄 Renovar vencidas", message: "Renovar todas las obligaciones vencidas" },
+    { label: "📊 Resumen general", message: "Dame un resumen de mi estado" },
   ];
 
-  // Custom link renderer for obligation links
   const MarkdownComponents = {
     a: ({ href, children }: { href?: string; children?: React.ReactNode }) => {
       if (href?.startsWith("/obligaciones/")) {
@@ -128,7 +135,6 @@ export function AIAssistantButton() {
 
   return (
     <>
-      {/* Floating button */}
       <Button
         onClick={() => setOpen(true)}
         className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg z-50"
@@ -137,13 +143,15 @@ export function AIAssistantButton() {
         <Bot className="w-6 h-6" />
       </Button>
 
-      {/* Chat dialog */}
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="sm:max-w-md h-[600px] flex flex-col p-0">
           <DialogHeader className="p-4 border-b">
             <DialogTitle className="flex items-center gap-2">
               <Sparkles className="w-5 h-5 text-primary" />
-              Asistente IfsinRem
+              Agente IfsinRem
+              <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full flex items-center gap-1">
+                <Zap className="w-3 h-3" /> Agente
+              </span>
             </DialogTitle>
           </DialogHeader>
 
@@ -152,25 +160,23 @@ export function AIAssistantButton() {
               <div className="space-y-4">
                 <div className="text-center text-muted-foreground">
                   <Bot className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                  <p>¡Hola! Soy tu asistente de cumplimiento.</p>
-                  <p className="text-sm">Pregúntame sobre tus obligaciones.</p>
+                  <p className="font-medium">¡Hola! Soy tu agente de cumplimiento.</p>
+                  <p className="text-sm">Puedo consultar, editar, renovar y eliminar obligaciones por vos.</p>
+                  <p className="text-xs mt-1 text-muted-foreground/70">Solo escribí lo que necesitás.</p>
                 </div>
 
                 <div className="space-y-2">
-                  <p className="text-xs text-muted-foreground text-center">Preguntas frecuentes:</p>
+                  <p className="text-xs text-muted-foreground text-center">Acciones rápidas:</p>
                   <div className="flex flex-wrap gap-2 justify-center">
                     {quickQuestions.map((q) => (
                       <Button
-                        key={q}
+                        key={q.label}
                         variant="outline"
                         size="sm"
                         className="text-xs"
-                        onClick={() => {
-                          setInput(q);
-                          setTimeout(() => handleSend(), 100);
-                        }}
+                        onClick={() => handleSend(q.message)}
                       >
-                        {q}
+                        {q.label}
                       </Button>
                     ))}
                   </div>
@@ -200,8 +206,9 @@ export function AIAssistantButton() {
                 ))}
                 {isLoading && (
                   <div className="flex justify-start">
-                    <div className="bg-muted rounded-lg px-4 py-2">
+                    <div className="bg-muted rounded-lg px-4 py-2 flex items-center gap-2">
                       <Loader2 className="w-4 h-4 animate-spin" />
+                      <span className="text-xs text-muted-foreground">Ejecutando...</span>
                     </div>
                   </div>
                 )}
@@ -216,10 +223,10 @@ export function AIAssistantButton() {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder="Escribe tu pregunta..."
+                placeholder="Escribí lo que necesitás..."
                 disabled={isLoading}
               />
-              <Button onClick={handleSend} disabled={isLoading || !input.trim()} size="icon">
+              <Button onClick={() => handleSend()} disabled={isLoading || !input.trim()} size="icon">
                 <Send className="w-4 h-4" />
               </Button>
             </div>
