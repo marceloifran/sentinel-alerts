@@ -13,6 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
 import { useNavigate } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface Message {
   role: "user" | "assistant";
@@ -27,6 +28,7 @@ export function AIAssistantButton() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -83,6 +85,10 @@ export function AIAssistantButton() {
       const data = await sendToAgent(updatedMessages);
       if (data) {
         setMessages((prev) => [...prev, { role: "assistant", content: data.response }]);
+        // Invalidate all obligation queries so dashboard/detail views refresh
+        queryClient.invalidateQueries({ queryKey: ["obligations"] });
+        queryClient.invalidateQueries({ queryKey: ["obligation"] });
+        queryClient.invalidateQueries({ queryKey: ["obligation-history"] });
       }
     } catch (error) {
       console.error("AI Assistant error:", error);
