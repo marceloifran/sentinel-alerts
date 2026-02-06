@@ -44,10 +44,12 @@ serve(async (req) => {
       );
     }
 
-    // Fetch user's obligations for context
+    // Fetch only the current user's obligations
+    const userId = userData.user.id;
     const { data: obligations, error: oblError } = await supabaseClient
       .from("obligations")
       .select("id, name, category, status, due_date, responsible_id, recurrence, notes")
+      .or(`responsible_id.eq.${userId},created_by.eq.${userId}`)
       .order("due_date", { ascending: true });
 
     if (oblError) {
