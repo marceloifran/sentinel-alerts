@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -42,11 +42,12 @@ const Auth = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
-  // Redirect if already logged in
-  if (user) {
-    navigate('/dashboard');
-    return null;
-  }
+  // Redirect if already logged in - use useEffect instead of render-time navigation
+  useEffect(() => {
+    if (user) {
+      navigate('/dashboard');
+    }
+  }, [user, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -61,7 +62,6 @@ const Auth = () => {
       return;
     }
 
-    // Validate phone format (basic validation for Argentine numbers or general)
     const phoneRegex = /^[\d\s\-\+\(\)]{8,20}$/;
     if (!isLogin && !phoneRegex.test(phone)) {
       toast.error("Por favor ingresa un número de teléfono válido");
@@ -102,6 +102,8 @@ const Auth = () => {
       setIsLoading(false);
     }
   };
+
+  if (user) return null;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-accent/20 flex">
@@ -223,14 +225,14 @@ const Auth = () => {
 
                 <div className="space-y-2">
                   <Label htmlFor="sector" className="text-sm font-medium">Sector o rubro</Label>
-                  <Select value={sector} onValueChange={setSector}>
+                  <Select value={sector} onValueChange={(val) => setSector(val)}>
                     <SelectTrigger className="h-12 bg-background border-border/60 focus:border-primary">
                       <div className="flex items-center gap-2">
                         <Building2 className="w-5 h-5 text-muted-foreground" />
                         <SelectValue placeholder="Selecciona tu sector" />
                       </div>
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="z-[9999]">
                       {SECTORS.map((s) => (
                         <SelectItem key={s.value} value={s.value}>
                           {s.label}
@@ -301,7 +303,6 @@ const Auth = () => {
               type="button"
               onClick={() => {
                 setIsLogin(!isLogin);
-                // Reset form when switching
                 setName("");
                 setPhone("");
                 setSector("");

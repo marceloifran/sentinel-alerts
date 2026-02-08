@@ -17,7 +17,7 @@ const GeneralStatus = ({ hasOverdue }: GeneralStatusProps) => {
         <>
           <ShieldAlert className="w-6 h-6 text-status-danger animate-pulse-subtle" />
           <div>
-            <p className="text-sm font-medium text-status-danger-foreground">Estado general</p>
+            <p className="text-sm font-medium text-status-danger-foreground">Mi resumen</p>
             <p className="text-lg font-bold text-status-danger">En riesgo</p>
           </div>
         </>
@@ -25,7 +25,7 @@ const GeneralStatus = ({ hasOverdue }: GeneralStatusProps) => {
         <>
           <ShieldCheck className="w-6 h-6 text-status-success" />
           <div>
-            <p className="text-sm font-medium text-status-success-foreground">Estado general</p>
+            <p className="text-sm font-medium text-status-success-foreground">Mi resumen</p>
             <p className="text-lg font-bold text-status-success">Cubierto</p>
           </div>
         </>
