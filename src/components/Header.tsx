@@ -1,6 +1,10 @@
 import { Button } from "@/components/ui/button";
-import { Plus, LogOut, User, LayoutDashboard, ClipboardList, Users } from "lucide-react";
+import { LogOut, User, LayoutDashboard, ClipboardList, Users, Sparkles } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { useState } from "react";
+import { SmartObligationLoader } from "@/components/ai/SmartObligationLoader";
+import { useAuth } from "@/contexts/AuthContext";
+import { useObligations } from "@/hooks/useObligations";
 
 interface HeaderProps {
   userName?: string;
@@ -12,7 +16,9 @@ interface HeaderProps {
 const Header = ({ userName = "Usuario", onLogout, isAdmin = false, userPlan }: HeaderProps) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const isDashboard = location.pathname === "/dashboard";
+  const { user } = useAuth();
+  const { data: obligations = [], refetch } = useObligations();
+  const [showSmartLoader, setShowSmartLoader] = useState(false);
 
   const navItems = [
     {
@@ -25,7 +31,6 @@ const Header = ({ userName = "Usuario", onLogout, isAdmin = false, userPlan }: H
       label: 'Obligaciones',
       icon: ClipboardList,
     },
-    // Only show Users for admins with non-Starter plans
     ...(isAdmin && userPlan !== 'starter' ? [{
       path: '/usuarios',
       label: 'Usuarios',
@@ -34,81 +39,94 @@ const Header = ({ userName = "Usuario", onLogout, isAdmin = false, userPlan }: H
   ];
 
   return (
-    <header className="sticky top-0 z-50 bg-card/80 backdrop-blur-md border-b border-border">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
-          <div
-            className="flex items-center gap-3 cursor-pointer"
-            onClick={() => navigate('/dashboard')}
-          >
-            <img src="/logo.png" alt="IfsinRem Logo" className="w-10 h-10 object-contain rounded-xl" />
-            <span className="text-xl font-bold text-foreground">IfsinRem</span>
-          </div>
+    <>
+      <header className="sticky top-0 z-50 bg-card/80 backdrop-blur-md border-b border-border">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
+            <div
+              className="flex items-center gap-3 cursor-pointer"
+              onClick={() => navigate('/dashboard')}
+            >
+              <img src="/logo.png" alt="IfsinRem Logo" className="w-10 h-10 object-contain rounded-xl" />
+              <span className="text-xl font-bold text-foreground hidden sm:inline">IfsinRem</span>
+            </div>
 
-          <div className="flex items-center gap-4">
-            {/* Navigation pills */}
-            <nav className="hidden md:flex items-center gap-2 bg-muted/50 p-1 rounded-lg">
-              {navItems.map((item) => {
-                const Icon = item.icon;
-                const isActive = location.pathname === item.path ||
-                  (item.path === '/obligaciones' && location.pathname.startsWith('/obligaciones'));
+            <div className="flex items-center gap-2 sm:gap-4">
+              {/* Navigation pills - visible on all screen sizes */}
+              <nav className="flex items-center gap-1 bg-muted/50 p-1 rounded-lg">
+                {navItems.map((item) => {
+                  const Icon = item.icon;
+                  const isActive = location.pathname === item.path ||
+                    (item.path === '/obligaciones' && location.pathname.startsWith('/obligaciones'));
 
-                return (
-                  <button
-                    key={item.path}
-                    onClick={() => navigate(item.path)}
-                    className={`
-                      flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium
-                      transition-all duration-200
-                      ${isActive
-                        ? 'bg-background text-foreground shadow-sm'
-                        : 'text-muted-foreground hover:text-foreground hover:bg-background/50'
-                      }
-                    `}
-                  >
-                    <Icon className="w-4 h-4" />
-                    <span>{item.label}</span>
-                  </button>
-                );
-              })}
-            </nav>
+                  return (
+                    <button
+                      key={item.path}
+                      onClick={() => navigate(item.path)}
+                      className={`
+                        flex items-center gap-1.5 px-2.5 sm:px-4 py-2 rounded-md text-xs sm:text-sm font-medium
+                        transition-all duration-200
+                        ${isActive
+                          ? 'bg-background text-foreground shadow-sm'
+                          : 'text-muted-foreground hover:text-foreground hover:bg-background/50'
+                        }
+                      `}
+                    >
+                      <Icon className="w-4 h-4" />
+                      <span className="hidden xs:inline sm:inline">{item.label}</span>
+                    </button>
+                  );
+                })}
+              </nav>
 
-            {/* New obligation button */}
-            {isAdmin && isDashboard && (
-              <Button
-                onClick={() => navigate('/obligaciones/nueva')}
-                size="sm"
-                className="gap-2"
+              {/* Smart loader button - replaces manual creation */}
+              {isAdmin && (
+                <Button
+                  onClick={() => setShowSmartLoader(true)}
+                  size="sm"
+                  className="gap-1.5"
+                >
+                  <Sparkles className="w-4 h-4" />
+                  <span className="hidden sm:inline">Nueva</span>
+                </Button>
+              )}
+
+              {/* User info */}
+              <button
+                onClick={() => navigate('/configuracion')}
+                className="flex items-center gap-2 px-2 sm:px-3 py-1.5 rounded-lg bg-secondary hover:bg-secondary/80 transition-colors cursor-pointer"
               >
-                <Plus className="w-4 h-4" />
-                <span className="hidden sm:inline">Nueva</span>
+                <User className="w-4 h-4 text-muted-foreground" />
+                <span className="text-sm font-medium text-secondary-foreground hidden sm:inline">
+                  {userName}
+                </span>
+              </button>
+
+              {/* Logout button */}
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={onLogout}
+                className="text-muted-foreground hover:text-foreground"
+              >
+                <LogOut className="w-4 h-4" />
               </Button>
-            )}
-
-            {/* User info */}
-            <button
-              onClick={() => navigate('/configuracion')}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-secondary hover:bg-secondary/80 transition-colors cursor-pointer"
-            >
-              <User className="w-4 h-4 text-muted-foreground" />
-              <span className="text-sm font-medium text-secondary-foreground hidden sm:inline">
-                {userName}
-              </span>
-            </button>
-
-            {/* Logout button */}
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={onLogout}
-              className="text-muted-foreground hover:text-foreground"
-            >
-              <LogOut className="w-4 h-4" />
-            </Button>
+            </div>
           </div>
         </div>
-      </div>
-    </header>
+      </header>
+
+      {/* Smart Obligation Loader */}
+      {isAdmin && user && (
+        <SmartObligationLoader
+          open={showSmartLoader}
+          onOpenChange={setShowSmartLoader}
+          onObligationsCreated={() => refetch()}
+          existingObligations={obligations.map(o => ({ name: o.name }))}
+          userId={user.id}
+        />
+      )}
+    </>
   );
 };
 

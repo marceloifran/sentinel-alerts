@@ -5,12 +5,17 @@ interface StatusCardProps {
   label: string;
   status: 'success' | 'warning' | 'danger';
   icon: React.ReactNode;
+  active?: boolean;
 }
 
-const StatusCard = ({ count, label, status, icon }: StatusCardProps) => {
+const StatusCard = ({ count, label, status, icon, active = false }: StatusCardProps) => {
   return (
     <div className={cn(
       "card-elevated p-6 transition-all duration-200 hover:shadow-elevated animate-fade-in relative overflow-hidden",
+      active && "ring-2",
+      active && status === 'success' && "ring-status-success",
+      active && status === 'warning' && "ring-status-warning",
+      active && status === 'danger' && "ring-status-danger",
     )}>
       {/* Colored background accent */}
       <div className={cn(

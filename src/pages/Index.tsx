@@ -130,41 +130,22 @@ const Index = () => {
       {/* Hero */}
       <main className="container mx-auto px-4 sm:px-6 lg:px-8">
         <section className="py-16 sm:py-24 text-center max-w-4xl mx-auto">
-          <motion.div
-            initial={{ scale: 0.8, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ duration: 0.5 }}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-accent text-accent-foreground text-sm font-medium mb-6"
-          >
-            <Shield className="w-4 h-4" />
-            {t('hero.badge')}
-          </motion.div>
-
           <motion.h1
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
+            transition={{ duration: 0.6, delay: 0.1 }}
             className="text-4xl sm:text-5xl lg:text-6xl font-bold text-foreground mb-6 leading-tight"
           >
-            {t('hero.title')}{" "}
-            <span
-              className="text-primary bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent"
-              style={{
-                backgroundSize: "200% 200%",
-                animation: "gradientShift 3s ease infinite"
-              }}
-            >
-              {t('hero.titleHighlight')}
-            </span>
+            {t('hero.badge')}
           </motion.h1>
 
           <motion.p
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
-            transition={{ duration: 0.6, delay: 0.3 }}
+            transition={{ duration: 0.6, delay: 0.25 }}
             className="text-lg sm:text-xl text-muted-foreground mb-10 max-w-2xl mx-auto"
           >
-            {t('hero.subtitle')}
+            Centraliza obligaciones, recibe alertas automáticas y mantené tu empresa al día.
           </motion.p>
 
           <motion.div
@@ -223,98 +204,7 @@ const Index = () => {
           </div>
         </AnimatedSection>
 
-        {/* Por qué IfsinRem - Ventajas */}
-        <section className="py-16 sm:py-24 border-b border-border/40">
-          <AnimatedSection className="text-center mb-12">
-            <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
-              {t('why.title')}
-            </h2>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              {t('why.subtitle')}
-            </p>
-          </AnimatedSection>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-5xl mx-auto">
-            {/* Método tradicional */}
-            <AnimatedSection direction="left">
-              <motion.div
-                whileHover={{ scale: 1.02, y: -5 }}
-                transition={{ type: "spring", stiffness: 300 }}
-                className="card-elevated p-6 sm:p-8 border-status-danger/30 bg-status-danger-bg/30 h-full"
-              >
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="w-10 h-10 rounded-full bg-status-danger/20 flex items-center justify-center">
-                    <XCircle className="w-5 h-5 text-status-danger" />
-                  </div>
-                  <h3 className="text-xl font-semibold text-foreground">{t('why.traditional')}</h3>
-                </div>
-                <ul className="space-y-3">
-                  {traditionalItems.map((item, i) => (
-                    <motion.li
-                      key={i}
-                      initial={{ x: -20, opacity: 0 }}
-                      whileInView={{ x: 0, opacity: 1 }}
-                      viewport={{ once: true }}
-                      transition={{ delay: i * 0.1 }}
-                      className="flex items-start gap-3 text-muted-foreground"
-                    >
-                      <XCircle className="w-4 h-4 text-status-danger flex-shrink-0 mt-0.5" />
-                      <span className="text-sm">{item}</span>
-                    </motion.li>
-                  ))}
-                </ul>
-              </motion.div>
-            </AnimatedSection>
-
-            {/* Con IfsinRem */}
-            <AnimatedSection direction="right" delay={0.2}>
-              <motion.div
-                whileHover={{ scale: 1.02, y: -5 }}
-                transition={{ type: "spring", stiffness: 300 }}
-                className="card-elevated p-6 sm:p-8 border-status-success/30 bg-status-success-bg/30 h-full"
-              >
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="w-10 h-10 rounded-full bg-status-success/20 flex items-center justify-center">
-                    <CheckCircle className="w-5 h-5 text-status-success" />
-                  </div>
-                  <h3 className="text-xl font-semibold text-foreground">{t('why.withIfsinRem')}</h3>
-                </div>
-                <ul className="space-y-3">
-                  {ifsinremItems.map((item, i) => (
-                    <motion.li
-                      key={i}
-                      initial={{ x: 20, opacity: 0 }}
-                      whileInView={{ x: 0, opacity: 1 }}
-                      viewport={{ once: true }}
-                      transition={{ delay: i * 0.1 }}
-                      className="flex items-start gap-3 text-muted-foreground"
-                    >
-                      <CheckCircle className="w-4 h-4 text-status-success flex-shrink-0 mt-0.5" />
-                      <span className="text-sm">{item}</span>
-                    </motion.li>
-                  ))}
-                </ul>
-              </motion.div>
-            </AnimatedSection>
-          </div>
-
-          <AnimatedSection delay={0.4} className="text-center mt-10">
-            <p className="text-muted-foreground mb-6 max-w-xl mx-auto">
-              {t('why.description')}
-            </p>
-            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-              <Button
-                variant="outline"
-                size="lg"
-                onClick={openCalendly}
-                className="h-12 px-8 text-base gap-2"
-              >
-                <Calendar className="w-4 h-4" />
-                {t('why.seeHow')}
-              </Button>
-            </motion.div>
-          </AnimatedSection>
-        </section>
+        {/* Removed verbose comparison section for a more direct landing */}
 
         {/* Features */}
         <section id="features" className="py-16 sm:py-24">
