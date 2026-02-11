@@ -4,6 +4,7 @@ import Header from "@/components/Header";
 import ObligationCard from "@/components/ObligationCard";
 import EmptyState from "@/components/EmptyState";
 import KanbanBoard from "@/components/KanbanBoard";
+import DuplicateObligationsDialog from "@/components/DuplicateObligationsDialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
