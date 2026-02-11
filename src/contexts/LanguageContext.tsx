@@ -172,7 +172,7 @@ const translations = {
         'pricing.professional.description': 'For growing teams',
         'pricing.professional.feature1': 'Up to 25 obligations',
         'pricing.professional.feature2': 'Up to 10 users',
-        'pricing.professional.feature3': 'Email and WhatsApp reminders',
+        'pricing.professional.feature3': 'Advanced email reminders',
         'pricing.professional.feature4': 'Custom notifications',
         'pricing.professional.feature5': 'File management',
         'pricing.professional.feature6': 'Roles and permissions',

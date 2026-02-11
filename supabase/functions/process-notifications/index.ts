@@ -340,32 +340,6 @@ serve(async (req) => {
         results.errors.push(`Failed to send email to ${profile.email}: ${emailResult.error}`);
       }
 
-      if (profile.whatsapp_enabled && profile.phone && TWILIO_ACCOUNT_SID && TWILIO_AUTH_TOKEN && TWILIO_WHATSAPP_FROM) {
-        try {
-          const whatsappResult = await sendWhatsAppNotification(
-            TWILIO_ACCOUNT_SID,
-            TWILIO_AUTH_TOKEN,
-            TWILIO_WHATSAPP_FROM,
-            profile.phone,
-            profile.name,
-            obligation.name,
-            obligation.due_date,
-            daysUntilDue
-          );
-
-          if (whatsappResult.success) {
-            console.log(`✅ WhatsApp enviado a ${profile.phone} para obligación "${obligation.name}"`);
-            results.whatsappSent++;
-          } else {
-            console.error(`❌ Error enviando WhatsApp a ${profile.phone}: ${whatsappResult.error}`);
-            results.errors.push(`Failed to send WhatsApp to ${profile.phone}: ${whatsappResult.error}`);
-          }
-        } catch (whatsappError) {
-          console.error(`❌ Exception enviando WhatsApp:`, whatsappError);
-          results.errors.push(`WhatsApp exception: ${whatsappError instanceof Error ? whatsappError.message : 'Unknown'}`);
-        }
-      }
-
       const { error: insertError } = await supabase
         .from("email_notifications")
         .insert({

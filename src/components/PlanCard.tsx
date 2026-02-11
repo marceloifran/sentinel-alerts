@@ -35,7 +35,7 @@ const planDetails = {
     features: [
       'Hasta 25 obligaciones',
       'Hasta 10 usuarios',
-      'Recordatorios por email y WhatsApp',
+      'Recordatorios avanzados por email',
       'Notificaciones personalizadas',
       'Gestión de archivos',
       'Roles y permisos',
