@@ -75,7 +75,7 @@ const translations = {
         'pricing.professional.description': 'Para equipos en crecimiento',
         'pricing.professional.feature1': 'Hasta 25 obligaciones',
         'pricing.professional.feature2': 'Hasta 10 usuarios',
-        'pricing.professional.feature3': 'Recordatorios por email y WhatsApp',
+        'pricing.professional.feature3': 'Recordatorios avanzados por email',
         'pricing.professional.feature4': 'Notificaciones personalizadas',
         'pricing.professional.feature5': 'Gestión de archivos',
         'pricing.professional.feature6': 'Roles y permisos',
