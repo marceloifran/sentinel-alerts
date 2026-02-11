@@ -138,7 +138,7 @@ const Auth = () => {
             </div>
             <div>
               <h3 className="font-semibold text-primary-foreground">Recordatorios Inteligentes</h3>
-              <p className="text-primary-foreground/80 text-sm">Notificaciones por email y WhatsApp antes de cada vencimiento</p>
+              <p className="text-primary-foreground/80 text-sm">Notificaciones automáticas por email antes de cada vencimiento</p>
             </div>
           </div>
           
@@ -220,7 +220,7 @@ const Auth = () => {
                       className="h-12 pl-10 bg-background border-border/60 focus:border-primary"
                     />
                   </div>
-                  <p className="text-xs text-muted-foreground">Incluí código de país para recibir notificaciones por WhatsApp</p>
+                  <p className="text-xs text-muted-foreground">Incluí código de país para recibir notificaciones</p>
                 </div>
 
                 <div className="space-y-2">

@@ -4,6 +4,7 @@ import Header from "@/components/Header";
 import ObligationCard from "@/components/ObligationCard";
 import EmptyState from "@/components/EmptyState";
 import KanbanBoard from "@/components/KanbanBoard";
+import DuplicateObligationsDialog from "@/components/DuplicateObligationsDialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,9 +16,10 @@ import {
 } from "@/components/ui/select";
 import { useAuth } from "@/contexts/AuthContext";
 import { useObligations } from "@/hooks/useObligations";
-import { categoryLabels, statusLabels } from "@/services/obligationService";
+import { categoryLabels, statusLabels, getResponsibles } from "@/services/obligationService";
 import { Search, Filter, ArrowLeft, LayoutGrid, List, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
+import { useQuery } from "@tanstack/react-query";
 import { ObligationListSkeleton } from "@/components/skeletons/Skeletons";
 import { ErrorState } from "@/components/ErrorState";
 
@@ -31,6 +33,10 @@ const AllObligations = () => {
 
   // React Query hook
   const { data: obligations = [], isLoading, error, refetch } = useObligations();
+  const { data: responsibles = [] } = useQuery({
+    queryKey: ['responsibles'],
+    queryFn: getResponsibles,
+  });
 
   // Redirect si no está autenticado
   useEffect(() => {
@@ -119,7 +125,13 @@ const AllObligations = () => {
             </span>
           </h1>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            {isAdmin && (
+              <DuplicateObligationsDialog
+                obligations={obligations}
+                responsibles={responsibles}
+              />
+            )}
             <Button
               variant="outline"
               size="icon"

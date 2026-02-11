@@ -19,8 +19,6 @@ interface Profile {
   id: string;
   email: string;
   name: string;
-  phone: string | null;
-  whatsapp_enabled: boolean;
 }
 
 const NOTIFICATION_TYPES = {
@@ -149,97 +147,6 @@ async function sendNotificationEmail(
   }
 }
 
-async function sendWhatsAppNotification(
-  accountSid: string,
-  authToken: string,
-  fromNumber: string,
-  toPhone: string,
-  userName: string,
-  obligationName: string,
-  dueDate: string,
-  daysUntilDue: number
-): Promise<{ success: boolean; error?: string }> {
-  const isOverdue = daysUntilDue < 0;
-  const isDueToday = daysUntilDue === 0;
-  const absDays = Math.abs(daysUntilDue);
-
-  const formattedDate = new Date(dueDate).toLocaleDateString('es-ES', {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
-  });
-
-  let emoji: string;
-  let statusText: string;
-  let urgencyText: string;
-
-  if (isOverdue) {
-    emoji = "🚨";
-    statusText = `*VENCIDA* hace ${absDays} día${absDays !== 1 ? 's' : ''}`;
-    urgencyText = "¡Requiere atención inmediata!";
-  } else if (isDueToday) {
-    emoji = "⚠️";
-    statusText = "*¡Vence HOY!*";
-    urgencyText = "¡Toma acción ahora!";
-  } else if (daysUntilDue <= 7) {
-    emoji = "⚠️";
-    statusText = `Vence en *${daysUntilDue} días*`;
-    urgencyText = "Por favor, revísala pronto.";
-  } else {
-    emoji = "📅";
-    statusText = `Vence en *${daysUntilDue} días*`;
-    urgencyText = "Aún tienes tiempo, pero no lo dejes pasar.";
-  }
-
-  const message = `${emoji} *Recordatorio de IfsinRem*
-
-Hola *${userName}*,
-
-La obligación *"${obligationName}"* ${statusText}.
-
-📆 Fecha de vencimiento: ${formattedDate}
-
-${urgencyText}
-
-_Este es un mensaje automático del sistema IfsinRem._`;
-
-  let formattedPhone = toPhone.replace(/\D/g, '');
-  if (!formattedPhone.startsWith('54')) {
-    formattedPhone = '54' + formattedPhone;
-  }
-  const whatsappTo = `whatsapp:+${formattedPhone}`;
-  const whatsappFrom = fromNumber.startsWith('whatsapp:') ? fromNumber : `whatsapp:${fromNumber}`;
-
-  try {
-    const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`;
-    
-    const formData = new URLSearchParams();
-    formData.append('To', whatsappTo);
-    formData.append('From', whatsappFrom);
-    formData.append('Body', message);
-
-    const response = await fetch(twilioUrl, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Basic ${btoa(`${accountSid}:${authToken}`)}`,
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: formData.toString(),
-    });
-
-    const result = await response.json();
-
-    if (!response.ok) {
-      return { success: false, error: result.message || 'Twilio error' };
-    }
-
-    return { success: true };
-  } catch (err) {
-    return { success: false, error: err instanceof Error ? err.message : 'Unknown error' };
-  }
-}
-
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -251,9 +158,6 @@ serve(async (req) => {
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     const FROM_EMAIL = Deno.env.get("RESEND_FROM_EMAIL") || "IfsinRem <onboarding@resend.dev>";
     
-    const TWILIO_ACCOUNT_SID = Deno.env.get("TWILIO_ACCOUNT_SID");
-    const TWILIO_AUTH_TOKEN = Deno.env.get("TWILIO_AUTH_TOKEN");
-    const TWILIO_WHATSAPP_FROM = Deno.env.get("TWILIO_WHATSAPP_FROM");
 
     if (!RESEND_API_KEY) {
       throw new Error("RESEND_API_KEY no está configurada");
@@ -281,7 +185,6 @@ serve(async (req) => {
     const results = {
       processed: 0,
       emailsSent: 0,
-      whatsappSent: 0,
       skipped: 0,
       failed: 0,
       errors: [] as string[],
@@ -314,7 +217,7 @@ serve(async (req) => {
 
       const { data: profile, error: profileError } = await supabase
         .from("profiles")
-        .select("id, email, name, phone, whatsapp_enabled")
+        .select("id, email, name")
         .eq("id", obligation.responsible_id)
         .single();
 
@@ -343,32 +246,6 @@ serve(async (req) => {
         console.error(`❌ Error enviando email a ${profile.email}: ${emailResult.error}`);
         results.failed++;
         results.errors.push(`Failed to send email to ${profile.email}: ${emailResult.error}`);
-      }
-
-      if (profile.whatsapp_enabled && profile.phone && TWILIO_ACCOUNT_SID && TWILIO_AUTH_TOKEN && TWILIO_WHATSAPP_FROM) {
-        try {
-          const whatsappResult = await sendWhatsAppNotification(
-            TWILIO_ACCOUNT_SID,
-            TWILIO_AUTH_TOKEN,
-            TWILIO_WHATSAPP_FROM,
-            profile.phone,
-            profile.name,
-            obligation.name,
-            obligation.due_date,
-            daysUntilDue
-          );
-
-          if (whatsappResult.success) {
-            console.log(`✅ WhatsApp enviado a ${profile.phone} para obligación "${obligation.name}"`);
-            results.whatsappSent++;
-          } else {
-            console.error(`❌ Error enviando WhatsApp a ${profile.phone}: ${whatsappResult.error}`);
-            results.errors.push(`Failed to send WhatsApp to ${profile.phone}: ${whatsappResult.error}`);
-          }
-        } catch (whatsappError) {
-          console.error(`❌ Exception enviando WhatsApp:`, whatsappError);
-          results.errors.push(`WhatsApp exception: ${whatsappError instanceof Error ? whatsappError.message : 'Unknown'}`);
-        }
       }
 
       const { error: insertError } = await supabase
