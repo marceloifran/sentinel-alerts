@@ -163,6 +163,7 @@ const AllObligations = () => {
             </div>
           </div>
         </div>
+        </div>
 
         {/* Filters */}
         <div className="card-elevated p-4 mb-6 animate-fade-in">
