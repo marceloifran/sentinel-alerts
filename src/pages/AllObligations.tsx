@@ -16,9 +16,10 @@ import {
 } from "@/components/ui/select";
 import { useAuth } from "@/contexts/AuthContext";
 import { useObligations } from "@/hooks/useObligations";
-import { categoryLabels, statusLabels } from "@/services/obligationService";
+import { categoryLabels, statusLabels, getResponsibles } from "@/services/obligationService";
 import { Search, Filter, ArrowLeft, LayoutGrid, List, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
+import { useQuery } from "@tanstack/react-query";
 import { ObligationListSkeleton } from "@/components/skeletons/Skeletons";
 import { ErrorState } from "@/components/ErrorState";
 
