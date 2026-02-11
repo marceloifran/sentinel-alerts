@@ -249,9 +249,6 @@ serve(async (req) => {
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     const FROM_EMAIL = Deno.env.get("RESEND_FROM_EMAIL") || "IfsinRem <onboarding@resend.dev>";
     
-    const TWILIO_ACCOUNT_SID = Deno.env.get("TWILIO_ACCOUNT_SID");
-    const TWILIO_AUTH_TOKEN = Deno.env.get("TWILIO_AUTH_TOKEN");
-    const TWILIO_WHATSAPP_FROM = Deno.env.get("TWILIO_WHATSAPP_FROM");
 
     if (!RESEND_API_KEY) {
       throw new Error("RESEND_API_KEY no está configurada");
