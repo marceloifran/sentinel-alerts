@@ -43,7 +43,7 @@ const translations = {
         'why.traditional6': 'Responsabilidades difusas entre el equipo',
         'why.ifsinrem1': 'Sistema automático que avisa antes de cada vencimiento',
         'why.ifsinrem2': 'Todo centralizado en un solo lugar visible',
-        'why.ifsinrem3': 'Recordatorios por email y WhatsApp que no fallan',
+        'why.ifsinrem3': 'Recordatorios automáticos por email que no fallan',
         'why.ifsinrem4': 'Tranquilidad de saber exactamente qué está al día',
         'why.ifsinrem5': 'Prevención en lugar de reacción tardía',
         'why.ifsinrem6': 'Cada obligación tiene un responsable claro',
