@@ -19,8 +19,6 @@ interface Profile {
   id: string;
   email: string;
   name: string;
-  phone: string | null;
-  whatsapp_enabled: boolean;
 }
 
 const NOTIFICATION_TYPES = {
