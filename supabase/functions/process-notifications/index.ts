@@ -309,7 +309,7 @@ serve(async (req) => {
 
       const { data: profile, error: profileError } = await supabase
         .from("profiles")
-        .select("id, email, name, phone, whatsapp_enabled")
+        .select("id, email, name")
         .eq("id", obligation.responsible_id)
         .single();
 
