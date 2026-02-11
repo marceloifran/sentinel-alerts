@@ -140,7 +140,7 @@ const translations = {
         'why.traditional6': 'Unclear responsibilities among the team',
         'why.ifsinrem1': 'Automatic system that alerts before each deadline',
         'why.ifsinrem2': 'Everything centralized in one visible place',
-        'why.ifsinrem3': 'Email and WhatsApp reminders that never fail',
+        'why.ifsinrem3': 'Automatic email reminders that never fail',
         'why.ifsinrem4': 'Peace of mind knowing exactly what\'s up to date',
         'why.ifsinrem5': 'Prevention instead of late reaction',
         'why.ifsinrem6': 'Each obligation has a clear owner',
