@@ -125,7 +125,13 @@ const AllObligations = () => {
             </span>
           </h1>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            {isAdmin && (
+              <DuplicateObligationsDialog
+                obligations={obligations}
+                responsibles={responsibles}
+              />
+            )}
             <Button
               variant="outline"
               size="icon"
