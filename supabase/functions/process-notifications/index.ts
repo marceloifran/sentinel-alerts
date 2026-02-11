@@ -185,7 +185,6 @@ serve(async (req) => {
     const results = {
       processed: 0,
       emailsSent: 0,
-      whatsappSent: 0,
       skipped: 0,
       failed: 0,
       errors: [] as string[],
