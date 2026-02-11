@@ -138,7 +138,7 @@ const Auth = () => {
             </div>
             <div>
               <h3 className="font-semibold text-primary-foreground">Recordatorios Inteligentes</h3>
-              <p className="text-primary-foreground/80 text-sm">Notificaciones por email y WhatsApp antes de cada vencimiento</p>
+              <p className="text-primary-foreground/80 text-sm">Notificaciones automáticas por email antes de cada vencimiento</p>
             </div>
           </div>
           
