@@ -33,6 +33,10 @@ const AllObligations = () => {
 
   // React Query hook
   const { data: obligations = [], isLoading, error, refetch } = useObligations();
+  const { data: responsibles = [] } = useQuery({
+    queryKey: ['responsibles'],
+    queryFn: getResponsibles,
+  });
 
   // Redirect si no está autenticado
   useEffect(() => {
