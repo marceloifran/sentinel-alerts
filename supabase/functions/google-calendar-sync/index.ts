@@ -591,6 +591,21 @@ Deno.serve(async (req) => {
           .eq('user_id', userId)
           .single();
 
+        if (integration) {
+          // Verify token is still valid
+          const tokenData = await getValidAccessToken(supabase, userId);
+          if (!tokenData) {
+            // Token expired and can't refresh - clean up
+            await supabase
+              .from('google_calendar_integrations')
+              .delete()
+              .eq('user_id', userId);
+            return new Response(JSON.stringify({ connected: false }), {
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
+          }
+        }
+
         return new Response(JSON.stringify({ 
           connected: !!integration,
           ...integration 
