@@ -1,5 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
+import { syncObligationToCalendar, deleteObligationFromCalendar } from './googleCalendarSync';
 
 
 type ObligationRow = Database['public']['Tables']['obligations']['Row'];
@@ -182,6 +183,20 @@ export async function createObligation(
     console.error('Error creando notificación automática:', notificationError);
   }
 
+  // Sync to Google Calendar
+  try {
+    await syncObligationToCalendar({
+      id: data.id,
+      title: obligation.name,
+      description: obligation.notes || '',
+      due_date: obligation.due_date,
+      category: obligation.category,
+      status: data.status,
+    });
+  } catch (syncError) {
+    console.error('Error syncing to Google Calendar:', syncError);
+  }
+
   return {
     ...data,
     recurrence: (data.recurrence || 'none') as 'none' | 'monthly' | 'annual'
@@ -258,6 +273,28 @@ export async function updateObligationDueDate(
     });
 
   if (historyError) throw historyError;
+
+  // Sync updated date to Google Calendar
+  try {
+    const { data: obligation } = await supabase
+      .from('obligations')
+      .select('*')
+      .eq('id', obligationId)
+      .single();
+
+    if (obligation) {
+      await syncObligationToCalendar({
+        id: obligation.id,
+        title: obligation.name,
+        description: obligation.notes || '',
+        due_date: obligation.due_date,
+        category: obligation.category,
+        status: obligation.status,
+      });
+    }
+  } catch (syncError) {
+    console.error('Error syncing to Google Calendar:', syncError);
+  }
 }
 
 export async function renewObligation(
@@ -408,6 +445,13 @@ export async function deleteObligationFile(fileId: string, filePath: string): Pr
 }
 
 export async function deleteObligation(obligationId: string): Promise<void> {
+  // Delete from Google Calendar first
+  try {
+    await deleteObligationFromCalendar(obligationId);
+  } catch (syncError) {
+    console.error('Error deleting from Google Calendar:', syncError);
+  }
+
   // 1. Get all files associated with this obligation
   const { data: files, error: filesError } = await supabase
     .from('obligation_files')

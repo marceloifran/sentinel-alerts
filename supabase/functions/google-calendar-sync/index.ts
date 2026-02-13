@@ -226,7 +226,7 @@ async function deleteCalendarEvent(
     const error = await response.text();
     throw new Error(`Failed to delete event: ${error}`);
   }
-  await response.text().catch(() => {});
+  await response.text().catch(() => { });
 }
 
 async function listCalendars(accessToken: string): Promise<{ id: string; summary: string }[]> {
@@ -297,7 +297,7 @@ Deno.serve(async (req) => {
           `&scope=${encodeURIComponent(scopes.join(' '))}` +
           `&access_type=offline` +
           `&prompt=consent`;
-        
+
         return new Response(JSON.stringify({ authUrl }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
@@ -305,7 +305,7 @@ Deno.serve(async (req) => {
 
       case 'exchange-code': {
         const { code, redirectUri } = params;
-        
+
         const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
           method: 'POST',
           headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -362,7 +362,7 @@ Deno.serve(async (req) => {
 
       case 'update-settings': {
         const { calendarId, syncEnabled } = params;
-        
+
         const { error } = await supabase
           .from('google_calendar_integrations')
           .update({
@@ -393,7 +393,7 @@ Deno.serve(async (req) => {
 
       case 'sync-obligation': {
         const { obligation, appUrl } = params;
-        
+
         const tokenData = await getValidAccessToken(supabase, userId);
         if (!tokenData) {
           return new Response(JSON.stringify({ error: 'Not connected' }), {
@@ -458,7 +458,7 @@ Deno.serve(async (req) => {
 
       case 'delete-event': {
         const { obligationId } = params;
-        
+
         const tokenData = await getValidAccessToken(supabase, userId);
         if (!tokenData) {
           return new Response(JSON.stringify({ skipped: true }), {
@@ -488,7 +488,7 @@ Deno.serve(async (req) => {
 
       case 'sync-all': {
         const { appUrl } = params;
-        
+
         const tokenData = await getValidAccessToken(supabase, userId);
         if (!tokenData) {
           return new Response(JSON.stringify({ error: 'Not connected' }), {
@@ -529,7 +529,7 @@ Deno.serve(async (req) => {
           .from('profiles')
           .select('id, name')
           .in('id', responsibleIds);
-        
+
         const profileMap = new Map(((profiles || []) as { id: string; name: string }[]).map(p => [p.id, p.name]));
 
         let synced = 0;
@@ -606,10 +606,157 @@ Deno.serve(async (req) => {
           }
         }
 
-        return new Response(JSON.stringify({ 
+        return new Response(JSON.stringify({
           connected: !!integration,
-          ...integration 
+          ...integration
         }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      case 'sync-obligation': {
+        const { obligation } = params;
+        const tokenData = await getValidAccessToken(supabase, userId);
+        if (!tokenData) {
+          throw new Error('Not connected to Google Calendar');
+        }
+
+        const { data: integration } = await supabase
+          .from('google_calendar_integrations')
+          .select('selected_calendar_id, sync_enabled')
+          .eq('user_id', userId)
+          .single();
+
+        if (!integration?.sync_enabled) {
+          return new Response(JSON.stringify({ success: false, message: 'Sync disabled' }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+
+        // Check if event already exists
+        const { data: existingObligation } = await supabase
+          .from('obligations')
+          .select('google_event_id')
+          .eq('id', obligation.id)
+          .single();
+
+        const event = {
+          summary: obligation.title,
+          description: obligation.description || '',
+          start: {
+            dateTime: new Date(obligation.due_date).toISOString(),
+            timeZone: 'America/Argentina/Buenos_Aires',
+          },
+          end: {
+            dateTime: new Date(new Date(obligation.due_date).getTime() + 60 * 60 * 1000).toISOString(),
+            timeZone: 'America/Argentina/Buenos_Aires',
+          },
+          colorId: getCategoryColor(obligation.category),
+        };
+
+        let eventId = existingObligation?.google_event_id;
+
+        if (eventId) {
+          // Update existing event
+          const updateResponse = await fetch(
+            `https://www.googleapis.com/calendar/v3/calendars/${integration.selected_calendar_id}/events/${eventId}`,
+            {
+              method: 'PUT',
+              headers: {
+                'Authorization': `Bearer ${tokenData.access_token}`,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify(event),
+            }
+          );
+
+          if (!updateResponse.ok) {
+            throw new Error(`Failed to update event: ${await updateResponse.text()}`);
+          }
+        } else {
+          // Create new event
+          const createResponse = await fetch(
+            `https://www.googleapis.com/calendar/v3/calendars/${integration.selected_calendar_id}/events`,
+            {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${tokenData.access_token}`,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify(event),
+            }
+          );
+
+          if (!createResponse.ok) {
+            throw new Error(`Failed to create event: ${await createResponse.text()}`);
+          }
+
+          const createdEvent = await createResponse.json();
+          eventId = createdEvent.id;
+
+          // Save event ID
+          await supabase
+            .from('obligations')
+            .update({ google_event_id: eventId })
+            .eq('id', obligation.id);
+        }
+
+        return new Response(JSON.stringify({ success: true, eventId }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      case 'delete-obligation': {
+        const { obligationId } = params;
+
+        // Get the Google event ID
+        const { data: obligation } = await supabase
+          .from('obligations')
+          .select('google_event_id')
+          .eq('id', obligationId)
+          .single();
+
+        if (!obligation?.google_event_id) {
+          return new Response(JSON.stringify({ success: true, message: 'No event to delete' }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+
+        const tokenData = await getValidAccessToken(supabase, userId);
+        if (!tokenData) {
+          return new Response(JSON.stringify({ success: false, message: 'Not connected' }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+
+        const { data: integration } = await supabase
+          .from('google_calendar_integrations')
+          .select('selected_calendar_id')
+          .eq('user_id', userId)
+          .single();
+
+        if (!integration) {
+          return new Response(JSON.stringify({ success: false, message: 'Not connected' }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+
+        // Delete from Google Calendar
+        const deleteResponse = await fetch(
+          `https://www.googleapis.com/calendar/v3/calendars/${integration.selected_calendar_id}/events/${obligation.google_event_id}`,
+          {
+            method: 'DELETE',
+            headers: {
+              'Authorization': `Bearer ${tokenData.access_token}`,
+            },
+          }
+        );
+
+        if (!deleteResponse.ok && deleteResponse.status !== 404) {
+          console.error('Failed to delete event:', await deleteResponse.text());
+        }
+
+        return new Response(JSON.stringify({ success: true }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }

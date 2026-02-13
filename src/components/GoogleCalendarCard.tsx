@@ -75,7 +75,11 @@ const GoogleCalendarCard = () => {
     if (code && window.location.pathname === '/configuracion') {
       const exchangeCode = async () => {
         try {
-          const redirectUri = `${window.location.origin}/configuracion`;
+          // Use localhost for development, actual domain for production
+          const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.hostname.includes('DESKTOP');
+          const redirectUri = isLocalhost
+            ? 'http://localhost:8080/configuracion'
+            : `${window.location.origin}/configuracion`;
           await callEdgeFunction('exchange-code', { code, redirectUri });
           toast.success('Google Calendar conectado exitosamente');
           // Clean URL
@@ -93,8 +97,18 @@ const GoogleCalendarCard = () => {
 
   const handleConnect = async () => {
     try {
-      const redirectUri = `${window.location.origin}/configuracion`;
+      // Use localhost for development, actual domain for production
+      const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.hostname.includes('DESKTOP');
+      const redirectUri = isLocalhost
+        ? 'http://localhost:8080/configuracion'
+        : `${window.location.origin}/configuracion`;
+
+      console.log('🔍 DEBUG - Redirect URI:', redirectUri);
+      console.log('🔍 DEBUG - Hostname:', window.location.hostname);
+      console.log('🔍 DEBUG - Is Localhost:', isLocalhost);
+
       const data = await callEdgeFunction('get-auth-url', { redirectUri });
+      console.log('🔍 DEBUG - Auth URL:', data.authUrl);
       window.location.href = data.authUrl;
     } catch (err) {
       console.error('Error:', err);
@@ -180,7 +194,7 @@ const GoogleCalendarCard = () => {
       {!isConnected ? (
         <div className="space-y-4">
           <p className="text-sm text-muted-foreground">
-            Conectá tu cuenta de Google para ver tus obligaciones en Google Calendar. 
+            Conectá tu cuenta de Google para ver tus obligaciones en Google Calendar.
             La sincronización es solo de lectura: no se pueden crear ni editar obligaciones desde Calendar.
           </p>
           <Button onClick={handleConnect} className="gap-2">
