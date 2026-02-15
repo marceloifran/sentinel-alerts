@@ -10,7 +10,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { User, Mail, Lock, Save, ArrowLeft } from 'lucide-react';
 import { SubscriptionCard } from '@/components/subscription/SubscriptionCard';
-import GoogleCalendarCard from '@/components/GoogleCalendarCard';
+// import GoogleCalendarCard from '@/components/GoogleCalendarCard';
 
 
 const UserSettings = () => {
@@ -215,8 +215,8 @@ const UserSettings = () => {
                         </div>
                     </Card>
 
-                    {/* Google Calendar */}
-                    <GoogleCalendarCard />
+                    {/* Google Calendar - TEMPORALMENTE DESHABILITADO */}
+                    {/* <GoogleCalendarCard /> */}
 
                     {/* Subscription Management */}
                     <SubscriptionCard />
