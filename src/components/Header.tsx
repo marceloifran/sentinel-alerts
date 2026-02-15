@@ -1,10 +1,13 @@
 import { Button } from "@/components/ui/button";
-import { LogOut, User, LayoutDashboard, ClipboardList, Users, Sparkles } from "lucide-react";
+import { LogOut, User, LayoutDashboard, ClipboardList, Users, Sparkles, Lightbulb } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useState } from "react";
 import { SmartObligationLoader } from "@/components/ai/SmartObligationLoader";
 import { useAuth } from "@/contexts/AuthContext";
 import { useObligations } from "@/hooks/useObligations";
+import { ObligationSuggestionsModal } from "./ObligationSuggestionsModal";
+import { useSuggestionCount } from "@/hooks/useTemplateSuggestions";
+
 
 interface HeaderProps {
   userName?: string;
@@ -19,6 +22,9 @@ const Header = ({ userName = "Usuario", onLogout, isAdmin = false, userPlan }: H
   const { user } = useAuth();
   const { data: obligations = [], refetch } = useObligations();
   const [showSmartLoader, setShowSmartLoader] = useState(false);
+  const [suggestionsOpen, setSuggestionsOpen] = useState(false);
+  const { data: suggestionCount = 0 } = useSuggestionCount();
+
 
   const navItems = [
     {
@@ -91,6 +97,22 @@ const Header = ({ userName = "Usuario", onLogout, isAdmin = false, userPlan }: H
                 </Button>
               )}
 
+              {/* Suggestions button - always visible */}
+              <Button
+                onClick={() => setSuggestionsOpen(true)}
+                size="sm"
+                variant="outline"
+                className="gap-1.5 relative"
+              >
+                <Lightbulb className="w-4 h-4" />
+                <span className="hidden sm:inline">Sugerencias</span>
+                {suggestionCount > 0 && (
+                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-primary text-primary-foreground text-xs font-bold rounded-full flex items-center justify-center">
+                    {suggestionCount}
+                  </span>
+                )}
+              </Button>
+
               {/* User info */}
               <button
                 onClick={() => navigate('/configuracion')}
@@ -126,8 +148,15 @@ const Header = ({ userName = "Usuario", onLogout, isAdmin = false, userPlan }: H
           userId={user.id}
         />
       )}
+
+      {/* Suggestions Modal */}
+      <ObligationSuggestionsModal
+        open={suggestionsOpen}
+        onOpenChange={setSuggestionsOpen}
+      />
     </>
   );
 };
 
 export default Header;
+

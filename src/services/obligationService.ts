@@ -1,7 +1,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
 import { syncObligationToCalendar, deleteObligationFromCalendar } from './googleCalendarSync';
-
+import type { CriticalityLevel } from './complianceScoreService';
 
 type ObligationRow = Database['public']['Tables']['obligations']['Row'];
 type ObligationInsert = Database['public']['Tables']['obligations']['Insert'];
@@ -10,9 +10,10 @@ type ObligationCategory = Database['public']['Enums']['obligation_category'];
 type ObligationFileRow = Database['public']['Tables']['obligation_files']['Row'];
 type ObligationHistoryRow = Database['public']['Tables']['obligation_history']['Row'];
 
-export interface Obligation extends Omit<ObligationRow, 'recurrence'> {
+export interface Obligation extends Omit<ObligationRow, 'recurrence' | 'criticality'> {
   responsible_name?: string;
   recurrence: 'none' | 'monthly' | 'annual';
+  criticality: CriticalityLevel;
 }
 
 export const recurrenceLabels: Record<string, string> = {
@@ -38,6 +39,12 @@ export const statusLabels: Record<ObligationStatus, string> = {
   al_dia: 'Al día',
   por_vencer: 'Por vencer',
   vencida: 'Vencida',
+};
+
+export const criticalityLabels: Record<CriticalityLevel, string> = {
+  baja: 'Baja',
+  media: 'Media',
+  alta: 'Alta',
 };
 
 
@@ -90,6 +97,7 @@ export async function getObligations(): Promise<Obligation[]> {
   return obligations.map(obligation => ({
     ...obligation,
     recurrence: (obligation.recurrence || 'none') as 'none' | 'monthly' | 'annual',
+    criticality: (obligation.criticality || 'media') as CriticalityLevel,
     responsible_name: profileMap.get(obligation.responsible_id) || 'Sin asignar'
   }));
 }
@@ -114,6 +122,7 @@ export async function getObligation(id: string): Promise<Obligation | null> {
   return {
     ...data,
     recurrence: (data.recurrence || 'none') as 'none' | 'monthly' | 'annual',
+    criticality: (data.criticality || 'media') as CriticalityLevel,
     responsible_name: profile?.name || 'Sin asignar'
   };
 }
@@ -199,7 +208,8 @@ export async function createObligation(
 
   return {
     ...data,
-    recurrence: (data.recurrence || 'none') as 'none' | 'monthly' | 'annual'
+    recurrence: (data.recurrence || 'none') as 'none' | 'monthly' | 'annual',
+    criticality: (data.criticality || 'media') as CriticalityLevel
   };
 }
 

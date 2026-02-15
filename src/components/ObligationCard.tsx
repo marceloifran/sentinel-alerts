@@ -1,8 +1,8 @@
 import { cn } from "@/lib/utils";
-import { categoryLabels, Obligation, recurrenceLabels } from "@/services/obligationService";
+import { categoryLabels, Obligation, recurrenceLabels, criticalityLabels } from "@/services/obligationService";
 import { CategoryIcon } from "./CategoryIcon";
 import StatusBadge from "./StatusBadge";
-import { Calendar, User, RefreshCw } from "lucide-react";
+import { Calendar, User, RefreshCw, AlertCircle } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { Badge } from "@/components/ui/badge";
@@ -37,6 +37,19 @@ const ObligationCard = ({ obligation, onClick }: ObligationCardProps) => {
   const formattedDate = isValidDate ? format(dueDate, "d 'de' MMMM, yyyy", { locale: es }) : 'Fecha inválida';
   const daysUntilDue = isValidDate ? Math.ceil((dueDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)) : 0;
 
+  const getCriticalityColor = (criticality: string) => {
+    switch (criticality) {
+      case 'alta':
+        return 'bg-red-100 text-red-800 border-red-300';
+      case 'media':
+        return 'bg-yellow-100 text-yellow-800 border-yellow-300';
+      case 'baja':
+        return 'bg-green-100 text-green-800 border-green-300';
+      default:
+        return 'bg-gray-100 text-gray-800 border-gray-300';
+    }
+  };
+
   return (
     <div
       className={cn(
@@ -48,11 +61,17 @@ const ObligationCard = ({ obligation, onClick }: ObligationCardProps) => {
     >
       <div className="flex items-start justify-between gap-4">
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-2">
+          <div className="flex items-center gap-2 mb-2 flex-wrap">
             <CategoryIcon category={obligation.category} />
             <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
               {categoryLabels[obligation.category]}
             </span>
+            {obligation.criticality && (
+              <Badge variant="outline" className={`text-xs flex items-center gap-1 ${getCriticalityColor(obligation.criticality)}`}>
+                <AlertCircle className="w-3 h-3" />
+                {criticalityLabels[obligation.criticality]}
+              </Badge>
+            )}
             {obligation.recurrence && obligation.recurrence !== 'none' && (
               <Badge variant="outline" className="text-xs flex items-center gap-1">
                 <RefreshCw className="w-3 h-3" />

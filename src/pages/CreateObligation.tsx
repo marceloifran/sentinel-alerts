@@ -16,8 +16,9 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { CalendarIcon, ArrowLeft, Loader2 } from "lucide-react";
-import { categoryLabels, ObligationCategory } from "@/services/obligationService";
+import { CalendarIcon, ArrowLeft, Loader2, AlertCircle } from "lucide-react";
+import { categoryLabels, ObligationCategory, criticalityLabels } from "@/services/obligationService";
+import type { CriticalityLevel } from "@/services/complianceScoreService";
 import { CategoryIcon } from "@/components/CategoryIcon";
 import { useCreateObligation } from "@/hooks/useObligations";
 import { useAuth } from "@/contexts/AuthContext";
@@ -30,6 +31,7 @@ const CreateObligation = () => {
   const [category, setCategory] = useState<ObligationCategory | "">("");
   const [dueDate, setDueDate] = useState<Date>();
   const [recurrence, setRecurrence] = useState<'none' | 'monthly' | 'annual'>('none');
+  const [criticality, setCriticality] = useState<CriticalityLevel>('media');
 
   // React Query mutation
   const createMutation = useCreateObligation();
@@ -64,7 +66,8 @@ const CreateObligation = () => {
           category: category as ObligationCategory,
           due_date: format(dueDate, 'yyyy-MM-dd'),
           responsible_id: user.id,
-          recurrence
+          recurrence,
+          criticality
         } as any,
         userId: user.id
       });
@@ -203,6 +206,58 @@ const CreateObligation = () => {
               <p className="text-xs text-muted-foreground">
                 Las obligaciones recurrentes pueden renovarse automáticamente
               </p>
+            </div>
+
+            {/* Criticality - NEW */}
+            <div className="space-y-2">
+              <Label>Criticidad</Label>
+              <div className="grid grid-cols-3 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setCriticality('baja')}
+                  className={cn(
+                    "h-12 px-3 py-2 rounded-md border-2 transition-all flex items-center justify-center gap-2",
+                    criticality === 'baja'
+                      ? "border-green-500 bg-green-50 text-green-800"
+                      : "border-input hover:border-green-300"
+                  )}
+                >
+                  <span className="text-lg">🟢</span>
+                  <span className="font-medium">{criticalityLabels.baja}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCriticality('media')}
+                  className={cn(
+                    "h-12 px-3 py-2 rounded-md border-2 transition-all flex items-center justify-center gap-2",
+                    criticality === 'media'
+                      ? "border-yellow-500 bg-yellow-50 text-yellow-800"
+                      : "border-input hover:border-yellow-300"
+                  )}
+                >
+                  <span className="text-lg">🟡</span>
+                  <span className="font-medium">{criticalityLabels.media}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCriticality('alta')}
+                  className={cn(
+                    "h-12 px-3 py-2 rounded-md border-2 transition-all flex items-center justify-center gap-2",
+                    criticality === 'alta'
+                      ? "border-red-500 bg-red-50 text-red-800"
+                      : "border-input hover:border-red-300"
+                  )}
+                >
+                  <span className="text-lg">🔴</span>
+                  <span className="font-medium">{criticalityLabels.alta}</span>
+                </button>
+              </div>
+              <div className="flex items-start gap-2 p-3 bg-blue-50 border border-blue-200 rounded-md">
+                <AlertCircle className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
+                <p className="text-xs text-blue-800">
+                  La criticidad afecta tu <strong>Score de Cumplimiento</strong>. Las obligaciones de alta criticidad tienen mayor impacto en el score.
+                </p>
+              </div>
             </div>
 
             {/* Responsible - Auto-assigned */}

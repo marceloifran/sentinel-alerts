@@ -2,10 +2,11 @@ import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
 import StatusCard from "@/components/StatusCard";
-import GeneralStatus from "@/components/GeneralStatus";
 import ObligationCard from "@/components/ObligationCard";
 import CalendarView from "@/components/CalendarView";
 import EmptyState from "@/components/EmptyState";
+import { ComplianceScoreCard } from "@/components/ComplianceScoreCard";
+import { ReportGeneratorButton } from "@/components/ReportGenerator";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { useObligations } from "@/hooks/useObligations";
@@ -14,6 +15,7 @@ import { AIAssistantButton } from "@/components/ai/AIAssistantButton";
 import { DashboardSkeleton } from "@/components/skeletons/Skeletons";
 import { ErrorState } from "@/components/ErrorState";
 import type { Obligation } from "@/services/obligationService";
+
 
 type ViewMode = 'list' | 'calendar';
 type StatusFilter = 'all' | 'vencida' | 'por_vencer' | 'al_dia';
@@ -29,20 +31,20 @@ const Dashboard = () => {
   const stats = useMemo(() => {
     const overdue = obligations.filter(o => o.status === 'vencida').length;
     const upcoming = obligations.filter(o => o.status === 'por_vencer').length;
-    const onTrack = obligations.filter(o => o.status === 'al_dia').length;
-    return { overdue, upcoming, onTrack };
+    const onTime = obligations.filter(o => o.status === 'al_dia').length;
+    return { overdue, upcoming, onTime };
   }, [obligations]);
 
   const displayedObligations = useMemo(() => {
-    let filtered: Obligation[];
+    let filtered = obligations;
+
+    if (statusFilter !== 'all') {
+      filtered = filtered.filter(o => o.status === statusFilter);
+    }
+
     if (statusFilter === 'all') {
-      // Default: show critical (vencida + por_vencer)
-      filtered = obligations
+      return filtered
         .filter(o => o.status === 'vencida' || o.status === 'por_vencer')
-        .sort((a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime());
-    } else {
-      filtered = obligations
-        .filter(o => o.status === statusFilter)
         .sort((a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime());
     }
     return filtered;
@@ -121,9 +123,14 @@ const Dashboard = () => {
           </span>
         </div>
 
-        {/* General Status - renamed */}
+        {/* Compliance Score Card */}
         <div className="mb-8 animate-fade-in">
-          <GeneralStatus hasOverdue={hasOverdue} />
+          <ComplianceScoreCard />
+        </div>
+
+        {/* Report Generator Button */}
+        <div className="mb-8 flex justify-end animate-fade-in">
+          <ReportGeneratorButton />
         </div>
 
         {/* Stats Cards - clickable to filter */}
@@ -140,7 +147,7 @@ const Dashboard = () => {
           <div className="cursor-pointer" onClick={() => handleCardClick('por_vencer')}>
             <StatusCard
               count={stats.upcoming}
-              label="Por vencer (30 días)"
+              label="Por vencer"
               status="warning"
               icon={<AlertTriangle className="w-6 h-6 text-status-warning" />}
               active={statusFilter === 'por_vencer'}
@@ -148,7 +155,7 @@ const Dashboard = () => {
           </div>
           <div className="cursor-pointer" onClick={() => handleCardClick('al_dia')}>
             <StatusCard
-              count={stats.onTrack}
+              count={stats.onTime}
               label="Al día"
               status="success"
               icon={<CheckCircle className="w-6 h-6 text-status-success" />}
@@ -157,14 +164,14 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* View Toggle */}
-        <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
-          <h2 className="text-2xl font-semibold text-foreground">
-            {viewMode === 'list' ? getListTitle() : 'Vista de calendario'}
+        {/* View mode toggle */}
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-xl font-semibold text-foreground">
+            {getListTitle()}
           </h2>
-          <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center gap-2 bg-muted p-1 rounded-lg">
             <Button
-              variant={viewMode === 'list' ? 'default' : 'outline'}
+              variant={viewMode === 'list' ? 'default' : 'ghost'}
               size="sm"
               onClick={() => setViewMode('list')}
               className="gap-2"
@@ -173,7 +180,7 @@ const Dashboard = () => {
               Lista
             </Button>
             <Button
-              variant={viewMode === 'calendar' ? 'default' : 'outline'}
+              variant={viewMode === 'calendar' ? 'default' : 'ghost'}
               size="sm"
               onClick={() => setViewMode('calendar')}
               className="gap-2"
@@ -184,7 +191,7 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Content */}
+        {/* Obligations display */}
         {viewMode === 'calendar' ? (
           <CalendarView
             obligations={obligations}
