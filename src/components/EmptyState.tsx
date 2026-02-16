@@ -1,7 +1,7 @@
 import { FileText, Lightbulb } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
-import { ObligationSuggestionsModal } from "./ObligationSuggestionsModal";
+import { SimpleSuggestionsModal } from "./SimpleSuggestionsModal";
 import { ReactNode } from "react";
 
 interface EmptyStateProps {
@@ -43,7 +43,7 @@ const EmptyState = ({
         )}
       </div>
 
-      <ObligationSuggestionsModal
+      <SimpleSuggestionsModal
         open={suggestionsOpen}
         onOpenChange={setSuggestionsOpen}
       />

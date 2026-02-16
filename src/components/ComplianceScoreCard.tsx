@@ -6,16 +6,15 @@ import {
     TrendingDown,
     Minus,
     ChevronDown,
-    ChevronUp,
-    RefreshCw
+    ChevronUp
 } from 'lucide-react';
-import { useRealtimeComplianceScore, useRecalculateComplianceScore } from '@/hooks/useComplianceScore';
+import { useRealtimeComplianceScore } from '@/hooks/useComplianceScore';
 import {
     complianceLevelLabels,
     getScoreColor,
     type ComplianceLevel
 } from '@/services/complianceScoreService';
-import { ScoreBreakdown } from './ScoreBreakdown';
+import { ScoreBreakdown } from '@/components/ScoreBreakdown';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface ComplianceScoreCardProps {
@@ -24,7 +23,6 @@ interface ComplianceScoreCardProps {
 
 export function ComplianceScoreCard({ className = '' }: ComplianceScoreCardProps) {
     const score = useRealtimeComplianceScore();
-    const { mutate: recalculate, isPending } = useRecalculateComplianceScore();
     const [isExpanded, setIsExpanded] = useState(false);
 
     if (!score) {
@@ -71,39 +69,26 @@ export function ComplianceScoreCard({ className = '' }: ComplianceScoreCardProps
     return (
         <Card className={`overflow-hidden ${className}`}>
             <div className={`bg-gradient-to-br ${getBackgroundGradient(level)} p-6`}>
-                <div className="flex items-start justify-between mb-6">
-                    <div>
-                        <h2 className="text-2xl font-bold text-foreground mb-2">
-                            Score de Cumplimiento
-                        </h2>
-                        <div className="flex items-center gap-2">
-                            <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium border ${getLevelBadgeColor(level)}`}>
-                                {complianceLevelLabels[level]}
+                <div className="mb-6">
+                    <h2 className="text-2xl font-bold text-foreground mb-2">
+                        Score de Cumplimiento
+                    </h2>
+                    <div className="flex items-center gap-2">
+                        <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium border ${getLevelBadgeColor(level)}`}>
+                            {complianceLevelLabels[level]}
+                        </span>
+                        {trend !== 'neutral' && (
+                            <span className="text-muted-foreground text-sm flex items-center gap-1">
+                                {trend === 'up' ? (
+                                    <TrendingUp className="w-4 h-4 text-green-600" />
+                                ) : trend === 'down' ? (
+                                    <TrendingDown className="w-4 h-4 text-red-600" />
+                                ) : (
+                                    <Minus className="w-4 h-4" />
+                                )}
                             </span>
-                            {trend !== 'neutral' && (
-                                <span className="text-muted-foreground text-sm flex items-center gap-1">
-                                    {trend === 'up' ? (
-                                        <TrendingUp className="w-4 h-4 text-green-600" />
-                                    ) : trend === 'down' ? (
-                                        <TrendingDown className="w-4 h-4 text-red-600" />
-                                    ) : (
-                                        <Minus className="w-4 h-4" />
-                                    )}
-                                </span>
-                            )}
-                        </div>
+                        )}
                     </div>
-
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => recalculate()}
-                        disabled={isPending}
-                        className="gap-2"
-                    >
-                        <RefreshCw className={`w-4 h-4 ${isPending ? 'animate-spin' : ''}`} />
-                        Actualizar
-                    </Button>
                 </div>
 
                 <div className="flex items-center justify-between gap-8">
