@@ -1,7 +1,7 @@
 import { FileText, Lightbulb } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
-import { SimpleSuggestionsModal } from "./SimpleSuggestionsModal";
+
 import { ReactNode } from "react";
 
 interface EmptyStateProps {
@@ -17,7 +17,7 @@ const EmptyState = ({
   icon,
   showButton = true
 }: EmptyStateProps) => {
-  const [suggestionsOpen, setSuggestionsOpen] = useState(false);
+
 
   return (
     <>
@@ -31,22 +31,10 @@ const EmptyState = ({
         <p className="text-muted-foreground mb-6 max-w-sm">
           {description}
         </p>
-        {showButton && (
-          <Button
-            onClick={() => setSuggestionsOpen(true)}
-            className="gap-2"
-            size="lg"
-          >
-            <Lightbulb className="w-5 h-5" />
-            Ver Sugerencias Inteligentes
-          </Button>
-        )}
+
       </div>
 
-      <SimpleSuggestionsModal
-        open={suggestionsOpen}
-        onOpenChange={setSuggestionsOpen}
-      />
+
     </>
   );
 };

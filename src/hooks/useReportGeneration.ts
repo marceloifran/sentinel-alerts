@@ -31,27 +31,18 @@ export function useGenerateReport() {
                 throw new Error('Score de cumplimiento no disponible');
             }
 
-            // Show progress toast
-            const loadingToast = toast.loading('Generando reporte PDF...');
+            // Aggregate all report data
+            const reportData: ReportData = aggregateReportData(
+                obligations,
+                complianceScore,
+                profile?.name || user.email || 'Usuario',
+                user.email || ''
+            );
 
-            try {
-                // Aggregate all report data
-                const reportData: ReportData = aggregateReportData(
-                    obligations,
-                    complianceScore,
-                    profile?.name || user.email || 'Usuario',
-                    user.email || ''
-                );
+            // Generate PDF
+            const pdfBlob = await generateComplianceReport(reportData);
 
-                // Generate PDF
-                const pdfBlob = await generateComplianceReport(reportData);
-
-                toast.dismiss(loadingToast);
-                return pdfBlob;
-            } catch (error) {
-                toast.dismiss(loadingToast);
-                throw error;
-            }
+            return pdfBlob;
         },
         onSuccess: (blob) => {
             // Generate filename

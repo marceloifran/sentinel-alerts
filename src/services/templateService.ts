@@ -20,10 +20,7 @@ export interface ObligationTemplate {
     updated_at: string;
 }
 
-export interface TemplateSuggestion extends ObligationTemplate {
-    template_id: string;
-    match_reason: string;
-}
+
 
 export interface TemplateInteraction {
     id: string;
@@ -34,99 +31,7 @@ export interface TemplateInteraction {
     interacted_at: string;
 }
 
-/**
- * Get suggested templates for the current user
- */
-export async function getSuggestedTemplates(): Promise<TemplateSuggestion[]> {
-    const { data: { user } } = await supabase.auth.getUser();
 
-    if (!user) {
-        throw new Error('Usuario no autenticado');
-    }
-
-    const { data, error } = await supabase.rpc('get_suggested_templates_for_user', {
-        _user_id: user.id
-    });
-
-    if (error) {
-        console.error('Error getting suggested templates:', error);
-        throw error;
-    }
-
-    return data || [];
-}
-
-/**
- * Get count of pending suggestions for current user
- */
-export async function getSuggestionCount(): Promise<number> {
-    const { data: { user } } = await supabase.auth.getUser();
-
-    if (!user) {
-        return 0;
-    }
-
-    const { data, error } = await supabase.rpc('get_suggestion_count', {
-        _user_id: user.id
-    });
-
-    if (error) {
-        console.error('Error getting suggestion count:', error);
-        return 0;
-    }
-
-    return data || 0;
-}
-
-/**
- * Accept a template suggestion and create an obligation
- */
-export async function acceptTemplateSuggestion(
-    templateId: string,
-    dueDate: Date,
-    responsibleId: string
-): Promise<string> {
-    const { data: { user } } = await supabase.auth.getUser();
-
-    if (!user) {
-        throw new Error('Usuario no autenticado');
-    }
-
-    const { data, error } = await supabase.rpc('accept_template_suggestion', {
-        _user_id: user.id,
-        _template_id: templateId,
-        _due_date: dueDate.toISOString().split('T')[0],
-        _responsible_id: responsibleId
-    });
-
-    if (error) {
-        console.error('Error accepting template:', error);
-        throw error;
-    }
-
-    return data;
-}
-
-/**
- * Reject a template suggestion
- */
-export async function rejectTemplateSuggestion(templateId: string): Promise<void> {
-    const { data: { user } } = await supabase.auth.getUser();
-
-    if (!user) {
-        throw new Error('Usuario no autenticado');
-    }
-
-    const { error } = await supabase.rpc('reject_template_suggestion', {
-        _user_id: user.id,
-        _template_id: templateId
-    });
-
-    if (error) {
-        console.error('Error rejecting template:', error);
-        throw error;
-    }
-}
 
 /**
  * Get all templates for a specific sector (for admin/preview)

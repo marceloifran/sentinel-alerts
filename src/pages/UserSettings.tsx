@@ -16,7 +16,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { User, Mail, Lock, Save, ArrowLeft, Building2, Lightbulb } from 'lucide-react';
-import { SubscriptionCard } from '@/components/subscription/SubscriptionCard';
+
 import { useQueryClient } from '@tanstack/react-query';
 // import GoogleCalendarCard from '@/components/GoogleCalendarCard';
 
@@ -254,13 +254,9 @@ const UserSettings = () => {
                                             .eq('id', user.id);
                                         if (error) throw error;
 
-                                        // Invalidate queries to refresh suggestions
-                                        queryClient.invalidateQueries({ queryKey: ['template-suggestions'] });
-                                        queryClient.invalidateQueries({ queryKey: ['suggestion-count'] });
                                         queryClient.invalidateQueries({ queryKey: ['profile'] });
 
                                         toast.success('Sector actualizado correctamente');
-                                        toast.info('Las sugerencias se actualizarán según tu nuevo sector', { duration: 5000 });
                                     } catch (error) {
                                         console.error('Error updating sector:', error);
                                         toast.error('Error al actualizar el sector');
@@ -329,8 +325,7 @@ const UserSettings = () => {
                     {/* Google Calendar - TEMPORALMENTE DESHABILITADO */}
                     {/* <GoogleCalendarCard /> */}
 
-                    {/* Subscription Management */}
-                    <SubscriptionCard />
+
 
                     {/* Account Info */}
                     <Card className="p-6">

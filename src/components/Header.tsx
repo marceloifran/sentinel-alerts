@@ -1,11 +1,11 @@
 import { Button } from "@/components/ui/button";
-import { LogOut, User, LayoutDashboard, ClipboardList, Users, Sparkles, Lightbulb } from "lucide-react";
+import { LogOut, User, LayoutDashboard, ClipboardList, Users, Sparkles, Lightbulb, BarChart3 } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useState } from "react";
 import { SmartObligationLoader } from "@/components/ai/SmartObligationLoader";
 import { useAuth } from "@/contexts/AuthContext";
 import { useObligations } from "@/hooks/useObligations";
-import { SimpleSuggestionsModal } from "./SimpleSuggestionsModal";
+
 
 
 interface HeaderProps {
@@ -21,7 +21,7 @@ const Header = ({ userName = "Usuario", onLogout, isAdmin = false, userPlan }: H
   const { user } = useAuth();
   const { data: obligations = [], refetch } = useObligations();
   const [showSmartLoader, setShowSmartLoader] = useState(false);
-  const [suggestionsOpen, setSuggestionsOpen] = useState(false);
+
 
 
   const navItems = [
@@ -34,6 +34,11 @@ const Header = ({ userName = "Usuario", onLogout, isAdmin = false, userPlan }: H
       path: '/obligaciones',
       label: 'Obligaciones',
       icon: ClipboardList,
+    },
+    {
+      path: '/reportes',
+      label: 'Reportes',
+      icon: BarChart3,
     },
     ...(isAdmin && userPlan !== 'starter' ? [{
       path: '/usuarios',
@@ -95,16 +100,7 @@ const Header = ({ userName = "Usuario", onLogout, isAdmin = false, userPlan }: H
                 </Button>
               )}
 
-              {/* Suggestions button - always visible */}
-              <Button
-                onClick={() => setSuggestionsOpen(true)}
-                size="sm"
-                variant="outline"
-                className="gap-1.5"
-              >
-                <Lightbulb className="w-4 h-4" />
-                <span className="hidden sm:inline">Sugerencias</span>
-              </Button>
+
 
               {/* User info */}
               <button
@@ -142,11 +138,7 @@ const Header = ({ userName = "Usuario", onLogout, isAdmin = false, userPlan }: H
         />
       )}
 
-      {/* Suggestions Modal */}
-      <SimpleSuggestionsModal
-        open={suggestionsOpen}
-        onOpenChange={setSuggestionsOpen}
-      />
+
     </>
   );
 };

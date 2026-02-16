@@ -6,7 +6,6 @@ import ObligationCard from "@/components/ObligationCard";
 import CalendarView from "@/components/CalendarView";
 import EmptyState from "@/components/EmptyState";
 import { ComplianceScoreCard } from "@/components/ComplianceScoreCard";
-import { ReportGeneratorButton } from "@/components/ReportGenerator";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { useObligations } from "@/hooks/useObligations";
@@ -128,10 +127,7 @@ const Dashboard = () => {
           <ComplianceScoreCard />
         </div>
 
-        {/* Report Generator Button */}
-        <div className="mb-8 flex justify-end animate-fade-in">
-          <ReportGeneratorButton />
-        </div>
+
 
         {/* Stats Cards - clickable to filter */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
