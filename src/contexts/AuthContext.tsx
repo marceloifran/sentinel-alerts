@@ -7,10 +7,21 @@ interface AuthContextType {
   session: Session | null;
   isLoading: boolean;
   isAdmin: boolean;
-  profile: { id: string; name: string; email: string; phone: string | null; whatsapp_enabled: boolean; plan: 'starter' | 'professional' | 'enterprise'; max_obligations: number; max_users: number } | null;
+  profile: {
+    id: string;
+    name: string;
+    email: string;
+    phone: string | null;
+    whatsapp_enabled: boolean;
+    plan: 'starter' | 'professional' | 'enterprise';
+    max_obligations: number;
+    max_users: number;
+    sector: string | null;
+  } | null;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signUp: (email: string, password: string, name: string, phone?: string, sector?: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
+  refreshProfile: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -20,7 +31,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
-  const [profile, setProfile] = useState<{ id: string; name: string; email: string; phone: string | null; whatsapp_enabled: boolean; plan: 'starter' | 'professional' | 'enterprise'; max_obligations: number; max_users: number } | null>(null);
+  const [profile, setProfile] = useState<{
+    id: string;
+    name: string;
+    email: string;
+    phone: string | null;
+    whatsapp_enabled: boolean;
+    plan: 'starter' | 'professional' | 'enterprise';
+    max_obligations: number;
+    max_users: number;
+    sector: string | null;
+  } | null>(null);
 
   useEffect(() => {
     // Set up auth state listener FIRST
@@ -74,6 +95,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           plan: profileData.plan || 'starter',
           max_obligations: profileData.max_obligations ?? 5,
           max_users: profileData.max_users ?? 1,
+          sector: profileData.sector || null,
         });
       }
 
@@ -87,6 +109,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setIsAdmin(roleData?.role === 'admin');
     } catch (error) {
       console.error('Error fetching user data:', error);
+    }
+  };
+
+  const refreshProfile = async () => {
+    if (user) {
+      await fetchUserData(user.id);
     }
   };
 
@@ -126,7 +154,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       profile,
       signIn,
       signUp,
-      signOut
+      signOut,
+      refreshProfile
     }}>
       {children}
     </AuthContext.Provider>

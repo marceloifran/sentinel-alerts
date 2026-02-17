@@ -11,7 +11,8 @@ import {
     Download,
     Filter,
     Calendar,
-    AlertCircle
+    AlertCircle,
+    Loader2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AnalyticsMetricCard } from "@/components/reports/AnalyticsMetricCard";
@@ -22,6 +23,26 @@ import { AIInsightsPanel } from "@/components/reports/AIInsightsPanel";
 import { getAnalyticsData } from "@/services/analyticsService";
 import { generateAIInsights } from "@/services/aiAnalysisService";
 import { DashboardSkeleton } from "@/components/skeletons/Skeletons";
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
+import {
+    generateComplianceReport,
+    downloadReport,
+    generateReportFileName
+} from "@/services/reportGenerationService";
+import { aggregateReportData } from "@/services/reportDataService";
+import { calculateComplianceScore } from "@/services/complianceScoreService";
+import { toast } from "sonner";
 
 const Reports = () => {
     const navigate = useNavigate();
@@ -29,18 +50,56 @@ const Reports = () => {
     const { data: obligations = [], isLoading, error } = useObligations();
     const [analyticsData, setAnalyticsData] = useState<any>(null);
     const [insights, setInsights] = useState<any[]>([]);
+    const [isExporting, setIsExporting] = useState(false);
+
+    // Filter states
+    const [categoryFilter, setCategoryFilter] = useState<string>("all");
+    const [criticalityFilter, setCriticalityFilter] = useState<string>("all");
+
+    const filteredObligations = useMemo(() => {
+        return obligations.filter(o => {
+            const matchesCategory = categoryFilter === "all" || o.category === categoryFilter;
+            const matchesCriticality = criticalityFilter === "all" || o.criticality === criticalityFilter;
+            return matchesCategory && matchesCriticality;
+        });
+    }, [obligations, categoryFilter, criticalityFilter]);
 
     useEffect(() => {
-        if (obligations.length > 0) {
+        if (filteredObligations.length > 0 || obligations.length > 0) {
             const fetchData = async () => {
-                const data = await getAnalyticsData(obligations);
+                const data = await getAnalyticsData(filteredObligations);
                 setAnalyticsData(data);
                 const aiInsights = generateAIInsights(data.complianceTrends, data.responseTimeMetrics, data.summary);
                 setInsights(aiInsights);
             };
             fetchData();
         }
-    }, [obligations]);
+    }, [filteredObligations, obligations.length]);
+
+    const handleExportPDF = async () => {
+        if (!user || !analyticsData) return;
+
+        try {
+            setIsExporting(true);
+            const score = calculateComplianceScore(filteredObligations);
+            const reportData = aggregateReportData(
+                filteredObligations,
+                score,
+                profile?.name || user.email || "Usuario",
+                user.email || ""
+            );
+
+            const blob = await generateComplianceReport(reportData);
+            const fileName = generateReportFileName(profile?.name || "Empresa", new Date());
+            downloadReport(blob, fileName);
+            toast.success("Reporte generado exitosamente");
+        } catch (error) {
+            console.error("Error generating report:", error);
+            toast.error("Error al generar el reporte");
+        } finally {
+            setIsExporting(false);
+        }
+    };
 
     const handleLogout = async () => {
         await signOut();
@@ -73,13 +132,73 @@ const Reports = () => {
                         <p className="text-gray-500">Visualiza el rendimiento y cumplimiento de tus obligaciones</p>
                     </div>
                     <div className="flex items-center gap-3">
-                        <Button variant="outline" className="gap-2 rounded-xl group hover:border-blue-400">
-                            <Filter className="w-4 h-4 group-hover:text-blue-500" />
-                            <span>Filtros</span>
-                        </Button>
-                        <Button className="gap-2 rounded-xl bg-blue-600 hover:bg-blue-700 shadow-sm transition-all hover:scale-[1.02]">
-                            <Download className="w-4 h-4" />
-                            <span>Exportar PDF</span>
+                        <Popover>
+                            <PopoverTrigger asChild>
+                                <Button variant="outline" className="gap-2 rounded-xl group hover:border-blue-400">
+                                    <Filter className="w-4 h-4 group-hover:text-blue-500" />
+                                    <span>Filtros</span>
+                                    {(categoryFilter !== "all" || criticalityFilter !== "all") && (
+                                        <span className="ml-1 w-2 h-2 rounded-full bg-blue-500" />
+                                    )}
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-72 p-4 rounded-2xl shadow-xl" align="end">
+                                <div className="space-y-4">
+                                    <h4 className="font-semibold text-gray-900">Filtrar Análisis</h4>
+                                    <div className="space-y-2">
+                                        <label className="text-xs font-medium text-gray-500 uppercase tracking-wider">Categoría</label>
+                                        <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                                            <SelectTrigger className="rounded-xl">
+                                                <SelectValue placeholder="Todas las categorías" />
+                                            </SelectTrigger>
+                                            <SelectContent className="rounded-xl">
+                                                <SelectItem value="all">Todas</SelectItem>
+                                                <SelectItem value="fiscal">Fiscal</SelectItem>
+                                                <SelectItem value="legal">Legal</SelectItem>
+                                                <SelectItem value="seguridad">Seguridad</SelectItem>
+                                                <SelectItem value="operativa">Operativa</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-xs font-medium text-gray-500 uppercase tracking-wider">Criticidad</label>
+                                        <Select value={criticalityFilter} onValueChange={setCriticalityFilter}>
+                                            <SelectTrigger className="rounded-xl">
+                                                <SelectValue placeholder="Todas las criticidades" />
+                                            </SelectTrigger>
+                                            <SelectContent className="rounded-xl">
+                                                <SelectItem value="all">Todas</SelectItem>
+                                                <SelectItem value="alta">Alta</SelectItem>
+                                                <SelectItem value="media">Media</SelectItem>
+                                                <SelectItem value="baja">Baja</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                    <Button
+                                        variant="ghost"
+                                        className="w-full text-xs text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                                        onClick={() => {
+                                            setCategoryFilter("all");
+                                            setCriticalityFilter("all");
+                                        }}
+                                    >
+                                        Limpiar Filtros
+                                    </Button>
+                                </div>
+                            </PopoverContent>
+                        </Popover>
+
+                        <Button
+                            onClick={handleExportPDF}
+                            disabled={isExporting}
+                            className="gap-2 rounded-xl bg-blue-600 hover:bg-blue-700 shadow-sm transition-all hover:scale-[1.02] disabled:opacity-70"
+                        >
+                            {isExporting ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                                <Download className="w-4 h-4" />
+                            )}
+                            <span>{isExporting ? "Generando..." : "Exportar PDF"}</span>
                         </Button>
                     </div>
                 </div>

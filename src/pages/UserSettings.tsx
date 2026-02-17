@@ -38,7 +38,7 @@ const SECTORS = [
 const UserSettings = () => {
     const navigate = useNavigate();
     const queryClient = useQueryClient();
-    const { user, profile, signOut, isAdmin } = useAuth();
+    const { user, profile, refreshProfile, signOut } = useAuth();
     const [isLoading, setIsLoading] = useState(false);
     const [name, setName] = useState(profile?.name || '');
     const [sector, setSector] = useState(profile?.sector || '');
@@ -48,7 +48,7 @@ const UserSettings = () => {
     useEffect(() => {
         if (profile) {
             setName(profile.name);
-            setSector(profile.sector || '');
+            setSector(profile.sector || 'otro');
         }
     }, [profile]);
 
@@ -64,10 +64,15 @@ const UserSettings = () => {
                 .from('profiles')
                 .update({
                     name: name.trim(),
-                } as any)
+                    sector: sector
+                })
                 .eq('id', user?.id);
 
             if (error) throw error;
+
+            await refreshProfile();
+            queryClient.invalidateQueries({ queryKey: ['profile'] });
+
             toast.success('Perfil actualizado correctamente');
         } catch (error) {
             console.error('Error updating profile:', error);
@@ -76,7 +81,6 @@ const UserSettings = () => {
             setIsLoading(false);
         }
     };
-
 
     const handleChangePassword = async () => {
         if (!newPassword || !confirmPassword) {
@@ -118,6 +122,8 @@ const UserSettings = () => {
         navigate('/');
     };
 
+    const hasChanges = name !== profile?.name || sector !== (profile?.sector || 'otro');
+
     return (
         <div className="min-h-screen bg-background">
             <Header
@@ -137,210 +143,175 @@ const UserSettings = () => {
                     Volver al dashboard
                 </Button>
 
-                <h1 className="text-3xl font-bold text-foreground mb-8">Configuración de Usuario</h1>
+                <h1 className="text-3xl font-bold text-foreground mb-8 text-center sm:text-left">Configuración de Cuenta</h1>
 
                 <div className="space-y-6">
-                    {/* Profile Information */}
-                    <Card className="p-6">
+                    {/* Profile & Sector Information */}
+                    <Card className="p-6 overflow-hidden border-primary/10 shadow-md">
                         <div className="flex items-center gap-3 mb-6">
-                            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                                <User className="w-5 h-5 text-primary" />
+                            <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center">
+                                <User className="w-6 h-6 text-primary" />
                             </div>
                             <div>
-                                <h2 className="text-xl font-semibold text-foreground">Información del Perfil</h2>
-                                <p className="text-sm text-muted-foreground">Actualiza tu información personal</p>
+                                <h2 className="text-xl font-bold text-foreground">Información del Perfil</h2>
+                                <p className="text-sm text-muted-foreground">Gestiona tu identidad y sector empresarial</p>
                             </div>
                         </div>
 
-                        <div className="space-y-4">
-                            <div>
-                                <Label htmlFor="email">Email</Label>
-                                <div className="flex items-center gap-2 mt-1.5">
-                                    <Mail className="w-4 h-4 text-muted-foreground" />
+                        <div className="space-y-6">
+                            {/* Email (Readonly) */}
+                            <div className="grid gap-2">
+                                <Label htmlFor="email" className="text-sm font-semibold">Email</Label>
+                                <div className="relative group">
+                                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
                                     <Input
                                         id="email"
                                         type="email"
                                         value={user?.email || ''}
                                         disabled
-                                        className="flex-1"
+                                        className="pl-10 bg-muted/50 border-muted opacity-70"
                                     />
                                 </div>
-                                <p className="text-xs text-muted-foreground mt-1">El email no se puede modificar</p>
+                                <p className="text-[10px] text-muted-foreground italic px-1">El email corporativo no se puede modificar.</p>
                             </div>
 
-                            <div>
-                                <Label htmlFor="name">Nombre</Label>
-                                <Input
-                                    id="name"
-                                    type="text"
-                                    value={name}
-                                    onChange={(e) => setName(e.target.value)}
-                                    placeholder="Tu nombre completo"
-                                    className="mt-1.5"
-                                />
+                            {/* Name */}
+                            <div className="grid gap-2">
+                                <Label htmlFor="name" className="text-sm font-semibold">Nombre Completo / Empresa</Label>
+                                <div className="relative group">
+                                    <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
+                                    <Input
+                                        id="name"
+                                        type="text"
+                                        value={name}
+                                        onChange={(e) => setName(e.target.value)}
+                                        placeholder="Sentinel Alerts S.A."
+                                        className="pl-10 rounded-xl focus-visible:ring-primary/30"
+                                    />
+                                </div>
                             </div>
 
-                            <Button
-                                onClick={handleUpdateProfile}
-                                disabled={isLoading || !name.trim()}
-                                className="gap-2"
-                            >
-                                <Save className="w-4 h-4" />
-                                Guardar cambios
-                            </Button>
-                        </div>
-                    </Card>
-
-                    {/* Sector/Industry Management */}
-                    <Card className="p-6 border-primary/20">
-                        <div className="flex items-center gap-3 mb-6">
-                            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                                <Building2 className="w-5 h-5 text-primary" />
-                            </div>
-                            <div>
-                                <h2 className="text-xl font-semibold text-foreground">Sector / Industria</h2>
-                                <p className="text-sm text-muted-foreground">Tu sector determina las sugerencias inteligentes de obligaciones</p>
-                            </div>
-                        </div>
-
-                        <div className="space-y-4">
-                            <div className="p-4 bg-primary/5 border border-primary/20 rounded-lg flex items-start gap-3">
-                                <Lightbulb className="w-5 h-5 text-primary mt-0.5" />
-                                <div className="flex-1">
-                                    <p className="text-sm font-medium text-foreground mb-1">
-                                        Sector actual: <span className="text-primary">{SECTORS.find(s => s.value === profile?.sector)?.label || "No especificado"}</span>
-                                    </p>
-                                    <p className="text-xs text-muted-foreground">
-                                        Al cambiar tu sector, las sugerencias de obligaciones se actualizarán automáticamente para mostrarte las más relevantes para tu industria.
+                            {/* Sector */}
+                            <div className="grid gap-2">
+                                <Label htmlFor="sector" className="text-sm font-semibold">Sector Económico</Label>
+                                <div className="relative group">
+                                    <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-primary z-10" />
+                                    <Select
+                                        value={sector}
+                                        onValueChange={setSector}
+                                    >
+                                        <SelectTrigger id="sector" className="pl-10 rounded-xl focus:ring-primary/30">
+                                            <SelectValue placeholder="Selecciona tu industria" />
+                                        </SelectTrigger>
+                                        <SelectContent className="rounded-xl">
+                                            {SECTORS.map((s) => (
+                                                <SelectItem key={s.value} value={s.value} className="rounded-lg">
+                                                    {s.label}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="mt-2 p-3 bg-blue-50/50 border border-blue-100 rounded-xl flex gap-3 items-start animate-fade-in">
+                                    <Lightbulb className="w-4 h-4 text-blue-500 mt-0.5 shrink-0" />
+                                    <p className="text-xs text-blue-700 leading-relaxed">
+                                        Tu sector se utiliza para <span className="underline decoration-blue-300 font-medium">personalizar las obligaciones sugeridas</span> por la IA.
                                     </p>
                                 </div>
                             </div>
 
-                            <div>
-                                <Label htmlFor="sector">Cambiar sector</Label>
-                                <Select
-                                    value={sector}
-                                    onValueChange={setSector}
+                            {/* Action Button */}
+                            <div className="pt-2 flex flex-col sm:flex-row gap-3">
+                                <Button
+                                    onClick={handleUpdateProfile}
+                                    disabled={isLoading || !name.trim() || !hasChanges}
+                                    className="gap-2 rounded-xl h-11 px-8 shadow-sm hover:shadow-md transition-all active:scale-95 flex-1 sm:flex-none"
                                 >
-                                    <SelectTrigger id="sector" className="mt-1.5">
-                                        <SelectValue placeholder="Selecciona tu sector" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {SECTORS.map((s) => (
-                                            <SelectItem key={s.value} value={s.value}>
-                                                {s.label}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
+                                    {isLoading ? (
+                                        <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                    ) : (
+                                        <Save className="w-4 h-4" />
+                                    )}
+                                    Guardar Cambios
+                                </Button>
+                                {hasChanges && (
+                                    <Button
+                                        variant="ghost"
+                                        className="rounded-xl h-11"
+                                        onClick={() => {
+                                            setName(profile?.name || '');
+                                            setSector(profile?.sector || 'otro');
+                                        }}
+                                    >
+                                        Descartar
+                                    </Button>
+                                )}
                             </div>
-
-                            {sector !== profile?.sector && (
-                                <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg">
-                                    <p className="text-sm text-amber-700 dark:text-amber-400">
-                                        ⚠️ Cambiar de sector actualizará tus sugerencias de obligaciones
-                                    </p>
-                                </div>
-                            )}
-
-                            <Button
-                                onClick={async () => {
-                                    if (!user) return;
-                                    setIsLoading(true);
-                                    try {
-                                        const { error } = await supabase
-                                            .from('profiles')
-                                            .update({ sector } as any)
-                                            .eq('id', user.id);
-                                        if (error) throw error;
-
-                                        queryClient.invalidateQueries({ queryKey: ['profile'] });
-
-                                        toast.success('Sector actualizado correctamente');
-                                    } catch (error) {
-                                        console.error('Error updating sector:', error);
-                                        toast.error('Error al actualizar el sector');
-                                    } finally {
-                                        setIsLoading(false);
-                                    }
-                                }}
-                                disabled={isLoading || sector === profile?.sector}
-                                className="gap-2"
-                            >
-                                <Save className="w-4 h-4" />
-                                Guardar sector
-                            </Button>
                         </div>
                     </Card>
 
                     {/* Change Password */}
-                    <Card className="p-6">
+                    <Card className="p-6 border-primary/10 shadow-md">
                         <div className="flex items-center gap-3 mb-6">
-                            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                                <Lock className="w-5 h-5 text-primary" />
+                            <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center">
+                                <Lock className="w-6 h-6 text-primary" />
                             </div>
                             <div>
-                                <h2 className="text-xl font-semibold text-foreground">Cambiar Contraseña</h2>
-                                <p className="text-sm text-muted-foreground">Actualiza tu contraseña de acceso</p>
+                                <h2 className="text-xl font-bold text-foreground">Seguridad</h2>
+                                <p className="text-sm text-muted-foreground">Actualiza tu contraseña periódicamente</p>
                             </div>
                         </div>
 
-                        <div className="space-y-4">
-                            <div>
-                                <Label htmlFor="new-password">Nueva Contraseña</Label>
-                                <Input
-                                    id="new-password"
-                                    type="password"
-                                    value={newPassword}
-                                    onChange={(e) => setNewPassword(e.target.value)}
-                                    placeholder="Mínimo 6 caracteres"
-                                    className="mt-1.5"
-                                />
-                            </div>
+                        <div className="grid gap-6">
+                            <div className="grid sm:grid-cols-2 gap-4">
+                                <div className="grid gap-2">
+                                    <Label htmlFor="new-password">Nueva Contraseña</Label>
+                                    <Input
+                                        id="new-password"
+                                        type="password"
+                                        value={newPassword}
+                                        onChange={(e) => setNewPassword(e.target.value)}
+                                        placeholder="Mínimo 6 caracteres"
+                                        className="rounded-xl"
+                                    />
+                                </div>
 
-                            <div>
-                                <Label htmlFor="confirm-password">Confirmar Contraseña</Label>
-                                <Input
-                                    id="confirm-password"
-                                    type="password"
-                                    value={confirmPassword}
-                                    onChange={(e) => setConfirmPassword(e.target.value)}
-                                    placeholder="Repite la nueva contraseña"
-                                    className="mt-1.5"
-                                />
+                                <div className="grid gap-2">
+                                    <Label htmlFor="confirm-password">Confirmar</Label>
+                                    <Input
+                                        id="confirm-password"
+                                        type="password"
+                                        value={confirmPassword}
+                                        onChange={(e) => setConfirmPassword(e.target.value)}
+                                        placeholder="Repite la contraseña"
+                                        className="rounded-xl"
+                                    />
+                                </div>
                             </div>
 
                             <Button
                                 onClick={handleChangePassword}
                                 disabled={isLoading || !newPassword || !confirmPassword}
                                 variant="outline"
-                                className="gap-2"
+                                className="w-fit gap-2 rounded-xl h-11 px-6 border-primary/20 hover:bg-primary/5 hover:border-primary/40 transition-all"
                             >
                                 <Lock className="w-4 h-4" />
-                                Cambiar contraseña
+                                Actualizar Contraseña
                             </Button>
                         </div>
                     </Card>
 
-                    {/* Google Calendar - TEMPORALMENTE DESHABILITADO */}
-                    {/* <GoogleCalendarCard /> */}
-
-
-
-                    {/* Account Info */}
-                    <Card className="p-6">
-                        <h2 className="text-xl font-semibold text-foreground mb-4">Información de la Cuenta</h2>
-                        <div className="space-y-3 text-sm">
-                            <div className="flex justify-between">
-                                <span className="text-muted-foreground">Usuario desde:</span>
-                                <span className="font-medium">{new Date(user?.created_at || '').toLocaleDateString('es-ES')}</span>
-                            </div>
-                            <div className="flex justify-between">
-                                <span className="text-muted-foreground">Última actualización:</span>
-                                <span className="font-medium">{new Date().toLocaleDateString('es-ES')}</span>
-                            </div>
+                    {/* Account Info Footer */}
+                    <div className="flex flex-col sm:flex-row justify-between items-center gap-4 px-2 py-4 text-[11px] text-muted-foreground uppercase tracking-widest font-medium border-t border-border/50">
+                        <div className="flex items-center gap-2">
+                            <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                            Cuenta Activa: {new Date(user?.created_at || '').toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })}
                         </div>
-                    </Card>
+                        <div className="flex items-center gap-4">
+                            <span>Sentinel Alerts v1.2</span>
+                            <span className="text-primary/40">ID: {user?.id.substring(0, 8)}</span>
+                        </div>
+                    </div>
                 </div>
             </main>
         </div>
