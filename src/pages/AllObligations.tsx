@@ -148,7 +148,7 @@ const AllObligations = () => {
                 variant={viewMode === "kanban" ? "default" : "ghost"}
                 size="sm"
                 onClick={() => setViewMode("kanban")}
-                className="gap-2"
+                className="gap-2 hidden sm:flex"
               >
                 <LayoutGrid className="w-4 h-4" />
                 Kanban
