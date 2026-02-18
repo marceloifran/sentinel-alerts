@@ -49,7 +49,7 @@ serve(async (req) => {
 
     const systemPrompt = `Eres un asistente especializado en identificar obligaciones legales, fiscales, de seguridad y operativas para empresas.
 
-Tu tarea es analizar texto libre y extraer todas las obligaciones mencionadas con sus fechas y periodicidad.
+Tu tarea es analizar texto libre, archivos (PDF, imágenes) y audios, y extraer todas las obligaciones mencionadas con sus fechas y periodicidad.
 
 Fecha actual: ${today}
 
@@ -63,17 +63,17 @@ Obligaciones existentes del usuario (para detectar duplicados):
 ${existingNames.length > 0 ? existingNames.join(", ") : "Ninguna"}
 
 Reglas:
-1. Detecta TODAS las obligaciones mencionadas en el texto
-2. Si se menciona una fecha específica, úsala en formato YYYY-MM-DD
-3. Si no hay fecha específica pero hay periodicidad, calcula la próxima fecha lógica
-4. Identifica la periodicidad: none (única), monthly (mensual), annual (anual)
-5. Si se menciona un responsable o persona, inclúyelo en responsible_hint
+1. Detecta TODAS las obligaciones mencionadas en el texto, archivos o audios.
+2. Si se menciona una fecha específica, úsala en formato YYYY-MM-DD.
+3. Si no hay fecha específica pero hay periodicidad, calcula la próxima fecha lógica.
+4. Identifica la periodicidad: none (única), monthly (mensual), annual (anual).
+5. Si se menciona un responsable o persona, inclúyelo en responsible_hint.
 6. Añade warnings si:
    - La fecha ya pasó (quedará como vencida)
    - Es muy similar a una obligación existente (posible duplicado)
    - La fecha es muy lejana (>2 años)
    - La periodicidad parece inconsistente con el tipo de obligación
-7. confidence: 0.0 a 1.0 basado en qué tan claro es el texto`;
+7. confidence: 0.0 a 1.0 basado en qué tan claro es el contenido (texto o audio).`;
 
     // Build user message content (text + images/PDFs)
     const userContent: Array<{ type: string; text?: string; image_url?: { url: string } }> = [];
@@ -86,31 +86,40 @@ Reglas:
       });
     }
 
-    // Add files as images (works with PDFs too for vision models)
+    // Add files (Images, PDFs, Audio)
     if (hasFiles) {
       const filesList = files as FileInput[];
-      
+
       // Add a text description of what we're analyzing
       if (!hasText) {
         userContent.push({
           type: "text",
-          text: `Analiza los siguientes ${filesList.length} archivo(s) y extrae todas las obligaciones que encuentres (fechas, vencimientos, renovaciones, etc.):`,
+          text: `Analiza los siguientes ${filesList.length} archivo(s)/audios y extrae todas las obligaciones que encuentres (fechas, vencimientos, renovaciones, etc.):`,
         });
       } else {
         userContent.push({
           type: "text",
-          text: `\n\nAdemás, analiza los siguientes ${filesList.length} archivo(s) adjuntos:`,
+          text: `\n\nAdemás, analiza los siguientes ${filesList.length} archivo(s)/audios adjuntos:`,
         });
       }
 
       for (const file of filesList) {
-        // For PDFs, we'll convert to a format the model can understand
-        if (file.type === "application/pdf") {
+        if (file.type.startsWith("audio/")) {
+          userContent.push({
+            type: "text",
+            text: `[Audio: ${file.name}]`,
+          });
+          userContent.push({
+            type: "image_url", // Most multimodal gateways use image_url for any data URL
+            image_url: {
+              url: `data:${file.type};base64,${file.base64}`,
+            },
+          });
+        } else if (file.type === "application/pdf") {
           userContent.push({
             type: "text",
             text: `[Archivo PDF: ${file.name}]`,
           });
-          // Send PDF as image (Gemini can process PDFs via data URL)
           userContent.push({
             type: "image_url",
             image_url: {
@@ -200,9 +209,9 @@ Reglas:
 
     if (!toolCall) {
       return new Response(
-        JSON.stringify({ 
-          obligations: [], 
-          summary: "No se pudieron identificar obligaciones en el texto proporcionado" 
+        JSON.stringify({
+          obligations: [],
+          summary: "No se pudieron identificar obligaciones en el texto proporcionado"
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
@@ -230,7 +239,7 @@ Reglas:
 
       // Check for potential duplicates
       const nameLower = obl.name.toLowerCase();
-      const isDuplicate = existingNames.some((existing: string) => 
+      const isDuplicate = existingNames.some((existing: string) =>
         existing.includes(nameLower) || nameLower.includes(existing)
       );
       if (isDuplicate && !warnings.some(w => w.includes("duplicado"))) {
@@ -241,9 +250,9 @@ Reglas:
     });
 
     return new Response(
-      JSON.stringify({ 
-        obligations: processedObligations, 
-        summary: result.summary 
+      JSON.stringify({
+        obligations: processedObligations,
+        summary: result.summary
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );

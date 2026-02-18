@@ -262,6 +262,7 @@ const ObligationDetail = () => {
       await updateNotesMutation.mutateAsync({
         id: obligation.id,
         notes: note,
+        userId: user.id
       });
 
       setNote("");
@@ -638,9 +639,9 @@ const ObligationDetail = () => {
                 {history.map((entry) => (
                   <div key={entry.id} className="pb-3 border-b last:border-0">
                     <p className="text-sm font-medium">
-                      {entry.previous_status && entry.new_status
+                      {entry.note || (entry.previous_status && entry.new_status
                         ? `Cambió de ${statusLabels[entry.previous_status]} a ${statusLabels[entry.new_status]}`
-                        : 'Cambio registrado'}
+                        : 'Cambio registrado')}
                     </p>
                     <p className="text-xs text-muted-foreground">
                       {entry.changed_by_name} •{' '}

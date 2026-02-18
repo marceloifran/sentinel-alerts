@@ -244,14 +244,34 @@ export async function updateObligationStatus(
 
 export async function updateObligationNotes(
   obligationId: string,
-  notes: string
+  notes: string,
+  userId?: string
 ): Promise<void> {
+  const { data: currentObligation } = await supabase
+    .from('obligations')
+    .select('status')
+    .eq('id', obligationId)
+    .single();
+
   const { error } = await supabase
     .from('obligations')
     .update({ notes })
     .eq('id', obligationId);
 
   if (error) throw error;
+
+  // Add history entry if userId is provided
+  if (userId && currentObligation) {
+    await supabase
+      .from('obligation_history')
+      .insert({
+        obligation_id: obligationId,
+        previous_status: currentObligation.status,
+        new_status: currentObligation.status,
+        changed_by: userId,
+        note: `Nota agregada: ${notes.length > 50 ? notes.substring(0, 47) + '...' : notes}`
+      });
+  }
 }
 
 export async function updateObligationDueDate(

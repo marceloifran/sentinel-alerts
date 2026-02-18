@@ -35,11 +35,14 @@ import {
   Upload,
   X,
   FileIcon,
+  Mic,
+  Music,
 } from "lucide-react";
 import { CategoryIcon } from "@/components/CategoryIcon";
 import { categoryLabels, ObligationCategory } from "@/services/obligationService";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { AudioRecorder } from "./AudioRecorder";
 
 interface UploadedFile {
   file: File;
@@ -89,6 +92,12 @@ export function SmartObligationLoader({
     "image/jpg",
     "image/webp",
     "image/gif",
+    "audio/webm",
+    "audio/ogg",
+    "audio/wav",
+    "audio/mp3",
+    "audio/mpeg",
+    "audio/m4a",
   ];
   const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
@@ -132,6 +141,13 @@ export function SmartObligationLoader({
       };
       reader.onerror = (error) => reject(error);
     });
+  };
+
+  const handleAudioRecorded = async (file: File) => {
+    const base64 = await fileToBase64(file);
+    const preview = URL.createObjectURL(file);
+    setUploadedFiles(prev => [...prev, { file, preview, base64 }]);
+    toast.success("Audio grabado correctamente");
   };
 
   const removeFile = (index: number) => {
@@ -330,6 +346,11 @@ export function SmartObligationLoader({
               />
             </div>
 
+            <div className="space-y-2">
+              <Label>O graba un audio</Label>
+              <AudioRecorder onAudioRecorded={handleAudioRecorded} isProcessing={isAnalyzing} />
+            </div>
+
             {/* File upload section */}
             <div className="space-y-3">
               <Label>Subir archivos (PDF, imágenes)</Label>
@@ -364,7 +385,7 @@ export function SmartObligationLoader({
                       key={index}
                       className="flex items-center gap-3 p-2 bg-muted/50 rounded-lg"
                     >
-                      {uploadedFile.preview ? (
+                      {uploadedFile.preview && uploadedFile.file.type.startsWith("image/") ? (
                         <img
                           src={uploadedFile.preview}
                           alt={uploadedFile.file.name}
@@ -373,6 +394,10 @@ export function SmartObligationLoader({
                       ) : uploadedFile.file.type === "application/pdf" ? (
                         <div className="w-10 h-10 bg-destructive/10 rounded flex items-center justify-center">
                           <FileText className="w-5 h-5 text-destructive" />
+                        </div>
+                      ) : uploadedFile.file.type.startsWith("audio/") ? (
+                        <div className="w-10 h-10 bg-primary/10 rounded flex items-center justify-center">
+                          <Mic className="w-5 h-5 text-primary" />
                         </div>
                       ) : (
                         <div className="w-10 h-10 bg-muted rounded flex items-center justify-center">
