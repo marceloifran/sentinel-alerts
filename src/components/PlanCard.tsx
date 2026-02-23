@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Check, Crown, Rocket, Building2, ArrowUpRight } from 'lucide-react';
 
-export type PlanType = 'starter' | 'professional' | 'enterprise';
+export type PlanType = 'professional' | 'enterprise';
 
 interface PlanCardProps {
   currentPlan: PlanType;
@@ -14,19 +14,7 @@ interface PlanCardProps {
 }
 
 const planDetails = {
-  starter: {
-    name: 'Starter',
-    description: 'Perfecto para empezar',
-    icon: Rocket,
-    color: 'bg-muted',
-    features: [
-      'Hasta 5 obligaciones',
-      '1 usuario',
-      'Recordatorios por email',
-      'Vista de calendario',
-      'Soporte por email'
-    ]
-  },
+
   professional: {
     name: 'Professional',
     description: 'Para equipos en crecimiento',
@@ -85,7 +73,7 @@ const PlanCard = ({ currentPlan, maxObligations, maxUsers, showUpgrade = true }:
         <div className="flex-1">
           <div className="flex items-center gap-2">
             <h2 className="text-xl font-semibold text-foreground">Tu Plan</h2>
-            <Badge variant={currentPlan === 'starter' ? 'secondary' : 'default'}>
+            <Badge variant="default">
               {plan.name}
             </Badge>
           </div>
@@ -123,7 +111,7 @@ const PlanCard = ({ currentPlan, maxObligations, maxUsers, showUpgrade = true }:
           className="w-full gap-2"
         >
           <ArrowUpRight className="w-4 h-4" />
-          {currentPlan === 'starter' ? 'Mejorar a Professional' : 'Mejorar a Enterprise'}
+          Mejorar a Enterprise
         </Button>
       )}
     </Card>

@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Mail, Lock, ArrowRight, User, Eye, EyeOff, Phone, Building2, Shield, CheckCircle2, Clock, Users } from "lucide-react";
+import { Mail, Lock, ArrowRight, User, Eye, EyeOff, Phone, Building2, Shield, CheckCircle2, Clock, Users, Crown } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   Select,
@@ -41,6 +41,7 @@ const Auth = () => {
   const [sector, setSector] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [plan, setPlan] = useState<'professional' | 'enterprise'>('professional');
 
   // Redirect if already logged in - use useEffect instead of render-time navigation
   useEffect(() => {
@@ -84,7 +85,7 @@ const Auth = () => {
         toast.success("Bienvenido de vuelta");
         navigate('/dashboard');
       } else {
-        const { error } = await signUp(email, password, name, phone, sector);
+        const { error } = await signUp(email, password, name, phone, sector, plan);
         if (error) {
           if (error.message.includes('already registered')) {
             toast.error("Este email ya está registrado");
@@ -114,7 +115,7 @@ const Auth = () => {
           <div className="absolute top-20 left-10 w-72 h-72 bg-white rounded-full blur-3xl" />
           <div className="absolute bottom-20 right-10 w-96 h-96 bg-white rounded-full blur-3xl" />
         </div>
-        
+
         <div className="relative z-10">
           <div className="flex items-center gap-3">
             <img src="/logo.png" alt="IfsinRem Logo" className="w-14 h-14 object-contain rounded-xl shadow-lg" />
@@ -141,7 +142,7 @@ const Auth = () => {
               <p className="text-primary-foreground/80 text-sm">Notificaciones automáticas por email antes de cada vencimiento</p>
             </div>
           </div>
-          
+
           <div className="flex items-start gap-4 bg-white/10 backdrop-blur-sm rounded-xl p-4 transition-all hover:bg-white/15">
             <div className="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0">
               <CheckCircle2 className="w-6 h-6 text-primary-foreground" />
@@ -151,7 +152,7 @@ const Auth = () => {
               <p className="text-primary-foreground/80 text-sm">Vista clara del estado de cumplimiento de todas tus obligaciones</p>
             </div>
           </div>
-          
+
           <div className="flex items-start gap-4 bg-white/10 backdrop-blur-sm rounded-xl p-4 transition-all hover:bg-white/15">
             <div className="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0">
               <Users className="w-6 h-6 text-primary-foreground" />
@@ -241,6 +242,21 @@ const Auth = () => {
                     </SelectContent>
                   </Select>
                 </div>
+                <div className="space-y-2">
+                  <Label htmlFor="plan" className="text-sm font-medium">Plan suscrito</Label>
+                  <Select value={plan} onValueChange={(val: any) => setPlan(val)}>
+                    <SelectTrigger className="h-12 bg-background border-border/60 focus:border-primary">
+                      <div className="flex items-center gap-2">
+                        <Crown className={`w-5 h-5 ${plan === 'enterprise' ? 'text-amber-500' : 'text-primary'}`} />
+                        <SelectValue placeholder="Selecciona un plan" />
+                      </div>
+                    </SelectTrigger>
+                    <SelectContent className="z-[9999]">
+                      <SelectItem value="professional">Professional (Equipos)</SelectItem>
+                      <SelectItem value="enterprise">Enterprise (Ilmitado)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </>
             )}
 
@@ -298,23 +314,26 @@ const Auth = () => {
             </Button>
           </form>
 
-          <div className="mt-6 text-center">
-            <button
-              type="button"
-              onClick={() => {
-                setIsLogin(!isLogin);
-                setName("");
-                setPhone("");
-                setSector("");
-              }}
-              className="text-sm text-primary hover:text-primary/80 font-medium transition-colors"
-            >
-              {isLogin
-                ? "¿No tienes cuenta? Crea una gratis"
-                : "¿Ya tienes cuenta? Inicia sesión"
-              }
-            </button>
-          </div>
+          {/* Conditionally show registration toggle only in admin mode */}
+          {window.location.search.includes('admin=true') && (
+            <div className="mt-6 text-center">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsLogin(!isLogin);
+                  setName("");
+                  setPhone("");
+                  setSector("");
+                }}
+                className="text-sm text-primary hover:text-primary/80 font-medium transition-colors"
+              >
+                {isLogin
+                  ? "¿No tienes cuenta? Crea una gratis"
+                  : "¿Ya tienes cuenta? Inicia sesión"
+                }
+              </button>
+            </div>
+          )}
 
           {!isLogin && (
             <p className="mt-6 text-center text-xs text-muted-foreground">

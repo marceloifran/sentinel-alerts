@@ -40,7 +40,7 @@ const Header = ({ userName = "Usuario", onLogout, isAdmin = false, userPlan }: H
       label: 'Reportes',
       icon: BarChart3,
     },
-    ...(isAdmin && userPlan !== 'starter' ? [{
+    ...(isAdmin ? [{
       path: '/usuarios',
       label: 'Usuarios',
       icon: Users,

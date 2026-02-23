@@ -105,7 +105,7 @@ const Index = () => {
                 onClick={() => navigate('/auth')}
                 className="w-full sm:w-auto gap-2 h-12 px-8 text-base group"
               >
-                {t('hero.startFree')}
+                Comenzar ahora
                 <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </Button>
             </motion.div>

@@ -13,13 +13,13 @@ interface AuthContextType {
     email: string;
     phone: string | null;
     whatsapp_enabled: boolean;
-    plan: 'starter' | 'professional' | 'enterprise';
+    plan: 'professional' | 'enterprise';
     max_obligations: number;
     max_users: number;
     sector: string | null;
   } | null;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
-  signUp: (email: string, password: string, name: string, phone?: string, sector?: string) => Promise<{ error: Error | null }>;
+  signUp: (email: string, password: string, name: string, phone?: string, sector?: string, plan?: 'professional' | 'enterprise') => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
 }
@@ -37,7 +37,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     email: string;
     phone: string | null;
     whatsapp_enabled: boolean;
-    plan: 'starter' | 'professional' | 'enterprise';
+    plan: 'professional' | 'enterprise';
     max_obligations: number;
     max_users: number;
     sector: string | null;
@@ -92,9 +92,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           email: profileData.email,
           phone: (profileData as any).phone || null,
           whatsapp_enabled: (profileData as any).whatsapp_enabled || false,
-          plan: profileData.plan || 'starter',
-          max_obligations: profileData.max_obligations ?? 5,
-          max_users: profileData.max_users ?? 1,
+          plan: (profileData.plan === 'starter' ? 'professional' : profileData.plan) as 'professional' | 'enterprise',
+          max_obligations: profileData.max_obligations ?? 25,
+          max_users: profileData.max_users ?? 10,
           sector: profileData.sector || null,
         });
       }
@@ -123,7 +123,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return { error: error as Error | null };
   };
 
-  const signUp = async (email: string, password: string, name: string, phone?: string, sector?: string) => {
+  const signUp = async (email: string, password: string, name: string, phone?: string, sector?: string, plan: 'professional' | 'enterprise' = 'professional') => {
     const redirectUrl = `${window.location.origin}/`;
 
     const { error } = await supabase.auth.signUp({
@@ -131,7 +131,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       password,
       options: {
         emailRedirectTo: redirectUrl,
-        data: { name, phone, sector }
+        data: { name, phone, sector, plan }
       }
     });
     return { error: error as Error | null };
