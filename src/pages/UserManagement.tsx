@@ -13,8 +13,8 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { useAuth } from "@/contexts/AuthContext";
-import { getAllUsers, getPendingInvitations, UserWithRole, AppRole } from "@/services/userService";
-import { Search, ArrowLeft, Loader2, Users, Shield, Eye, Clock, Mail } from "lucide-react";
+import { getAllUsers, getPendingInvitations, deleteInvitation, UserWithRole, AppRole } from "@/services/userService";
+import { Search, ArrowLeft, Loader2, Users, Shield, Eye, Clock, Mail, X } from "lucide-react";
 import { toast } from "sonner";
 
 const UserManagement = () => {
@@ -73,6 +73,17 @@ const UserManagement = () => {
     const handleLogout = async () => {
         await signOut();
         navigate('/');
+    };
+
+    const handleCancelInvitation = async (email: string) => {
+        try {
+            await deleteInvitation(email);
+            toast.success("Invitación cancelada");
+            loadUsers();
+        } catch (error) {
+            console.error('Error canceling invitation:', error);
+            toast.error("Error al cancelar la invitación");
+        }
     };
 
     if (authLoading) {
@@ -165,9 +176,16 @@ const UserManagement = () => {
                         </div>
                         <div className="flex flex-wrap gap-2">
                             {pendingInvitations.map((inv, i) => (
-                                <div key={i} className="flex items-center gap-2 px-3 py-1.5 bg-muted rounded-full text-sm">
+                                <div key={i} className="flex items-center gap-2 px-3 py-1.5 bg-muted rounded-full text-sm group">
                                     <Mail className="w-3 h-3 text-muted-foreground" />
                                     <span className="text-muted-foreground">{inv.email}</span>
+                                    <button
+                                        onClick={() => handleCancelInvitation(inv.email)}
+                                        className="hover:text-destructive text-muted-foreground transition-colors p-0.5"
+                                        title="Cancelar invitación"
+                                    >
+                                        <X className="w-3 h-3" />
+                                    </button>
                                 </div>
                             ))}
                         </div>

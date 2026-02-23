@@ -9,10 +9,13 @@ import { ComplianceScoreCard } from "@/components/ComplianceScoreCard";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { useObligations } from "@/hooks/useObligations";
+import { ExecutiveSummary } from "@/components/ExecutiveSummary";
+import { useRealtimeComplianceScore } from "@/hooks/useComplianceScore";
 import { CheckCircle, AlertTriangle, XCircle, List, Calendar as CalendarIcon, Shield, Eye } from "lucide-react";
 import { AIAssistantButton } from "@/components/ai/AIAssistantButton";
 import { DashboardSkeleton } from "@/components/skeletons/Skeletons";
 import { ErrorState } from "@/components/ErrorState";
+import { useIsMobile } from "@/hooks/use-mobile";
 import type { Obligation } from "@/services/obligationService";
 
 
@@ -24,8 +27,10 @@ const Dashboard = () => {
   const { user, profile, isAdmin, isLoading: authLoading, signOut } = useAuth();
   const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+  const isMobile = useIsMobile();
 
   const { data: obligations = [], isLoading, error, refetch } = useObligations();
+  const complianceScore = useRealtimeComplianceScore();
 
   const stats = useMemo(() => {
     const overdue = obligations.filter(o => o.status === 'vencida').length;
@@ -122,9 +127,12 @@ const Dashboard = () => {
           </span>
         </div>
 
-        {/* Compliance Score Card */}
+        {/* Executive Summary Section */}
         <div className="mb-8 animate-fade-in">
-          <ComplianceScoreCard />
+          <ExecutiveSummary
+            complianceScore={complianceScore}
+            obligations={obligations}
+          />
         </div>
 
 
@@ -165,30 +173,32 @@ const Dashboard = () => {
           <h2 className="text-xl font-semibold text-foreground">
             {getListTitle()}
           </h2>
-          <div className="flex items-center gap-2 bg-muted p-1 rounded-lg">
-            <Button
-              variant={viewMode === 'list' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setViewMode('list')}
-              className="gap-2"
-            >
-              <List className="w-4 h-4" />
-              Lista
-            </Button>
-            <Button
-              variant={viewMode === 'calendar' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setViewMode('calendar')}
-              className="gap-2"
-            >
-              <CalendarIcon className="w-4 h-4" />
-              Calendario
-            </Button>
-          </div>
+          {!isMobile && (
+            <div className="flex items-center gap-2 bg-muted p-1 rounded-lg">
+              <Button
+                variant={viewMode === 'list' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setViewMode('list')}
+                className="gap-2"
+              >
+                <List className="w-4 h-4" />
+                Lista
+              </Button>
+              <Button
+                variant={viewMode === 'calendar' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setViewMode('calendar')}
+                className="gap-2"
+              >
+                <CalendarIcon className="w-4 h-4" />
+                Calendario
+              </Button>
+            </div>
+          )}
         </div>
 
         {/* Obligations display */}
-        {viewMode === 'calendar' ? (
+        {viewMode === 'calendar' && !isMobile ? (
           <CalendarView
             obligations={obligations}
             onSelectObligation={(o: any) => navigate(`/obligaciones/${o.id}`)}

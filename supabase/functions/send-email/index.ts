@@ -6,10 +6,15 @@ const RESEND_FROM_EMAIL = Deno.env.get("RESEND_FROM_EMAIL") || "Sentinel Alerts 
 
 interface EmailRequest {
   to: string;
+  type?: 'alert' | 'invitation';
   userName: string;
-  obligationName: string;
-  daysUntilDue: number;
-  dueDate: string;
+  // Fields for alert
+  obligationName?: string;
+  daysUntilDue?: number;
+  dueDate?: string;
+  // Fields for invitation
+  invitedBy?: string;
+  inviteLink?: string;
 }
 
 serve(async (req) => {
@@ -33,49 +38,96 @@ serve(async (req) => {
     const resend = new Resend(RESEND_API_KEY);
     const body: EmailRequest = await req.json();
 
-    const { to, userName, obligationName, daysUntilDue, dueDate } = body;
+    const {
+      to,
+      type = 'alert',
+      userName,
+      obligationName,
+      daysUntilDue,
+      dueDate,
+      invitedBy,
+      inviteLink = "https://sentinel-alerts.netlify.app/auth" // Default fallback
+    } = body;
 
-    if (!to || !userName || !obligationName) {
-      throw new Error("Faltan parámetros requeridos");
+    if (!to || !userName) {
+      throw new Error("Faltan parámetros requeridos (to, userName)");
     }
 
-    // Determine email subject and content based on days until due
-    const isOverdue = daysUntilDue < 0;
-    const isDueToday = daysUntilDue === 0;
-    const absDays = Math.abs(daysUntilDue);
+    let subject = "";
+    let htmlContent = "";
 
-    const subject = isOverdue
-      ? `🚨 URGENTE: ${obligationName} está vencida hace ${absDays} días`
-      : isDueToday
-        ? `⚠️ Atención: ${obligationName} vence HOY`
-        : daysUntilDue <= 7
-          ? `⚠️ Atención: ${obligationName} vence en ${daysUntilDue} días`
-          : `📅 Recordatorio: ${obligationName} vence en ${daysUntilDue} días`;
+    if (type === 'invitation') {
+      subject = `🎫 Invitación a Sentinel Alerts`;
+      htmlContent = `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${subject}</title>
+</head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+    <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
+        <h1 style="color: white; margin: 0; font-size: 24px;">🎫 Tienes una invitación</h1>
+    </div>
+    <div style="background: #f9fafb; padding: 30px; border-radius: 0 0 10px 10px; border: 1px solid #e5e7eb;">
+        <p style="font-size: 16px; margin-bottom: 20px;">Hola <strong>${userName}</strong>,</p>
+        <p style="font-size: 16px; margin-bottom: 20px;"><strong>${invitedBy || 'Un administrador'}</strong> te ha invitado a unirte a <strong>Sentinel Alerts</strong>.</p>
+        <p style="font-size: 16px; margin-bottom: 20px;">Sentinel Alerts es un sistema inteligente de gestión y notificación de obligaciones legales, fiscales y de seguridad.</p>
+        
+        <div style="text-align: center; margin: 30px 0;">
+            <a href="${inviteLink}" style="background-color: #667eea; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">Completar Registro</a>
+        </div>
+        
+        <p style="font-size: 14px; color: #6b7280; margin-top: 30px;">Si el botón no funciona, puedes copiar y lanzar este enlace en tu navegador:</p>
+        <p style="font-size: 12px; color: #9ca3af; word-break: break-all;">${inviteLink}</p>
+    </div>
+    <div style="text-align: center; margin-top: 20px; padding: 20px; color: #9ca3af; font-size: 12px;">
+        <p>Este es un email de invitación del sistema Sentinel Alerts.</p>
+    </div>
+</body>
+</html>
+      `;
+    } else {
+      // DEFAULT: ALERTS
+      if (!obligationName) throw new Error("Faltan parámetros requeridos para alertas");
 
-    const message = isOverdue
-      ? `La obligación "${obligationName}" está <strong style="color: #dc2626;">VENCIDA hace ${absDays} días</strong>.`
-      : isDueToday
-        ? `La obligación "${obligationName}" <strong style="color: #f59e0b;">vence HOY</strong>.`
-        : `La obligación "${obligationName}" vence en <strong>${daysUntilDue} días</strong>.`;
+      const isOverdue = (daysUntilDue || 0) < 0;
+      const isDueToday = daysUntilDue === 0;
+      const absDays = Math.abs(daysUntilDue || 0);
 
-    const urgencyColor = isOverdue ? "#dc2626" : isDueToday ? "#f59e0b" : daysUntilDue <= 7 ? "#f59e0b" : "#10b981";
-    const urgencyEmoji = isOverdue ? "🚨" : isDueToday ? "⚠️" : daysUntilDue <= 7 ? "⚠️" : "📅";
-    
-    const urgencyText = isOverdue
-      ? "🚨 ¡VENCIDA! Requiere atención inmediata."
-      : isDueToday
-        ? "⚠️ ¡Vence hoy! Toma acción inmediata."
-        : daysUntilDue <= 7
-          ? "⚠️ Vence pronto. Por favor, revísala."
-          : "✅ Aún tienes tiempo, pero no lo dejes pasar.";
+      subject = isOverdue
+        ? `🚨 URGENTE: ${obligationName} está vencida hace ${absDays} días`
+        : isDueToday
+          ? `⚠️ Atención: ${obligationName} vence HOY`
+          : (daysUntilDue || 0) <= 7
+            ? `⚠️ Atención: ${obligationName} vence en ${daysUntilDue} días`
+            : `📅 Recordatorio: ${obligationName} vence en ${daysUntilDue} días`;
 
-    const daysText = isOverdue
-      ? `Vencida hace ${absDays} día${absDays !== 1 ? 's' : ''}`
-      : isDueToday
-        ? "¡Vence hoy!"
-        : `${daysUntilDue} día${daysUntilDue !== 1 ? 's' : ''} restantes`;
+      const message = isOverdue
+        ? `La obligación "${obligationName}" está <strong style="color: #dc2626;">VENCIDA hace ${absDays} días</strong>.`
+        : isDueToday
+          ? `La obligación "${obligationName}" <strong style="color: #f59e0b;">vence HOY</strong>.`
+          : `La obligación "${obligationName}" vence en <strong>${daysUntilDue} días</strong>.`;
 
-    const htmlContent = `
+      const urgencyColor = isOverdue ? "#dc2626" : isDueToday ? "#f59e0b" : (daysUntilDue || 0) <= 7 ? "#f59e0b" : "#10b981";
+      const urgencyEmoji = isOverdue ? "🚨" : isDueToday ? "⚠️" : (daysUntilDue || 0) <= 7 ? "⚠️" : "📅";
+
+      const urgencyText = isOverdue
+        ? "🚨 ¡VENCIDA! Requiere atención inmediata."
+        : isDueToday
+          ? "⚠️ ¡Vence hoy! Toma acción inmediata."
+          : (daysUntilDue || 0) <= 7
+            ? "⚠️ Vence pronto. Por favor, revísala."
+            : "✅ Aún tienes tiempo, pero no lo dejes pasar.";
+
+      const daysText = isOverdue
+        ? `Vencida hace ${absDays} día${absDays !== 1 ? 's' : ''}`
+        : isDueToday
+          ? "¡Vence hoy!"
+          : `${daysUntilDue} día${daysUntilDue !== 1 ? 's' : ''} restantes`;
+
+      htmlContent = `
 <!DOCTYPE html>
 <html>
 <head>
@@ -91,7 +143,7 @@ serve(async (req) => {
         <p style="font-size: 16px; margin-bottom: 20px;">Hola <strong>${userName}</strong>,</p>
         <p style="font-size: 16px; margin-bottom: 20px;">${message}</p>
         <div style="background: white; padding: 20px; border-radius: 8px; border-left: 4px solid ${urgencyColor}; margin: 20px 0;">
-            <p style="margin: 0; font-size: 14px; color: #6b7280;"><strong>Fecha de vencimiento:</strong> ${new Date(dueDate).toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+            <p style="margin: 0; font-size: 14px; color: #6b7280;"><strong>Fecha de vencimiento:</strong> ${dueDate ? new Date(dueDate).toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) : '-'}</p>
             <p style="margin: 10px 0 0 0; font-size: 14px; color: ${urgencyColor}; font-weight: 600;"><strong>Estado:</strong> ${daysText}</p>
         </div>
         <p style="font-size: 14px; color: ${urgencyColor}; font-weight: 600; text-align: center; padding: 15px; background: ${urgencyColor}15; border-radius: 8px;">${urgencyText}</p>
@@ -102,7 +154,8 @@ serve(async (req) => {
     </div>
 </body>
 </html>
-    `;
+      `;
+    }
 
     const { data, error } = await resend.emails.send({
       from: RESEND_FROM_EMAIL,

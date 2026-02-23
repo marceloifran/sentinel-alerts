@@ -1,6 +1,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
 import { Shield, Eye } from 'lucide-react';
+import { sendInvitationEmail } from './emailService';
 
 type AppRole = Database['public']['Enums']['app_role'];
 
@@ -90,7 +91,7 @@ export async function getPendingInvitations(): Promise<{ email: string; created_
         .order('created_at', { ascending: false });
 
     if (error) throw error;
-    
+
     return (data || []).map(inv => ({
         email: inv.invited_email,
         created_at: inv.created_at
@@ -242,10 +243,53 @@ export async function inviteUser(
         };
     }
 
+    // Send the email (awaiting it now to catch errors)
+    const { data: adminProfile } = await supabase
+        .from('profiles')
+        .select('name')
+        .eq('id', user.id)
+        .maybeSingle();
+
+    try {
+        console.log(`📧 Intentando enviar invitación a ${email}...`);
+        await sendInvitationEmail({
+            to: email,
+            userName: name,
+            invitedBy: adminProfile?.name || user.email || 'Un administrador',
+            inviteLink: `${window.location.origin}/auth`
+        });
+        console.log('✅ Correo de invitación enviado exitosamente');
+    } catch (err) {
+        console.error('❌ Error enviando email de invitación:', err);
+        // We still return success: true because the invitation IS in the database,
+        // but we notify the user that the email failed.
+        return {
+            success: true,
+            message: `Invitación guardada para ${email}, pero hubo un error al enviar el correo. El usuario puede registrarse directamente con este email.`,
+        };
+    }
+
     return {
         success: true,
         message: `Invitación enviada a ${email}. El usuario debe registrarse con este email para unirse.`,
     };
+}
+
+export async function deleteInvitation(email: string): Promise<void> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('No estás autenticado');
+
+    const { error } = await supabase
+        .from('user_invitations')
+        .delete()
+        .eq('invited_email', email)
+        .eq('invited_by', user.id)
+        .eq('status', 'pending');
+
+    if (error) {
+        console.error('Error deleting invitation:', error);
+        throw error;
+    }
 }
 
 export type { AppRole };

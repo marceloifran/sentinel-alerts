@@ -8,6 +8,13 @@ export interface SendObligationAlertParams {
     dueDate: string;
 }
 
+export interface SendInvitationEmailParams {
+    to: string;
+    userName: string;
+    invitedBy: string;
+    inviteLink?: string;
+}
+
 export async function sendObligationAlert({
     to,
     userName,
@@ -45,6 +52,40 @@ export async function sendObligationAlert({
         console.log('Email enviado exitosamente:', data);
     } catch (error) {
         console.error('Error en sendObligationAlert:', error);
+        throw error;
+    }
+}
+export async function sendInvitationEmail({
+    to,
+    userName,
+    invitedBy,
+    inviteLink
+}: SendInvitationEmailParams): Promise<void> {
+    try {
+        const { data, error } = await supabase.functions.invoke('send-email', {
+            body: {
+                type: 'invitation',
+                to,
+                userName,
+                invitedBy,
+                inviteLink,
+            },
+        });
+
+        if (error) {
+            console.error('Error invocando función send-email (invitación):', error);
+            throw error;
+        }
+
+        if (!data || !data.success) {
+            const errorMessage = data?.error || 'Error desconocido al enviar invitación';
+            console.error('Error enviando invitación:', errorMessage);
+            throw new Error(errorMessage);
+        }
+
+        console.log('Invitación enviada exitosamente:', data);
+    } catch (error) {
+        console.error('Error en sendInvitationEmail:', error);
         throw error;
     }
 }
