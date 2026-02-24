@@ -92,6 +92,7 @@ export async function updateNotificationMessage(
 import { sendObligationAlert } from './emailService';
 
 // This would be called from a backend cron job or edge function
+/*
 export async function sendObligationAlerts(): Promise<void> {
     // Get obligations that are due in the next 7, 15, or 30 days
     const today = new Date();
@@ -137,3 +138,4 @@ export async function sendObligationAlerts(): Promise<void> {
         }
     }
 }
+*/

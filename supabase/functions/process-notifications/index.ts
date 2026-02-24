@@ -52,7 +52,7 @@ function generateEmailHtml(
 ): string {
   const urgencyColor = daysUntilDue === 0 ? "#dc2626" : daysUntilDue <= 7 ? "#f59e0b" : "#10b981";
   const urgencyEmoji = daysUntilDue === 0 ? "🚨" : daysUntilDue <= 7 ? "⚠️" : "📅";
-  
+
   const message = daysUntilDue === 0
     ? `La obligación "${obligationName}" vence HOY.`
     : `La obligación "${obligationName}" vence en ${daysUntilDue} días.`;
@@ -60,8 +60,8 @@ function generateEmailHtml(
   const urgencyText = daysUntilDue === 0
     ? "¡VENCE HOY! Toma acción inmediata."
     : daysUntilDue <= 7
-    ? "Vence pronto. Por favor, revísala."
-    : "Aún tienes tiempo, pero no lo dejes pasar.";
+      ? "Vence pronto. Por favor, revísala."
+      : "Aún tienes tiempo, pero no lo dejes pasar.";
 
   return `
 <!DOCTYPE html>
@@ -121,8 +121,8 @@ async function sendNotificationEmail(
   const subject = daysUntilDue === 0
     ? `🚨 ¡URGENTE! "${obligationName}" vence HOY`
     : daysUntilDue <= 7
-    ? `⚠️ "${obligationName}" vence en ${daysUntilDue} días`
-    : `📅 Recordatorio: "${obligationName}" vence en ${daysUntilDue} días`;
+      ? `⚠️ "${obligationName}" vence en ${daysUntilDue} días`
+      : `📅 Recordatorio: "${obligationName}" vence en ${daysUntilDue} días`;
 
   const html = generateEmailHtml(userName, obligationName, dueDate, daysUntilDue, notificationType);
 
@@ -157,7 +157,7 @@ serve(async (req) => {
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     const FROM_EMAIL = Deno.env.get("RESEND_FROM_EMAIL") || "IfsinRem <onboarding@resend.dev>";
-    
+
 
     if (!RESEND_API_KEY) {
       throw new Error("RESEND_API_KEY no está configurada");
@@ -168,6 +168,18 @@ serve(async (req) => {
 
     const resend = new Resend(RESEND_API_KEY);
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
+    // Disable automated notifications as requested
+    return new Response(
+      JSON.stringify({
+        success: true,
+        message: "Procesamiento de notificaciones deshabilitado",
+      }),
+      {
+        status: 200,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      }
+    );
 
     console.log("Iniciando procesamiento de notificaciones...");
 
