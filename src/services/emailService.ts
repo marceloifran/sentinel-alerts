@@ -62,14 +62,17 @@ export async function sendInvitationEmail({
     inviteLink
 }: SendInvitationEmailParams): Promise<void> {
     try {
+        const payload = {
+            type: 'invitation',
+            to,
+            userName,
+            invitedBy,
+            inviteLink,
+        };
+        console.log('🚀 Enviando payload a send-email:', payload);
+
         const { data, error } = await supabase.functions.invoke('send-email', {
-            body: {
-                type: 'invitation',
-                to,
-                userName,
-                invitedBy,
-                inviteLink,
-            },
+            body: payload,
         });
 
         if (error) {

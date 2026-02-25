@@ -40,11 +40,12 @@ serve(async (req) => {
     let body: EmailRequest;
     try {
       body = await req.json();
+      console.log("📥 Body recibido en la Edge Function:", JSON.stringify(body));
     } catch (e) {
       console.error("Error parseando JSON del body:", e);
       return new Response(
         JSON.stringify({ success: false, error: "Cuerpo de solicitud inválido (no es JSON)" }),
-        { status: 400, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } }
+        { status: 200, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type" } }
       );
     }
 
