@@ -330,26 +330,23 @@ const Auth = () => {
             </Button>
           </form>
 
-          {/* Conditionally show registration toggle only in admin mode */}
-          {window.location.search.includes('admin=true') && (
-            <div className="mt-6 text-center">
-              <button
-                type="button"
-                onClick={() => {
-                  setIsLogin(!isLogin);
-                  setName("");
-                  setPhone("");
-                  setSector("");
-                }}
-                className="text-sm text-primary hover:text-primary/80 font-medium transition-colors"
-              >
-                {isLogin
-                  ? "¿No tienes cuenta? Crea una gratis"
-                  : "¿Ya tienes cuenta? Inicia sesión"
-                }
-              </button>
-            </div>
-          )}
+          <div className="mt-6 text-center">
+            <button
+              type="button"
+              onClick={() => {
+                setIsLogin(!isLogin);
+                setName("");
+                setPhone("");
+                setSector("");
+              }}
+              className="text-sm text-primary hover:text-primary/80 font-medium transition-colors"
+            >
+              {isLogin
+                ? "¿No tienes cuenta? Crea una gratis"
+                : "¿Ya tienes cuenta? Inicia sesión"
+              }
+            </button>
+          </div>
 
           {!isLogin && (
             <p className="mt-6 text-center text-xs text-muted-foreground">

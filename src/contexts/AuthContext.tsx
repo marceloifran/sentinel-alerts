@@ -17,6 +17,7 @@ interface AuthContextType {
     max_obligations: number;
     max_users: number;
     sector: string | null;
+    company_id: string | null;
   } | null;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signUp: (email: string, password: string, name: string, phone?: string, sector?: string, plan?: 'professional' | 'enterprise', companyName?: string) => Promise<{ error: Error | null }>;
@@ -41,6 +42,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     max_obligations: number;
     max_users: number;
     sector: string | null;
+    company_id: string | null;
   } | null>(null);
 
   useEffect(() => {
@@ -96,6 +98,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           max_obligations: profileData.max_obligations ?? 25,
           max_users: profileData.max_users ?? 10,
           sector: profileData.sector || null,
+          company_id: profileData.company_id || null,
         });
       }
 

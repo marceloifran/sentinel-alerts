@@ -43,6 +43,7 @@ import { categoryLabels, ObligationCategory } from "@/services/obligationService
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { AudioRecorder } from "./AudioRecorder";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface UploadedFile {
   file: File;
@@ -76,6 +77,7 @@ export function SmartObligationLoader({
   existingObligations,
   userId,
 }: SmartObligationLoaderProps) {
+  const { profile } = useAuth();
   const [step, setStep] = useState<"input" | "preview" | "creating">("input");
   const [inputText, setInputText] = useState("");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -238,6 +240,7 @@ export function SmartObligationLoader({
           recurrence: obl.recurrence,
           responsible_id: userId,
           created_by: userId,
+          company_id: profile?.company_id,
           status: calculateStatus(obl.due_date),
         });
 

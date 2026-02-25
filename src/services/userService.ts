@@ -86,14 +86,39 @@ export async function getPendingInvitations(): Promise<{ email: string; created_
 
     if (!profile || !profile.company_id) return [];
 
-    const { data, error } = await supabase
+    let query = supabase
         .from('user_invitations')
         .select('invited_email, created_at')
-        .eq('company_id', profile.company_id)
-        .eq('status', 'pending')
-        .order('created_at', { ascending: false });
+        .eq('status', 'pending');
 
-    if (error) throw error;
+    // Attempt to filter by company_id, but handle failure if column doesn't exist yet
+    if (profile.company_id) {
+        // We wrap this in a try-catch or just check if it fails later
+        // But for now, let's just use it and rely on the catch block below
+        query = query.eq('company_id', profile.company_id);
+    }
+
+    const { data, error } = await query.order('created_at', { ascending: false });
+
+    if (error) {
+        // Fallback: search by invited_by instead if company_id filter fails
+        if (error.code === '42703') { // Undefined column
+            console.warn('⚠️ Columna company_id no existe en user_invitations. Usando fallback por usuario.');
+            const { data: fallbackData, error: fallbackError } = await supabase
+                .from('user_invitations')
+                .select('invited_email, created_at')
+                .eq('invited_by', user.id)
+                .eq('status', 'pending')
+                .order('created_at', { ascending: false });
+
+            if (fallbackError) throw fallbackError;
+            return (fallbackData || []).map(inv => ({
+                email: inv.invited_email,
+                created_at: inv.created_at
+            }));
+        }
+        throw error;
+    }
 
     return (data || []).map(inv => ({
         email: inv.invited_email,
@@ -232,22 +257,43 @@ export async function inviteUser(
         };
     }
 
-    // Create the invitation linked to the company
+    // Create the invitation linked to the company (with fallback if company_id is missing)
+    const invitationData: any = {
+        invited_by: user.id,
+        invited_email: email,
+        status: 'pending'
+    };
+
+    if (profile.company_id) {
+        invitationData.company_id = profile.company_id;
+    }
+
     const { error } = await supabase
         .from('user_invitations')
-        .insert({
-            invited_by: user.id,
-            invited_email: email,
-            company_id: profile.company_id,
-            status: 'pending'
-        });
+        .insert(invitationData);
 
     if (error) {
-        console.error('Error creating invitation:', error);
-        return {
-            success: false,
-            message: 'Error al crear la invitación',
-        };
+        // Handle missing column case during transition
+        if (error.code === '42703') {
+            const { error: retryError } = await supabase
+                .from('user_invitations')
+                .insert({
+                    invited_by: user.id,
+                    invited_email: email,
+                    status: 'pending'
+                });
+            if (!retryError) {
+                console.warn('⚠️ Invitación creada sin company_id como fallback.');
+            } else {
+                throw retryError;
+            }
+        } else {
+            console.error('Error creating invitation:', error);
+            return {
+                success: false,
+                message: 'Error al crear la invitación',
+            };
+        }
     }
 
     // Send the email (awaiting it now to catch errors)
