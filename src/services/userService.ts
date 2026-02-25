@@ -13,13 +13,17 @@ export interface UserWithRole {
     created_at: string;
 }
 
-export const roleLabels: Record<AppRole, string> = {
+export const roleLabels: Record<AppRole | 'owner' | 'operativo', string> = {
+    owner: 'Propietario',
     admin: 'Administrador',
-    responsable: 'Responsable',
+    operativo: 'Operativo',
+    responsable: 'Responsable', // Keep for compatibility during transition
 };
 
-export const roleIcons: Record<AppRole, any> = {
+export const roleIcons: Record<AppRole | 'owner' | 'operativo', any> = {
+    owner: Shield,
     admin: Shield,
+    operativo: Eye,
     responsable: Eye,
 };
 
@@ -28,35 +32,26 @@ export async function getAllUsers(): Promise<UserWithRole[]> {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return [];
 
-    // Get invitations made by the current user that have been accepted
-    const { data: invitations, error: invitationsError } = await supabase
-        .from('user_invitations')
-        .select('invited_user_id, invited_email')
-        .eq('invited_by', user.id)
-        .eq('status', 'accepted')
-        .not('invited_user_id', 'is', null);
+    // Get current user's company_id
+    const { data: profile } = await supabase
+        .from('profiles')
+        .select('company_id')
+        .eq('id', user.id)
+        .single();
 
-    if (invitationsError) throw invitationsError;
+    if (!profile || !profile.company_id) return [];
 
-    // Get the invited user IDs
-    const invitedUserIds = (invitations || [])
-        .map(inv => inv.invited_user_id)
-        .filter((id): id is string => id !== null);
-
-    // Always include the current user
-    const allUserIds = [...new Set([user.id, ...invitedUserIds])];
-
-    if (allUserIds.length === 0) return [];
-
-    // Get profiles for these users
+    // Get all profiles for the same company
     const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
         .select('id, email, name, created_at')
-        .in('id', allUserIds)
+        .eq('company_id', profile.company_id)
         .order('created_at', { ascending: false });
 
     if (profilesError) throw profilesError;
     if (!profiles || profiles.length === 0) return [];
+
+    const allUserIds = profiles.map(p => p.id);
 
     // Get all user roles for these users
     const { data: roles, error: rolesError } = await supabase
@@ -83,10 +78,18 @@ export async function getPendingInvitations(): Promise<{ email: string; created_
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return [];
 
+    const { data: profile } = await supabase
+        .from('profiles')
+        .select('company_id')
+        .eq('id', user.id)
+        .single();
+
+    if (!profile || !profile.company_id) return [];
+
     const { data, error } = await supabase
         .from('user_invitations')
         .select('invited_email, created_at')
-        .eq('invited_by', user.id)
+        .eq('company_id', profile.company_id)
         .eq('status', 'pending')
         .order('created_at', { ascending: false });
 
@@ -164,29 +167,32 @@ export async function updateUserRole(
 export async function inviteUser(
     email: string,
     name: string,
-    role: AppRole
+    role: AppRole | 'admin' | 'operativo'
 ): Promise<{ success: boolean; message: string }> {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
         return { success: false, message: 'No estás autenticado' };
     }
 
-    // Check plan limits before inviting
+    // Get inviter's company and limits
     const { data: profile } = await supabase
         .from('profiles')
-        .select('max_users')
+        .select('max_users, company_id')
         .eq('id', user.id)
         .single();
 
-    if (profile && profile.max_users !== -1) {
-        // Count current team members (accepted invitations + current user)
-        const { count: acceptedCount } = await supabase
-            .from('user_invitations')
-            .select('*', { count: 'exact', head: true })
-            .eq('invited_by', user.id)
-            .eq('status', 'accepted');
+    if (!profile || !profile.company_id) {
+        return { success: false, message: 'No se encontró el perfil de la empresa' };
+    }
 
-        const currentTeamSize = (acceptedCount || 0) + 1; // +1 for the admin themselves
+    if (profile.max_users !== -1) {
+        // Count current team members in the company
+        const { count } = await supabase
+            .from('profiles')
+            .select('*', { count: 'exact', head: true })
+            .eq('company_id', profile.company_id);
+
+        const currentTeamSize = (count || 0);
 
         if (currentTeamSize >= profile.max_users) {
             return {
@@ -215,23 +221,24 @@ export async function inviteUser(
         .from('user_invitations')
         .select('id')
         .eq('invited_email', email)
-        .eq('invited_by', user.id)
+        .eq('company_id', profile.company_id)
         .eq('status', 'pending')
         .maybeSingle();
 
     if (existingInvitation) {
         return {
             success: false,
-            message: 'Ya existe una invitación pendiente para este email',
+            message: 'Ya existe una invitación pendiente para este email en tu empresa',
         };
     }
 
-    // Create the invitation
+    // Create the invitation linked to the company
     const { error } = await supabase
         .from('user_invitations')
         .insert({
             invited_by: user.id,
             invited_email: email,
+            company_id: profile.company_id,
             status: 'pending'
         });
 
@@ -261,8 +268,6 @@ export async function inviteUser(
         console.log('✅ Correo de invitación procesado correctamente por el servicio');
     } catch (err: any) {
         console.error('❌ Error crítico enviando email de invitación:', err);
-        // We still return success: true because the invitation IS in the database,
-        // but we notify the user that the email failed and why.
         return {
             success: true,
             message: `Invitación creada para ${email}, pero hubo un error en el envío: "${err.message}". El usuario puede registrarse directamente con este email.`,

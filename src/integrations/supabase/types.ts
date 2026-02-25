@@ -14,6 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      companies: {
+        Row: {
+          created_at: string
+          cuit: string | null
+          id: string
+          name: string
+          plan: Database["public"]["Enums"]["user_plan"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          cuit?: string | null
+          id?: string
+          name: string
+          plan?: Database["public"]["Enums"]["user_plan"]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          cuit?: string | null
+          id?: string
+          name?: string
+          plan?: Database["public"]["Enums"]["user_plan"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
       email_notifications: {
         Row: {
           created_at: string
@@ -144,8 +171,8 @@ export type Database = {
           note: string | null
           obligation_id: string
           previous_status:
-            | Database["public"]["Enums"]["obligation_status"]
-            | null
+          | Database["public"]["Enums"]["obligation_status"]
+          | null
         }
         Insert: {
           changed_by: string
@@ -155,8 +182,8 @@ export type Database = {
           note?: string | null
           obligation_id: string
           previous_status?:
-            | Database["public"]["Enums"]["obligation_status"]
-            | null
+          | Database["public"]["Enums"]["obligation_status"]
+          | null
         }
         Update: {
           changed_by?: string
@@ -166,8 +193,8 @@ export type Database = {
           note?: string | null
           obligation_id?: string
           previous_status?:
-            | Database["public"]["Enums"]["obligation_status"]
-            | null
+          | Database["public"]["Enums"]["obligation_status"]
+          | null
         }
         Relationships: [
           {
@@ -182,8 +209,10 @@ export type Database = {
       obligations: {
         Row: {
           category: Database["public"]["Enums"]["obligation_category"]
+          company_id: string | null
           created_at: string
           created_by: string
+          criticality: Database["public"]["Enums"]["compliance_level"] | null
           due_date: string
           google_event_id: string | null
           id: string
@@ -196,8 +225,10 @@ export type Database = {
         }
         Insert: {
           category: Database["public"]["Enums"]["obligation_category"]
+          company_id?: string | null
           created_at?: string
           created_by: string
+          criticality?: Database["public"]["Enums"]["compliance_level"] | null
           due_date: string
           google_event_id?: string | null
           id?: string
@@ -210,8 +241,10 @@ export type Database = {
         }
         Update: {
           category?: Database["public"]["Enums"]["obligation_category"]
+          company_id?: string | null
           created_at?: string
           created_by?: string
+          criticality?: Database["public"]["Enums"]["compliance_level"] | null
           due_date?: string
           google_event_id?: string | null
           id?: string
@@ -226,6 +259,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          company_id: string | null
           created_at: string
           email: string
           id: string
@@ -239,6 +273,7 @@ export type Database = {
           whatsapp_enabled: boolean | null
         }
         Insert: {
+          company_id?: string | null
           created_at?: string
           email: string
           id: string
@@ -252,6 +287,7 @@ export type Database = {
           whatsapp_enabled?: boolean | null
         }
         Update: {
+          company_id?: string | null
           created_at?: string
           email?: string
           id?: string
@@ -314,6 +350,7 @@ export type Database = {
       user_invitations: {
         Row: {
           accepted_at: string | null
+          company_id: string | null
           created_at: string
           id: string
           invited_by: string
@@ -323,6 +360,7 @@ export type Database = {
         }
         Insert: {
           accepted_at?: string | null
+          company_id?: string | null
           created_at?: string
           id?: string
           invited_by: string
@@ -332,6 +370,7 @@ export type Database = {
         }
         Update: {
           accepted_at?: string | null
+          company_id?: string | null
           created_at?: string
           id?: string
           invited_by?: string
@@ -377,7 +416,8 @@ export type Database = {
       is_admin: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
-      app_role: "admin" | "responsable"
+      app_role: "admin" | "responsable" | "owner" | "operativo"
+      compliance_level: "baja" | "media" | "alta"
       obligation_category: "legal" | "fiscal" | "seguridad" | "operativa"
       obligation_status: "al_dia" | "por_vencer" | "vencida"
       user_plan: "starter" | "professional" | "enterprise"
@@ -394,121 +434,122 @@ type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
 
 export type Tables<
   DefaultSchemaTableNameOrOptions extends
-    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
-    | { schema: keyof DatabaseWithoutInternals },
+  | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
+  | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+  ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+    DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+  : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
   ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+    DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
       Row: infer R
     }
-    ? R
-    : never
+  ? R
+  : never
   : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
-        DefaultSchema["Views"])
-    ? (DefaultSchema["Tables"] &
-        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
-        Row: infer R
-      }
-      ? R
-      : never
-    : never
+    DefaultSchema["Views"])
+  ? (DefaultSchema["Tables"] &
+    DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+      Row: infer R
+    }
+  ? R
+  : never
+  : never
 
 export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema["Tables"]
-    | { schema: keyof DatabaseWithoutInternals },
+  | keyof DefaultSchema["Tables"]
+  | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+  ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+  : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
   ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
-      Insert: infer I
-    }
-    ? I
-    : never
+    Insert: infer I
+  }
+  ? I
+  : never
   : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
-    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
-        Insert: infer I
-      }
-      ? I
-      : never
-    : never
+  ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+    Insert: infer I
+  }
+  ? I
+  : never
+  : never
 
 export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema["Tables"]
-    | { schema: keyof DatabaseWithoutInternals },
+  | keyof DefaultSchema["Tables"]
+  | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+  ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+  : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
   ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
-      Update: infer U
-    }
-    ? U
-    : never
+    Update: infer U
+  }
+  ? U
+  : never
   : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
-    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
-        Update: infer U
-      }
-      ? U
-      : never
-    : never
+  ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+    Update: infer U
+  }
+  ? U
+  : never
+  : never
 
 export type Enums<
   DefaultSchemaEnumNameOrOptions extends
-    | keyof DefaultSchema["Enums"]
-    | { schema: keyof DatabaseWithoutInternals },
+  | keyof DefaultSchema["Enums"]
+  | { schema: keyof DatabaseWithoutInternals },
   EnumName extends DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+  ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+  : never = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
   ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
   : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
-    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
-    : never
+  ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
+  : never
 
 export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
-    | keyof DefaultSchema["CompositeTypes"]
-    | { schema: keyof DatabaseWithoutInternals },
+  | keyof DefaultSchema["CompositeTypes"]
+  | { schema: keyof DatabaseWithoutInternals },
   CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
+  ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+  : never = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
   ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
   : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
-    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
-    : never
+  ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+  : never
 
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "responsable"],
+      app_role: ["admin", "responsable", "owner", "operativo"],
+      compliance_level: ["baja", "media", "alta"],
       obligation_category: ["legal", "fiscal", "seguridad", "operativa"],
       obligation_status: ["al_dia", "por_vencer", "vencida"],
       user_plan: ["starter", "professional", "enterprise"],

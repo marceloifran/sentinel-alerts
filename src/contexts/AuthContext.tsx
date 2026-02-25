@@ -19,7 +19,7 @@ interface AuthContextType {
     sector: string | null;
   } | null;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
-  signUp: (email: string, password: string, name: string, phone?: string, sector?: string, plan?: 'professional' | 'enterprise') => Promise<{ error: Error | null }>;
+  signUp: (email: string, password: string, name: string, phone?: string, sector?: string, plan?: 'professional' | 'enterprise', companyName?: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
 }
@@ -106,7 +106,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         .eq('user_id', userId)
         .maybeSingle();
 
-      setIsAdmin(roleData?.role === 'admin');
+      setIsAdmin(roleData?.role === 'admin' || roleData?.role === 'owner');
     } catch (error) {
       console.error('Error fetching user data:', error);
     }
@@ -123,7 +123,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return { error: error as Error | null };
   };
 
-  const signUp = async (email: string, password: string, name: string, phone?: string, sector?: string, plan: 'professional' | 'enterprise' = 'professional') => {
+  const signUp = async (
+    email: string,
+    password: string,
+    name: string,
+    phone?: string,
+    sector?: string,
+    plan: 'professional' | 'enterprise' = 'professional',
+    companyName?: string
+  ) => {
     const redirectUrl = `${window.location.origin}/`;
 
     const { error } = await supabase.auth.signUp({
@@ -131,7 +139,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       password,
       options: {
         emailRedirectTo: redirectUrl,
-        data: { name, phone, sector, plan }
+        data: {
+          name,
+          phone,
+          sector,
+          plan,
+          company_name: companyName
+        }
       }
     });
     return { error: error as Error | null };

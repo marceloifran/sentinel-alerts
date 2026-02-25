@@ -42,6 +42,7 @@ const Auth = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [plan, setPlan] = useState<'professional' | 'enterprise'>('professional');
+  const [companyName, setCompanyName] = useState("");
 
   // Redirect if already logged in - use useEffect instead of render-time navigation
   useEffect(() => {
@@ -53,7 +54,7 @@ const Auth = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!email || !password || (!isLogin && (!name || !phone || !sector))) {
+    if (!email || !password || (!isLogin && (!name || !phone || !sector || !companyName))) {
       toast.error("Por favor completa todos los campos");
       return;
     }
@@ -85,7 +86,7 @@ const Auth = () => {
         toast.success("Bienvenido de vuelta");
         navigate('/dashboard');
       } else {
-        const { error } = await signUp(email, password, name, phone, sector, plan);
+        const { error } = await signUp(email, password, name, phone, sector, plan, companyName);
         if (error) {
           if (error.message.includes('already registered')) {
             toast.error("Este email ya está registrado");
@@ -203,6 +204,21 @@ const Auth = () => {
                       placeholder="Ej: Juan Pérez"
                       value={name}
                       onChange={(e) => setName(e.target.value)}
+                      className="h-12 pl-10 bg-background border-border/60 focus:border-primary"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="companyName" className="text-sm font-medium">Nombre de la Empresa</Label>
+                  <div className="relative">
+                    <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                    <Input
+                      id="companyName"
+                      type="text"
+                      placeholder="Ej: Mi Empresa S.A."
+                      value={companyName}
+                      onChange={(e) => setCompanyName(e.target.value)}
                       className="h-12 pl-10 bg-background border-border/60 focus:border-primary"
                     />
                   </div>

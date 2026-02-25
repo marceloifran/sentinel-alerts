@@ -69,11 +69,20 @@ export async function getObligations(): Promise<Obligation[]> {
 
   if (!user) throw new Error('Usuario no autenticado');
 
-  // Get only obligations created by current user
+  // Get user's company_id
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('company_id')
+    .eq('id', user.id)
+    .single();
+
+  if (!profile || !profile.company_id) return [];
+
+  // Get only obligations for the user's company
   const { data: obligations, error: obligationsError } = await supabase
     .from('obligations')
     .select('*')
-    .eq('created_by', user.id)
+    .eq('company_id', profile.company_id)
     .order('due_date', { ascending: true });
 
   if (obligationsError) throw obligationsError;
@@ -128,22 +137,24 @@ export async function getObligation(id: string): Promise<Obligation | null> {
 }
 
 export async function createObligation(
-  obligation: Omit<ObligationInsert, 'created_by' | 'status'>,
+  obligation: Omit<ObligationInsert, 'created_by' | 'status' | 'company_id'>,
   userId: string
 ): Promise<Obligation> {
-  // Check plan limits before creating (backup check - main enforcement is at DB level)
+  // Get user's profile for limits and company_id
   const { data: profile } = await supabase
     .from('profiles')
-    .select('max_obligations, plan')
+    .select('max_obligations, plan, company_id')
     .eq('id', userId)
     .single();
 
-  if (profile && profile.max_obligations !== -1) {
-    // Count current user's obligations (each user has their own plan limit)
+  if (!profile || !profile.company_id) throw new Error('Perfil incompleto: Falta company_id');
+
+  if (profile.max_obligations !== -1) {
+    // Count company obligations
     const { count } = await supabase
       .from('obligations')
       .select('*', { count: 'exact', head: true })
-      .eq('created_by', userId);
+      .eq('company_id', profile.company_id);
 
     if (count !== null && count >= profile.max_obligations) {
       throw new Error(`Has alcanzado el límite de ${profile.max_obligations} obligaciones de tu plan. Actualiza tu plan para crear más.`);
@@ -157,7 +168,8 @@ export async function createObligation(
     .insert({
       ...obligation,
       status,
-      created_by: userId
+      created_by: userId,
+      company_id: profile.company_id
     })
     .select()
     .single();
@@ -557,9 +569,21 @@ export async function getSignedFileUrl(filePath: string): Promise<string> {
 }
 
 export async function getResponsibles(): Promise<{ id: string; name: string; email: string }[]> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return [];
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('company_id')
+    .eq('id', user.id)
+    .single();
+
+  if (!profile || !profile.company_id) return [];
+
   const { data, error } = await supabase
     .from('profiles')
     .select('id, name, email')
+    .eq('company_id', profile.company_id)
     .order('name');
 
   if (error) throw error;

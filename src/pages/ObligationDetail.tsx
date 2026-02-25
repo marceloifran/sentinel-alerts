@@ -454,6 +454,7 @@ const ObligationDetail = () => {
                     <Select
                       value={obligation.recurrence}
                       onValueChange={handleRecurrenceChange}
+                      disabled={!isAdmin}
                     >
                       <SelectTrigger className="w-[180px]">
                         <SelectValue />
@@ -470,7 +471,7 @@ const ObligationDetail = () => {
 
               {/* Actions */}
               <div className="flex flex-wrap gap-2 pt-4 border-t">
-                {obligation.recurrence !== 'none' && (
+                {isAdmin && obligation.recurrence !== 'none' && (
                   <Button
                     onClick={handleRenewObligation}
                     disabled={isRenewing}
@@ -486,35 +487,37 @@ const ObligationDetail = () => {
                   </Button>
                 )}
 
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button variant="outline" className="gap-2">
-                      <CalendarIcon className="w-4 h-4" />
-                      Cambiar fecha
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <CalendarComponent
-                      mode="single"
-                      selected={newDueDate}
-                      onSelect={setNewDueDate}
-                      initialFocus
-                    />
-                    <div className="p-3 border-t">
-                      <Button
-                        onClick={handleChangeDueDate}
-                        disabled={!newDueDate || isChangingDate}
-                        className="w-full"
-                      >
-                        {isChangingDate ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : (
-                          'Confirmar'
-                        )}
+                {isAdmin && (
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" className="gap-2">
+                        <CalendarIcon className="w-4 h-4" />
+                        Cambiar fecha
                       </Button>
-                    </div>
-                  </PopoverContent>
-                </Popover>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <CalendarComponent
+                        mode="single"
+                        selected={newDueDate}
+                        onSelect={setNewDueDate}
+                        initialFocus
+                      />
+                      <div className="p-3 border-t">
+                        <Button
+                          onClick={handleChangeDueDate}
+                          disabled={!newDueDate || isChangingDate}
+                          className="w-full"
+                        >
+                          {isChangingDate ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            'Confirmar'
+                          )}
+                        </Button>
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                )}
               </div>
             </div>
 

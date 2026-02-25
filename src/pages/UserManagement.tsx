@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/select";
 import { useAuth } from "@/contexts/AuthContext";
 import { getAllUsers, getPendingInvitations, deleteInvitation, UserWithRole, AppRole } from "@/services/userService";
-import { Search, ArrowLeft, Loader2, Users, Shield, Eye, Clock, Mail, X } from "lucide-react";
+import { Search, ArrowLeft, Loader2, Users, Shield, Eye, Clock, Mail, X, Crown } from "lucide-react";
 import { toast } from "sonner";
 
 const UserManagement = () => {
@@ -149,16 +149,22 @@ const UserManagement = () => {
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="all">Todos los roles</SelectItem>
+                                <SelectItem value="owner">
+                                    <div className="flex items-center gap-2">
+                                        <Crown className="w-4 h-4 text-amber-500" />
+                                        Dueño (Owner)
+                                    </div>
+                                </SelectItem>
                                 <SelectItem value="admin">
                                     <div className="flex items-center gap-2">
                                         <Shield className="w-4 h-4" />
                                         Administradores
                                     </div>
                                 </SelectItem>
-                                <SelectItem value="responsable">
+                                <SelectItem value="operativo">
                                     <div className="flex items-center gap-2">
                                         <Eye className="w-4 h-4" />
-                                        Responsables
+                                        Operativos
                                     </div>
                                 </SelectItem>
                             </SelectContent>
