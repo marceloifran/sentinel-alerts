@@ -2,7 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { Resend } from "https://esm.sh/resend@2.0.0";
 
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
-const RESEND_FROM_EMAIL = Deno.env.get("RESEND_FROM_EMAIL") || "Sentinel Alerts <onboarding@resend.dev>";
+const RESEND_FROM_EMAIL = Deno.env.get("RESEND_FROM_EMAIL") || "IfsinRem <onboarding@resend.dev>";
 
 interface EmailRequest {
   to: string;
@@ -12,27 +12,36 @@ interface EmailRequest {
   obligationName?: string;
   daysUntilDue?: number;
   dueDate?: string;
+  obligationId?: string;
   // Fields for invitation
   invitedBy?: string;
   inviteLink?: string;
 }
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
 
 serve(async (req) => {
   // Handle CORS
   if (req.method === "OPTIONS") {
     return new Response(null, {
       status: 200,
-      headers: {
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "POST, OPTIONS",
-        "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-      },
+      headers: corsHeaders,
     });
   }
 
   try {
     if (!RESEND_API_KEY) {
-      throw new Error("RESEND_API_KEY no está configurada en las variables de entorno de Supabase");
+      console.error("❌ Error: RESEND_API_KEY no está configurada.");
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: "Configuración incompleta: RESEND_API_KEY no está establecida en Supabase Secrets."
+        }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
     const resend = new Resend(RESEND_API_KEY);
@@ -40,12 +49,11 @@ serve(async (req) => {
     let body: EmailRequest;
     try {
       body = await req.json();
-      console.log("📥 Body recibido en la Edge Function:", JSON.stringify(body));
+      console.log("📥 Payload recibido:", JSON.stringify(body));
     } catch (e) {
-      console.error("Error parseando JSON del body:", e);
       return new Response(
         JSON.stringify({ success: false, error: "Cuerpo de solicitud inválido (no es JSON)" }),
-        { status: 200, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type" } }
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
@@ -57,13 +65,14 @@ serve(async (req) => {
       daysUntilDue,
       dueDate,
       invitedBy,
-      inviteLink = "https://sentinel-alerts.netlify.app/auth"
+      inviteLink = "https://www.ifsinrem.site/auth",
+      obligationId
     } = body;
 
     if (!to || !userName) {
       return new Response(
         JSON.stringify({ success: false, error: "Faltan parámetros requeridos: 'to' y 'userName'" }),
-        { status: 400, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } }
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
@@ -97,23 +106,26 @@ serve(async (req) => {
         <p style="font-size: 12px; color: #9ca3af; word-break: break-all;">${inviteLink}</p>
     </div>
     <div style="text-align: center; margin-top: 20px; padding: 20px; color: #9ca3af; font-size: 12px;">
-        <p>Este es un email de invitación del sistema Sentinel Alerts.</p>
+        <p>Este es un email de invitación de <strong>ifsinrem.site</strong>.</p>
     </div>
 </body>
 </html>
       `;
     } else {
-      // DEFAULT: ALERTS
+      // ALERTS
       if (!obligationName) {
         return new Response(
           JSON.stringify({ success: false, error: "Faltan parámetros requeridos para alertas: 'obligationName'" }),
-          { status: 400, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } }
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
 
       const isOverdue = (daysUntilDue || 0) < 0;
       const isDueToday = daysUntilDue === 0;
       const absDays = Math.abs(daysUntilDue || 0);
+      const detailLink = obligationId
+        ? `https://www.ifsinrem.site/obligaciones/${obligationId}`
+        : `https://www.ifsinrem.site/obligaciones`;
 
       subject = isOverdue
         ? `🚨 URGENTE: ${obligationName} está vencida hace ${absDays} días`
@@ -165,18 +177,23 @@ serve(async (req) => {
             <p style="margin: 0; font-size: 14px; color: #6b7280;"><strong>Fecha de vencimiento:</strong> ${dueDate ? new Date(dueDate).toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) : '-'}</p>
             <p style="margin: 10px 0 0 0; font-size: 14px; color: ${urgencyColor}; font-weight: 600;"><strong>Estado:</strong> ${daysText}</p>
         </div>
+
+        <div style="text-align: center; margin: 30px 0;">
+            <a href="${detailLink}" style="background-color: ${urgencyColor}; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">Ver Obligación</a>
+        </div>
+
         <p style="font-size: 14px; color: ${urgencyColor}; font-weight: 600; text-align: center; padding: 15px; background: ${urgencyColor}15; border-radius: 8px;">${urgencyText}</p>
         <p style="font-size: 14px; color: #6b7280; margin-top: 30px;">Por favor, revisa esta obligación en el sistema para mantener todo al día.</p>
     </div>
     <div style="text-align: center; margin-top: 20px; padding: 20px; color: #9ca3af; font-size: 12px;">
-        <p>Este es un email automático del sistema de gestión de obligaciones.</p>
+        <p>Este es un email automático de <strong>ifsinrem.site</strong>.</p>
     </div>
 </body>
 </html>
       `;
     }
 
-    console.log(`Intentando enviar email a ${to}...`);
+    console.log(`🚀 Intentando enviar email via Resend a: ${to}`);
     const { data: resendData, error: resendError } = await resend.emails.send({
       from: RESEND_FROM_EMAIL,
       to: [to],
@@ -185,42 +202,25 @@ serve(async (req) => {
     });
 
     if (resendError) {
-      console.error("Error de Resend:", resendError);
+      console.error("❌ Error de Resend:", resendError);
       return new Response(
         JSON.stringify({
           success: false,
-          error: `Error de Resend: ${resendError.message}. Verifica que el email de origen sea de un dominio verificado o usa onboarding@resend.dev para pruebas con tu propio email.`
+          error: `Resend Error: ${resendError.message}`
         }),
-        { status: 200, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type" } }
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
     return new Response(
       JSON.stringify({ success: true, data: resendData }),
-      {
-        status: 200,
-        headers: {
-          "Content-Type": "application/json",
-          "Access-Control-Allow-Origin": "*",
-          "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-        },
-      }
+      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
-    console.error("Error inesperado en send-email function:", error);
+    console.error("❌ Error inesperado:", error);
     return new Response(
-      JSON.stringify({
-        success: false,
-        error: error instanceof Error ? error.message : "Error inesperado"
-      }),
-      {
-        status: 200,
-        headers: {
-          "Content-Type": "application/json",
-          "Access-Control-Allow-Origin": "*",
-          "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-        },
-      }
+      JSON.stringify({ success: false, error: error instanceof Error ? error.message : "Error inesperado" }),
+      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 });

@@ -6,6 +6,7 @@ export interface SendObligationAlertParams {
     obligationName: string;
     daysUntilDue: number;
     dueDate: string;
+    obligationId?: string;
 }
 
 export interface SendInvitationEmailParams {
@@ -15,51 +16,58 @@ export interface SendInvitationEmailParams {
     inviteLink?: string;
 }
 
+/**
+ * Sends an email alert for an obligation nearing its due date or overdue.
+ */
 export async function sendObligationAlert({
     to,
     userName,
     obligationName,
     daysUntilDue,
     dueDate,
+    obligationId
 }: SendObligationAlertParams): Promise<void> {
-    const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-    if (!SUPABASE_URL) {
-        throw new Error('VITE_SUPABASE_URL no está configurada');
-    }
-
     try {
+        console.log(`🚀 Iniciando envío de alerta para: ${obligationName} (${to})`);
+
         const { data, error } = await supabase.functions.invoke('send-email', {
             body: {
+                type: 'alert',
                 to,
                 userName,
                 obligationName,
                 daysUntilDue,
                 dueDate,
+                obligationId,
+                inviteLink: `https://www.ifsinrem.site/auth`
             },
         });
 
         if (error) {
-            console.error('Error invocando función send-email:', error);
-            throw error;
+            console.error('❌ Error de Supabase al invocar send-email (Alert):', error);
+            throw new Error(`Error de comunicación: ${error.message || 'Sin detalles'}`);
         }
 
-        if (!data || !data.success) {
-            const errorMessage = data?.error || 'Error desconocido al enviar email';
-            console.error('Error enviando email:', errorMessage);
-            throw new Error(errorMessage);
+        if (data && data.success === false) {
+            console.error('❌ La Edge Function reportó un fallo (Alert):', data.error);
+            throw new Error(data.error || 'Error desconocido en el servidor de correo');
         }
 
-        console.log('Email enviado exitosamente:', data);
-    } catch (error) {
-        console.error('Error en sendObligationAlert:', error);
+        console.log('✅ Alerta enviada con éxito');
+    } catch (error: any) {
+        console.error('❌ Error fatal en sendObligationAlert:', error);
         throw error;
     }
 }
+
+/**
+ * Sends an invitation email to a new user.
+ */
 export async function sendInvitationEmail({
     to,
     userName,
     invitedBy,
-    inviteLink
+    inviteLink = "https://www.ifsinrem.site/auth"
 }: SendInvitationEmailParams): Promise<void> {
     try {
         const payload = {
@@ -69,26 +77,26 @@ export async function sendInvitationEmail({
             invitedBy,
             inviteLink,
         };
-        console.log('🚀 Enviando payload a send-email:', payload);
+        console.log('🚀 Enviando invitación con payload:', payload);
 
         const { data, error } = await supabase.functions.invoke('send-email', {
             body: payload,
         });
 
         if (error) {
-            console.error('❌ Error de red/autenticación al invocar send-email:', error);
-            throw new Error(`Error de comunicación con Supabase: ${error.message}`);
+            console.error('❌ Error de Supabase al invocar send-email (Invite):', error);
+            const errorMsg = error.message || 'Error de red o permisos';
+            throw new Error(`Error de comunicación con Supabase: ${errorMsg}`);
         }
 
-        if (!data || !data.success) {
-            const errorMessage = data?.error || 'Error interno en la Edge Function';
-            console.error('❌ La Edge Function devolvió un error:', errorMessage);
-            throw new Error(errorMessage);
+        if (data && data.success === false) {
+            console.error('❌ La Edge Function reportó un fallo (Invite):', data.error);
+            throw new Error(`Error del Servidor: ${data.error}`);
         }
 
-        console.log('✅ Invitación enviada exitosamente via Edge Function:', data);
+        console.log('✅ Invitación enviada con éxito:', data);
     } catch (error: any) {
-        console.error('❌ Error fatal en sendInvitationEmail:', error);
+        console.error('❌ Error crítico en sendInvitationEmail:', error);
         throw error;
     }
 }
