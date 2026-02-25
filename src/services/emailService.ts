@@ -73,19 +73,19 @@ export async function sendInvitationEmail({
         });
 
         if (error) {
-            console.error('Error invocando función send-email (invitación):', error);
-            throw error;
+            console.error('❌ Error de red/autenticación al invocar send-email:', error);
+            throw new Error(`Error de comunicación con Supabase: ${error.message}`);
         }
 
         if (!data || !data.success) {
-            const errorMessage = data?.error || 'Error desconocido al enviar invitación';
-            console.error('Error enviando invitación:', errorMessage);
+            const errorMessage = data?.error || 'Error interno en la Edge Function';
+            console.error('❌ La Edge Function devolvió un error:', errorMessage);
             throw new Error(errorMessage);
         }
 
-        console.log('Invitación enviada exitosamente:', data);
-    } catch (error) {
-        console.error('Error en sendInvitationEmail:', error);
+        console.log('✅ Invitación enviada exitosamente via Edge Function:', data);
+    } catch (error: any) {
+        console.error('❌ Error fatal en sendInvitationEmail:', error);
         throw error;
     }
 }

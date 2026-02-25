@@ -20,35 +20,41 @@ export function ObligationsTrendChart({ data }: ObligationsTrendChartProps) {
                         margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
                     >
                         <defs>
-                            <linearGradient id="colorScore" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.1} />
+                            <linearGradient id="colorCount" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.2} />
                                 <stop offset="95%" stopColor="#3B82F6" stopOpacity={0} />
                             </linearGradient>
                         </defs>
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F3F4F6" />
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" opacity={0.5} />
                         <XAxis
                             dataKey="date"
                             axisLine={false}
                             tickLine={false}
-                            tick={{ fill: '#9CA3AF', fontSize: 12 }}
+                            tick={{ fill: '#6B7280', fontSize: 12, fontWeight: 500 }}
                             dy={10}
                         />
                         <YAxis
                             axisLine={false}
                             tickLine={false}
-                            tick={{ fill: '#9CA3AF', fontSize: 12 }}
+                            tick={{ fill: '#6B7280', fontSize: 12, fontWeight: 500 }}
                             dx={-10}
                         />
                         <Tooltip
-                            contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                            contentStyle={{
+                                borderRadius: '16px',
+                                border: '1px solid #E5E7EB',
+                                boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)',
+                                padding: '12px'
+                            }}
                         />
                         <Area
                             type="monotone"
                             dataKey="count"
                             stroke="#3B82F6"
-                            strokeWidth={3}
+                            strokeWidth={4}
                             fillOpacity={1}
-                            fill="url(#colorScore)"
+                            fill="url(#colorCount)"
+                            animationDuration={1500}
                         />
                     </AreaChart>
                 </ResponsiveContainer>

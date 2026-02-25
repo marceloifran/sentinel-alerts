@@ -251,27 +251,27 @@ export async function inviteUser(
         .maybeSingle();
 
     try {
-        console.log(`📧 Intentando enviar invitación a ${email}...`);
+        console.log(`📧 Intentando enviar invitación a ${email} para ${name}...`);
         await sendInvitationEmail({
             to: email,
             userName: name,
             invitedBy: adminProfile?.name || user.email || 'Un administrador',
             inviteLink: `${window.location.origin}/auth`
         });
-        console.log('✅ Correo de invitación enviado exitosamente');
-    } catch (err) {
-        console.error('❌ Error enviando email de invitación:', err);
+        console.log('✅ Correo de invitación procesado correctamente por el servicio');
+    } catch (err: any) {
+        console.error('❌ Error crítico enviando email de invitación:', err);
         // We still return success: true because the invitation IS in the database,
-        // but we notify the user that the email failed.
+        // but we notify the user that the email failed and why.
         return {
             success: true,
-            message: `Invitación guardada para ${email}, pero hubo un error al enviar el correo. El usuario puede registrarse directamente con este email.`,
+            message: `Invitación creada para ${email}, pero hubo un error en el envío: "${err.message}". El usuario puede registrarse directamente con este email.`,
         };
     }
 
     return {
         success: true,
-        message: `Invitación enviada a ${email}. El usuario debe registrarse con este email para unirse.`,
+        message: `Invitación enviada con éxito a ${email}.`,
     };
 }
 

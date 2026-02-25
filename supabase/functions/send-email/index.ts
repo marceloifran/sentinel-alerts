@@ -36,7 +36,17 @@ serve(async (req) => {
     }
 
     const resend = new Resend(RESEND_API_KEY);
-    const body: EmailRequest = await req.json();
+
+    let body: EmailRequest;
+    try {
+      body = await req.json();
+    } catch (e) {
+      console.error("Error parseando JSON del body:", e);
+      return new Response(
+        JSON.stringify({ success: false, error: "Cuerpo de solicitud inválido (no es JSON)" }),
+        { status: 400, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } }
+      );
+    }
 
     const {
       to,
@@ -46,11 +56,14 @@ serve(async (req) => {
       daysUntilDue,
       dueDate,
       invitedBy,
-      inviteLink = "https://sentinel-alerts.netlify.app/auth" // Default fallback
+      inviteLink = "https://sentinel-alerts.netlify.app/auth"
     } = body;
 
     if (!to || !userName) {
-      throw new Error("Faltan parámetros requeridos (to, userName)");
+      return new Response(
+        JSON.stringify({ success: false, error: "Faltan parámetros requeridos: 'to' y 'userName'" }),
+        { status: 400, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } }
+      );
     }
 
     let subject = "";
@@ -90,7 +103,12 @@ serve(async (req) => {
       `;
     } else {
       // DEFAULT: ALERTS
-      if (!obligationName) throw new Error("Faltan parámetros requeridos para alertas");
+      if (!obligationName) {
+        return new Response(
+          JSON.stringify({ success: false, error: "Faltan parámetros requeridos para alertas: 'obligationName'" }),
+          { status: 400, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } }
+        );
+      }
 
       const isOverdue = (daysUntilDue || 0) < 0;
       const isDueToday = daysUntilDue === 0;
@@ -157,40 +175,49 @@ serve(async (req) => {
       `;
     }
 
-    const { data, error } = await resend.emails.send({
+    console.log(`Intentando enviar email a ${to}...`);
+    const { data: resendData, error: resendError } = await resend.emails.send({
       from: RESEND_FROM_EMAIL,
       to: [to],
       subject,
       html: htmlContent,
     });
 
-    if (error) {
-      console.error("Error enviando email con Resend:", error);
-      throw error;
+    if (resendError) {
+      console.error("Error de Resend:", resendError);
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: `Error de Resend: ${resendError.message}. Verifica que el email de origen sea de un dominio verificado o usa onboarding@resend.dev para pruebas con tu propio email.`
+        }),
+        { status: 200, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type" } }
+      );
     }
 
     return new Response(
-      JSON.stringify({ success: true, data }),
+      JSON.stringify({ success: true, data: resendData }),
       {
         status: 200,
         headers: {
           "Content-Type": "application/json",
           "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
         },
       }
     );
   } catch (error) {
-    console.error("Error en send-email function:", error);
+    console.error("Error inesperado en send-email function:", error);
     return new Response(
       JSON.stringify({
         success: false,
-        error: error instanceof Error ? error.message : "Error desconocido"
+        error: error instanceof Error ? error.message : "Error inesperado"
       }),
       {
-        status: 500,
+        status: 200,
         headers: {
           "Content-Type": "application/json",
           "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
         },
       }
     );
