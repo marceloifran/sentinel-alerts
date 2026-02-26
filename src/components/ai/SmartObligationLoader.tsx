@@ -366,6 +366,39 @@ export function SmartObligationLoader({
                     Describe tus obligaciones hablando, como cuando envías un audio de WhatsApp.
                   </p>
                   <AudioRecorder onAudioRecorded={handleAudioRecorded} isProcessing={isAnalyzing} />
+                  {uploadedFiles.filter(f => f.file.type.startsWith("audio/")).length > 0 && (
+                    <div className="space-y-2 pt-2">
+                      {uploadedFiles.filter(f => f.file.type.startsWith("audio/")).map((uploadedFile, index) => (
+                        <div
+                          key={index}
+                          className="flex items-center gap-3 p-2 bg-muted/50 rounded-lg"
+                        >
+                          <div className="w-10 h-10 bg-primary/10 rounded flex items-center justify-center">
+                            <Mic className="w-5 h-5 text-primary" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium truncate">
+                              {uploadedFile.file.name}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {(uploadedFile.file.size / 1024).toFixed(1)} KB
+                            </p>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              removeFile(uploadedFiles.indexOf(uploadedFile));
+                            }}
+                          >
+                            <X className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </TabsContent>
 
@@ -396,9 +429,9 @@ export function SmartObligationLoader({
                   </div>
 
                   {/* Uploaded files preview */}
-                  {uploadedFiles.length > 0 && (
+                  {uploadedFiles.filter(f => !f.file.type.startsWith("audio/")).length > 0 && (
                     <div className="space-y-2">
-                      {uploadedFiles.map((uploadedFile, index) => (
+                      {uploadedFiles.filter(f => !f.file.type.startsWith("audio/")).map((uploadedFile, index) => (
                         <div
                           key={index}
                           className="flex items-center gap-3 p-2 bg-muted/50 rounded-lg"
@@ -436,7 +469,7 @@ export function SmartObligationLoader({
                             className="h-8 w-8"
                             onClick={(e) => {
                               e.stopPropagation();
-                              removeFile(index);
+                              removeFile(uploadedFiles.indexOf(uploadedFile));
                             }}
                           >
                             <X className="w-4 h-4" />
