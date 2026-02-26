@@ -23,6 +23,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   Sparkles,
   Loader2,
@@ -338,120 +339,141 @@ export function SmartObligationLoader({
 
         {step === "input" && (
           <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="input-text">Texto a analizar</Label>
-              <Textarea
-                id="input-text"
-                placeholder={`Ejemplos:\n• Seguro vence 15/03, habilitación municipal 01/04\n• Renovar matafuegos cada 12 meses\n• Vence el contrato de alquiler el 1 de junio de 2025`}
-                value={inputText}
-                onChange={(e) => setInputText(e.target.value)}
-                className="min-h-[150px]"
-              />
-            </div>
+            <Tabs defaultValue="text" className="w-full">
+              <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="text">Texto</TabsTrigger>
+                <TabsTrigger value="audio">Audio</TabsTrigger>
+                <TabsTrigger value="files">Archivos</TabsTrigger>
+              </TabsList>
 
-            <div className="space-y-2">
-              <Label>O graba un audio</Label>
-              <AudioRecorder onAudioRecorded={handleAudioRecorded} isProcessing={isAnalyzing} />
-            </div>
-
-            {/* File upload section */}
-            <div className="space-y-3">
-              <Label>Subir archivos (PDF, imágenes)</Label>
-
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".pdf,.png,.jpg,.jpeg,.webp,.gif"
-                multiple
-                onChange={handleFileSelect}
-                className="hidden"
-              />
-
-              <div
-                onClick={() => fileInputRef.current?.click()}
-                className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6 text-center cursor-pointer hover:border-primary/50 hover:bg-muted/50 transition-colors"
-              >
-                <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
-                <p className="text-sm text-muted-foreground">
-                  Clic para subir o arrastra archivos aquí
-                </p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  PDF, PNG, JPG, WEBP (máx. 10MB)
-                </p>
-              </div>
-
-              {/* Uploaded files preview */}
-              {uploadedFiles.length > 0 && (
+              <TabsContent value="text">
                 <div className="space-y-2">
-                  {uploadedFiles.map((uploadedFile, index) => (
-                    <div
-                      key={index}
-                      className="flex items-center gap-3 p-2 bg-muted/50 rounded-lg"
-                    >
-                      {uploadedFile.preview && uploadedFile.file.type.startsWith("image/") ? (
-                        <img
-                          src={uploadedFile.preview}
-                          alt={uploadedFile.file.name}
-                          className="w-10 h-10 object-cover rounded"
-                        />
-                      ) : uploadedFile.file.type === "application/pdf" ? (
-                        <div className="w-10 h-10 bg-destructive/10 rounded flex items-center justify-center">
-                          <FileText className="w-5 h-5 text-destructive" />
-                        </div>
-                      ) : uploadedFile.file.type.startsWith("audio/") ? (
-                        <div className="w-10 h-10 bg-primary/10 rounded flex items-center justify-center">
-                          <Mic className="w-5 h-5 text-primary" />
-                        </div>
-                      ) : (
-                        <div className="w-10 h-10 bg-muted rounded flex items-center justify-center">
-                          <FileIcon className="w-5 h-5 text-muted-foreground" />
-                        </div>
-                      )}
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">
-                          {uploadedFile.file.name}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {(uploadedFile.file.size / 1024).toFixed(1)} KB
-                        </p>
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          removeFile(index);
-                        }}
-                      >
-                        <X className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  ))}
+                  <Label htmlFor="input-text">Texto a analizar</Label>
+                  <Textarea
+                    id="input-text"
+                    placeholder={`Ejemplos:\n• Seguro vence 15/03, habilitación municipal 01/04\n• Renovar matafuegos cada 12 meses\n• Vence el contrato de alquiler el 1 de junio de 2025`}
+                    value={inputText}
+                    onChange={(e) => setInputText(e.target.value)}
+                    className="min-h-[150px]"
+                  />
                 </div>
-              )}
-            </div>
+              </TabsContent>
 
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={handleClose}>
-                Cancelar
-              </Button>
-              <Button
-                onClick={handleAnalyze}
-                disabled={isAnalyzing || (!inputText.trim() && uploadedFiles.length === 0)}
-              >
-                {isAnalyzing ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Analizando...
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="w-4 h-4 mr-2" />
-                    Analizar con IA
-                  </>
-                )}
-              </Button>
+              <TabsContent value="audio">
+                <div className="space-y-2">
+                  <Label>Grabar audio</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Describe tus obligaciones hablando, como cuando envías un audio de WhatsApp.
+                  </p>
+                  <AudioRecorder onAudioRecorded={handleAudioRecorded} isProcessing={isAnalyzing} />
+                </div>
+              </TabsContent>
+
+              <TabsContent value="files">
+                <div className="space-y-3">
+                  <Label>Subir archivos (PDF, imágenes)</Label>
+
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".pdf,.png,.jpg,.jpeg,.webp,.gif"
+                    multiple
+                    onChange={handleFileSelect}
+                    className="hidden"
+                  />
+
+                  <div
+                    onClick={() => fileInputRef.current?.click()}
+                    className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6 text-center cursor-pointer hover:border-primary/50 hover:bg-muted/50 transition-colors"
+                  >
+                    <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
+                    <p className="text-sm text-muted-foreground">
+                      Clic para subir o arrastra archivos aquí
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      PDF, PNG, JPG, WEBP (máx. 10MB)
+                    </p>
+                  </div>
+
+                  {/* Uploaded files preview */}
+                  {uploadedFiles.length > 0 && (
+                    <div className="space-y-2">
+                      {uploadedFiles.map((uploadedFile, index) => (
+                        <div
+                          key={index}
+                          className="flex items-center gap-3 p-2 bg-muted/50 rounded-lg"
+                        >
+                          {uploadedFile.preview && uploadedFile.file.type.startsWith("image/") ? (
+                            <img
+                              src={uploadedFile.preview}
+                              alt={uploadedFile.file.name}
+                              className="w-10 h-10 object-cover rounded"
+                            />
+                          ) : uploadedFile.file.type === "application/pdf" ? (
+                            <div className="w-10 h-10 bg-destructive/10 rounded flex items-center justify-center">
+                              <FileText className="w-5 h-5 text-destructive" />
+                            </div>
+                          ) : uploadedFile.file.type.startsWith("audio/") ? (
+                            <div className="w-10 h-10 bg-primary/10 rounded flex items-center justify-center">
+                              <Mic className="w-5 h-5 text-primary" />
+                            </div>
+                          ) : (
+                            <div className="w-10 h-10 bg-muted rounded flex items-center justify-center">
+                              <FileIcon className="w-5 h-5 text-muted-foreground" />
+                            </div>
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium truncate">
+                              {uploadedFile.file.name}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {(uploadedFile.file.size / 1024).toFixed(1)} KB
+                            </p>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              removeFile(index);
+                            }}
+                          >
+                            <X className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </TabsContent>
+            </Tabs>
+
+            <div className="sticky bottom-0 flex items-center justify-between gap-3 border-t bg-background pt-3">
+              <span className="text-xs text-muted-foreground">
+                Analizaremos el texto, audios y archivos que cargues.
+              </span>
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={handleClose}>
+                  Cancelar
+                </Button>
+                <Button
+                  onClick={handleAnalyze}
+                  disabled={isAnalyzing || (!inputText.trim() && uploadedFiles.length === 0)}
+                >
+                  {isAnalyzing ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Analizando...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-4 h-4 mr-2" />
+                      Analizar con IA
+                    </>
+                  )}
+                </Button>
+              </div>
             </div>
           </div>
         )}
