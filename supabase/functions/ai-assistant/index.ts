@@ -91,7 +91,7 @@ const tools = [
 async function executeTool(
   toolName: string,
   args: Record<string, unknown>,
-  supabaseClient: ReturnType<typeof createClient>,
+  supabaseClient: any,
   userId: string
 ): Promise<string> {
   try {

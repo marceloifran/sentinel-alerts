@@ -640,6 +640,10 @@ Deno.serve(async (req) => {
           .eq('id', obligation.id)
           .single();
 
+        const categoryColorMap: Record<string, string> = {
+          legal: '9', fiscal: '5', seguridad: '11', operativa: '7'
+        };
+
         const event = {
           summary: obligation.title,
           description: obligation.description || '',
@@ -651,7 +655,7 @@ Deno.serve(async (req) => {
             dateTime: new Date(new Date(obligation.due_date).getTime() + 60 * 60 * 1000).toISOString(),
             timeZone: 'America/Argentina/Buenos_Aires',
           },
-          colorId: getCategoryColor(obligation.category),
+          colorId: categoryColorMap[obligation.category] || '1',
         };
 
         let eventId = existingObligation?.google_event_id;
@@ -663,7 +667,7 @@ Deno.serve(async (req) => {
             {
               method: 'PUT',
               headers: {
-                'Authorization': `Bearer ${tokenData.access_token}`,
+                'Authorization': `Bearer ${tokenData.accessToken}`,
                 'Content-Type': 'application/json',
               },
               body: JSON.stringify(event),
@@ -680,7 +684,7 @@ Deno.serve(async (req) => {
             {
               method: 'POST',
               headers: {
-                'Authorization': `Bearer ${tokenData.access_token}`,
+                'Authorization': `Bearer ${tokenData.accessToken}`,
                 'Content-Type': 'application/json',
               },
               body: JSON.stringify(event),
@@ -747,7 +751,7 @@ Deno.serve(async (req) => {
           {
             method: 'DELETE',
             headers: {
-              'Authorization': `Bearer ${tokenData.access_token}`,
+              'Authorization': `Bearer ${tokenData.accessToken}`,
             },
           }
         );
