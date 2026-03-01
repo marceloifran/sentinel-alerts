@@ -309,7 +309,7 @@ export async function inviteUser(
             to: email,
             userName: name,
             invitedBy: adminProfile?.name || user.email || 'Un administrador',
-            inviteLink: `${window.location.origin}/auth`
+            inviteLink: `${window.location.origin}/auth?invited_email=${encodeURIComponent(email)}`
         });
         console.log('✅ Correo de invitación procesado correctamente por el servicio');
     } catch (err: any) {

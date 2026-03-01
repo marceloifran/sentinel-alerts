@@ -43,6 +43,7 @@ const Auth = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [plan, setPlan] = useState<'professional' | 'enterprise'>('professional');
   const [companyName, setCompanyName] = useState("");
+  const [isInvitedSignup, setIsInvitedSignup] = useState(false);
 
   // Redirect if already logged in - use useEffect instead of render-time navigation
   useEffect(() => {
@@ -51,12 +52,37 @@ const Auth = () => {
     }
   }, [user, navigate]);
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const invitedEmail = params.get('invited_email');
+
+    if (invitedEmail) {
+      setIsLogin(false);
+      setIsInvitedSignup(true);
+      setEmail(invitedEmail);
+    }
+  }, []);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!email || !password || (!isLogin && (!name || !phone || !sector || !companyName))) {
+    if (!email || !password) {
       toast.error("Por favor completa todos los campos");
       return;
+    }
+
+    if (!isLogin) {
+      if (isInvitedSignup) {
+        if (!name) {
+          toast.error("Por favor completa tu nombre");
+          return;
+        }
+      } else {
+        if (!name || !phone || !sector || !companyName) {
+          toast.error("Por favor completa todos los campos");
+          return;
+        }
+      }
     }
 
     if (password.length < 6) {
@@ -65,7 +91,7 @@ const Auth = () => {
     }
 
     const phoneRegex = /^[\d\s\-\+\(\)]{8,20}$/;
-    if (!isLogin && !phoneRegex.test(phone)) {
+    if (!isLogin && !isInvitedSignup && !phoneRegex.test(phone)) {
       toast.error("Por favor ingresa un número de teléfono válido");
       return;
     }
@@ -178,15 +204,15 @@ const Auth = () => {
           <div className="text-center mb-8">
             <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-3 py-1.5 rounded-full text-sm font-medium mb-4">
               <Shield className="w-4 h-4" />
-              {isLogin ? "Acceso seguro" : "Registro gratuito"}
+              {isLogin ? "Acceso seguro" : (isInvitedSignup ? "Te estás uniendo a tu equipo" : "Registro gratuito")}
             </div>
             <h2 className="text-3xl font-bold text-foreground mb-2">
-              {isLogin ? "Bienvenido de vuelta" : "Crea tu cuenta"}
+              {isLogin ? "Bienvenido de vuelta" : (isInvitedSignup ? "Crea tu usuario" : "Crea tu cuenta")}
             </h2>
             <p className="text-muted-foreground">
               {isLogin
                 ? "Ingresa tus credenciales para continuar"
-                : "Completa tus datos para comenzar"
+                : (isInvitedSignup ? "Completa tus datos personales para sumarte a tu empresa" : "Completa tus datos para comenzar")
               }
             </p>
           </div>
@@ -209,70 +235,74 @@ const Auth = () => {
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="companyName" className="text-sm font-medium">Nombre de la Empresa</Label>
-                  <div className="relative">
-                    <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                    <Input
-                      id="companyName"
-                      type="text"
-                      placeholder="Ej: Mi Empresa S.A."
-                      value={companyName}
-                      onChange={(e) => setCompanyName(e.target.value)}
-                      className="h-12 pl-10 bg-background border-border/60 focus:border-primary"
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="phone" className="text-sm font-medium">Teléfono</Label>
-                  <div className="relative">
-                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                    <Input
-                      id="phone"
-                      type="tel"
-                      placeholder="Ej: +54 11 1234-5678"
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      className="h-12 pl-10 bg-background border-border/60 focus:border-primary"
-                    />
-                  </div>
-                  <p className="text-xs text-muted-foreground">Incluí código de país para recibir notificaciones</p>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="sector" className="text-sm font-medium">Sector o rubro</Label>
-                  <Select value={sector} onValueChange={(val) => setSector(val)}>
-                    <SelectTrigger className="h-12 bg-background border-border/60 focus:border-primary">
-                      <div className="flex items-center gap-2">
-                        <Building2 className="w-5 h-5 text-muted-foreground" />
-                        <SelectValue placeholder="Selecciona tu sector" />
+                {!isInvitedSignup && (
+                  <>
+                    <div className="space-y-2">
+                      <Label htmlFor="companyName" className="text-sm font-medium">Nombre de la Empresa</Label>
+                      <div className="relative">
+                        <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                        <Input
+                          id="companyName"
+                          type="text"
+                          placeholder="Ej: Mi Empresa S.A."
+                          value={companyName}
+                          onChange={(e) => setCompanyName(e.target.value)}
+                          className="h-12 pl-10 bg-background border-border/60 focus:border-primary"
+                        />
                       </div>
-                    </SelectTrigger>
-                    <SelectContent className="z-[9999]">
-                      {SECTORS.map((s) => (
-                        <SelectItem key={s.value} value={s.value}>
-                          {s.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="plan" className="text-sm font-medium">Plan suscrito</Label>
-                  <Select value={plan} onValueChange={(val: any) => setPlan(val)}>
-                    <SelectTrigger className="h-12 bg-background border-border/60 focus:border-primary">
-                      <div className="flex items-center gap-2">
-                        <Crown className={`w-5 h-5 ${plan === 'enterprise' ? 'text-amber-500' : 'text-primary'}`} />
-                        <SelectValue placeholder="Selecciona un plan" />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="phone" className="text-sm font-medium">Teléfono</Label>
+                      <div className="relative">
+                        <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                        <Input
+                          id="phone"
+                          type="tel"
+                          placeholder="Ej: +54 11 1234-5678"
+                          value={phone}
+                          onChange={(e) => setPhone(e.target.value)}
+                          className="h-12 pl-10 bg-background border-border/60 focus:border-primary"
+                        />
                       </div>
-                    </SelectTrigger>
-                    <SelectContent className="z-[9999]">
-                      <SelectItem value="professional">Professional (Equipos)</SelectItem>
-                      <SelectItem value="enterprise">Enterprise (Ilmitado)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+                      <p className="text-xs text-muted-foreground">Incluí código de país para recibir notificaciones</p>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="sector" className="text-sm font-medium">Sector o rubro</Label>
+                      <Select value={sector} onValueChange={(val) => setSector(val)}>
+                        <SelectTrigger className="h-12 bg-background border-border/60 focus:border-primary">
+                          <div className="flex items-center gap-2">
+                            <Building2 className="w-5 h-5 text-muted-foreground" />
+                            <SelectValue placeholder="Selecciona tu sector" />
+                          </div>
+                        </SelectTrigger>
+                        <SelectContent className="z-[9999]">
+                          {SECTORS.map((s) => (
+                            <SelectItem key={s.value} value={s.value}>
+                              {s.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="plan" className="text-sm font-medium">Plan suscrito</Label>
+                      <Select value={plan} onValueChange={(val: any) => setPlan(val)}>
+                        <SelectTrigger className="h-12 bg-background border-border/60 focus:border-primary">
+                          <div className="flex items-center gap-2">
+                            <Crown className={`w-5 h-5 ${plan === 'enterprise' ? 'text-amber-500' : 'text-primary'}`} />
+                            <SelectValue placeholder="Selecciona un plan" />
+                          </div>
+                        </SelectTrigger>
+                        <SelectContent className="z-[9999]">
+                          <SelectItem value="professional">Professional (Equipos)</SelectItem>
+                          <SelectItem value="enterprise">Enterprise (Ilmitado)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </>
+                )}
               </>
             )}
 
@@ -287,6 +317,7 @@ const Auth = () => {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="h-12 pl-10 bg-background border-border/60 focus:border-primary"
+                  readOnly={isInvitedSignup}
                 />
               </div>
             </div>
@@ -338,6 +369,7 @@ const Auth = () => {
                 setName("");
                 setPhone("");
                 setSector("");
+                setIsInvitedSignup(false);
               }}
               className="text-sm text-primary hover:text-primary/80 font-medium transition-colors"
             >
@@ -354,9 +386,11 @@ const Auth = () => {
             </p>
           )}
 
-          <p className="mt-4 text-center text-xs text-muted-foreground/70">
-            El primer usuario registrado será designado como administrador.
-          </p>
+          {!isInvitedSignup && (
+            <p className="mt-4 text-center text-xs text-muted-foreground/70">
+              El primer usuario registrado será designado como administrador.
+            </p>
+          )}
         </div>
       </div>
     </div>

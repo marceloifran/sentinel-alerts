@@ -69,7 +69,7 @@ serve(async (req) => {
     let htmlContent = "";
 
     if (type === 'invitation') {
-      subject = `🎫 Invitación a Sentinel Alerts`;
+      subject = `🎫 Invitación a IfsinRem`;
       htmlContent = `
         <!DOCTYPE html>
         <html>
@@ -83,7 +83,7 @@ serve(async (req) => {
             </div>
             <div style="padding: 20px;">
                 <p>Hola <strong>${userName}</strong>,</p>
-                <p><strong>${invitedBy || 'Un administrador'}</strong> te ha invitado a unirte a <strong>Sentinel Alerts</strong>.</p>
+                <p><strong>${invitedBy || 'Un administrador'}</strong> te ha invitado a unirte a <strong>IfsinRem</strong>.</p>
                 <div style="text-align: center; margin: 20px 0;">
                     <a href="${inviteLink}" style="background-color: #7c3aed; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">Completar Registro</a>
                 </div>
