@@ -245,21 +245,21 @@ serve(async (req) => {
       const emailResult = await sendNotificationEmail(
         resend,
         FROM_EMAIL,
-        profile.email,
-        profile.name,
+        profile!.email,
+        profile!.name,
         obligation.name,
         obligation.due_date,
         daysUntilDue,
-        notificationType
+        notificationType!
       );
 
       if (emailResult.success) {
-        console.log(`✅ Email enviado a ${profile.email} para obligación "${obligation.name}" (${notificationType})`);
+        console.log(`✅ Email enviado a ${profile!.email} para obligación "${obligation.name}" (${notificationType})`);
         results.emailsSent++;
       } else {
-        console.error(`❌ Error enviando email a ${profile.email}: ${emailResult.error}`);
+        console.error(`❌ Error enviando email a ${profile!.email}: ${emailResult.error}`);
         results.failed++;
-        results.errors.push(`Failed to send email to ${profile.email}: ${emailResult.error}`);
+        results.errors.push(`Failed to send email to ${profile!.email}: ${emailResult.error}`);
       }
 
       const { error: insertError } = await supabase
@@ -267,14 +267,14 @@ serve(async (req) => {
         .insert({
           obligation_id: obligation.id,
           user_id: obligation.responsible_id,
-          notification_type: notificationType,
-          email_to: profile.email,
+          notification_type: notificationType!,
+          email_to: profile!.email,
           status: emailResult.success ? "sent" : "failed",
           error_message: emailResult.error || null,
         });
 
       if (insertError) {
-        console.error(`Error recording notification: ${insertError.message}`);
+        console.error(`Error recording notification: ${insertError?.message}`);
       }
     }
 
