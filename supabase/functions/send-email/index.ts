@@ -2,11 +2,7 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Resend } from "https://esm.sh/resend@2.0.0";
 
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
-<<<<<<< HEAD
 const RESEND_FROM_EMAIL = Deno.env.get("RESEND_FROM_EMAIL") || "IfsinRem <no-reply@ifsinrem.site>";
-=======
-const RESEND_FROM_EMAIL = Deno.env.get("RESEND_FROM_EMAIL") || "IfsinRem <noreply@ifsinrem.site>";
->>>>>>> 8a4e76a3b4cdb6931540ac79a57337491fa866de
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
