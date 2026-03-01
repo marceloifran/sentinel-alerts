@@ -106,7 +106,7 @@ export async function getObligations(): Promise<Obligation[]> {
   return obligations.map(obligation => ({
     ...obligation,
     recurrence: (obligation.recurrence || 'none') as 'none' | 'monthly' | 'annual',
-    criticality: (obligation.criticality || 'media') as CriticalityLevel,
+    criticality: ((obligation as any).criticality || 'media') as CriticalityLevel,
     responsible_name: profileMap.get(obligation.responsible_id) || 'Sin asignar'
   }));
 }
@@ -131,7 +131,7 @@ export async function getObligation(id: string): Promise<Obligation | null> {
   return {
     ...data,
     recurrence: (data.recurrence || 'none') as 'none' | 'monthly' | 'annual',
-    criticality: (data.criticality || 'media') as CriticalityLevel,
+    criticality: ((data as any).criticality || 'media') as CriticalityLevel,
     responsible_name: profile?.name || 'Sin asignar'
   };
 }
@@ -221,7 +221,7 @@ export async function createObligation(
   return {
     ...data,
     recurrence: (data.recurrence || 'none') as 'none' | 'monthly' | 'annual',
-    criticality: (data.criticality || 'media') as CriticalityLevel
+    criticality: ((data as any).criticality || 'media') as CriticalityLevel
   };
 }
 

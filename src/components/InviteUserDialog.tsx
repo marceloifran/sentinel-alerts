@@ -29,7 +29,7 @@ const InviteUserDialog = ({ onUserInvited }: InviteUserDialogProps) => {
     const [isOpen, setIsOpen] = useState(false);
     const [email, setEmail] = useState("");
     const [name, setName] = useState("");
-    const [role, setRole] = useState<AppRole>("operativo");
+    const [role, setRole] = useState<AppRole | 'operativo'>("operativo");
     const [isInviting, setIsInviting] = useState(false);
 
     const handleInvite = async (e: React.FormEvent) => {
@@ -56,7 +56,7 @@ const InviteUserDialog = ({ onUserInvited }: InviteUserDialogProps) => {
                 setIsOpen(false);
                 setEmail("");
                 setName("");
-                setRole("operativo");
+                setRole("operativo" as any);
                 onUserInvited();
             } else {
                 toast.error(result.message);
@@ -115,7 +115,7 @@ const InviteUserDialog = ({ onUserInvited }: InviteUserDialogProps) => {
                                 <Label htmlFor="role">Rol</Label>
                                 <Select
                                     value={role}
-                                    onValueChange={(value: AppRole) => setRole(value)}
+                                    onValueChange={(value: string) => setRole(value as any)}
                                 >
                                     <SelectTrigger id="role">
                                         <SelectValue />

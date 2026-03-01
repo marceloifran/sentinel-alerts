@@ -205,7 +205,7 @@ function generateSummary(score: number, overdueCount: number, upcomingCount: num
  * Get the latest compliance score from database for a user
  */
 export async function getLatestComplianceScore(userId: string): Promise<ComplianceScore | null> {
-    const { data, error } = await supabase
+    const { data, error } = await (supabase as any)
         .from('compliance_scores')
         .select('*')
         .eq('user_id', userId)
@@ -217,10 +217,10 @@ export async function getLatestComplianceScore(userId: string): Promise<Complian
     if (!data) return null;
 
     return {
-        score: data.score,
-        level: data.level as ComplianceLevel,
-        breakdown: data.breakdown as ScoreBreakdown,
-        calculatedAt: data.calculated_at,
+        score: (data as any).score,
+        level: (data as any).level as ComplianceLevel,
+        breakdown: (data as any).breakdown as ScoreBreakdown,
+        calculatedAt: (data as any).calculated_at,
     };
 }
 
@@ -231,7 +231,7 @@ export async function getComplianceScoreHistory(
     userId: string,
     limit: number = 30
 ): Promise<ComplianceScore[]> {
-    const { data, error } = await supabase
+    const { data, error } = await (supabase as any)
         .from('compliance_scores')
         .select('*')
         .eq('user_id', userId)
@@ -240,7 +240,7 @@ export async function getComplianceScoreHistory(
 
     if (error) throw error;
 
-    return (data || []).map(record => ({
+    return (data || []).map((record: any) => ({
         score: record.score,
         level: record.level as ComplianceLevel,
         breakdown: record.breakdown as ScoreBreakdown,
@@ -253,19 +253,19 @@ export async function getComplianceScoreHistory(
  */
 export async function recalculateComplianceScore(userId: string): Promise<ComplianceScore> {
     // Call the database function
-    const { data, error } = await supabase.rpc('calculate_compliance_score', {
+    const { data, error } = await (supabase as any).rpc('calculate_compliance_score', {
         _user_id: userId,
     });
 
     if (error) throw error;
-    if (!data || data.length === 0) {
+    if (!data || (Array.isArray(data) && data.length === 0)) {
         throw new Error('Failed to calculate compliance score');
     }
 
-    const result = data[0];
+    const result = Array.isArray(data) ? data[0] : data;
 
     // Save the score
-    const { error: insertError } = await supabase
+    const { error: insertError } = await (supabase as any)
         .from('compliance_scores')
         .insert({
             user_id: userId,

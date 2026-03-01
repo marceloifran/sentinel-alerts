@@ -34,7 +34,7 @@ const UserTable = ({ users, onRoleChanged }: UserTableProps) => {
                                 <div>
                                     <div className="font-bold text-foreground leading-tight">{user.name}</div>
                                     <span
-                                        className={`inline-flex items-center gap-1 mt-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${user.role === 'owner'
+                                        className={`inline-flex items-center gap-1 mt-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${(user.role as string) === 'owner'
                                             ? 'bg-amber-100 text-amber-700 border border-amber-200'
                                             : user.role === 'admin'
                                                 ? 'bg-blue-100 text-blue-700 border border-blue-200'
@@ -103,7 +103,7 @@ const UserTable = ({ users, onRoleChanged }: UserTableProps) => {
                                     </td>
                                     <td className="p-4">
                                         <span
-                                            className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${user.role === 'owner'
+                                            className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${(user.role as string) === 'owner'
                                                 ? 'bg-amber-50 text-amber-700 border border-amber-100'
                                                 : user.role === 'admin'
                                                     ? 'bg-blue-50 text-blue-700 border border-blue-100'

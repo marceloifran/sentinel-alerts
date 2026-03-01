@@ -37,7 +37,7 @@ export interface TemplateInteraction {
  * Get all templates for a specific sector (for admin/preview)
  */
 export async function getTemplatesBySector(sector: string): Promise<ObligationTemplate[]> {
-    const { data, error } = await supabase
+    const { data, error } = await (supabase as any)
         .from('obligation_templates')
         .select('*')
         .or(`sector.eq.${sector},applies_to_all_sectors.eq.true`)
@@ -50,7 +50,7 @@ export async function getTemplatesBySector(sector: string): Promise<ObligationTe
         throw error;
     }
 
-    return data || [];
+    return (data || []) as ObligationTemplate[];
 }
 
 /**
@@ -63,7 +63,7 @@ export async function getUserTemplateInteractions(): Promise<TemplateInteraction
         throw new Error('Usuario no autenticado');
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await (supabase as any)
         .from('user_template_interactions')
         .select('*')
         .eq('user_id', user.id)
@@ -74,7 +74,7 @@ export async function getUserTemplateInteractions(): Promise<TemplateInteraction
         throw error;
     }
 
-    return data || [];
+    return (data || []) as TemplateInteraction[];
 }
 
 /**
@@ -87,7 +87,7 @@ export async function completeOnboarding(): Promise<void> {
         throw new Error('Usuario no autenticado');
     }
 
-    const { error } = await supabase
+    const { error } = await (supabase as any)
         .from('profiles')
         .update({
             onboarding_completed: true,
@@ -112,7 +112,7 @@ export async function updateOnboardingStep(step: number): Promise<void> {
         throw new Error('Usuario no autenticado');
     }
 
-    const { error } = await supabase
+    const { error } = await (supabase as any)
         .from('profiles')
         .update({ onboarding_step: step })
         .eq('id', user.id);
