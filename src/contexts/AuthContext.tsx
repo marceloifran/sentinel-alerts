@@ -109,7 +109,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         .eq('user_id', userId)
         .maybeSingle();
 
-      setIsAdmin(roleData?.role === 'admin' || roleData?.role === 'owner');
+      setIsAdmin(roleData?.role === 'admin' || (roleData?.role as string) === 'owner');
     } catch (error) {
       console.error('Error fetching user data:', error);
     }
