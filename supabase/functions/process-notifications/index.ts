@@ -191,7 +191,7 @@ serve(async (req) => {
       .neq("status", "vencida");
 
     if (obligationsError) {
-      throw new Error(`Error fetching obligations: ${obligationsError.message}`);
+      throw new Error(`Error fetching obligations: ${obligationsError?.message || 'Unknown'}`);
     }
 
     console.log(`Encontradas ${obligations?.length || 0} obligaciones activas`);
