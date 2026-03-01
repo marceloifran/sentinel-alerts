@@ -156,7 +156,11 @@ serve(async (req) => {
     const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+<<<<<<< HEAD
     const FROM_EMAIL = Deno.env.get("RESEND_FROM_EMAIL") || "IfsinRem <no-reply@ifsinrem.site>";
+=======
+    const FROM_EMAIL = Deno.env.get("RESEND_FROM_EMAIL") || "IfsinRem <noreply@ifsinrem.site>";
+>>>>>>> 8a4e76a3b4cdb6931540ac79a57337491fa866de
 
 
     if (!RESEND_API_KEY) {
