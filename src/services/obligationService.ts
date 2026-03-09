@@ -102,13 +102,20 @@ export async function getObligations(): Promise<Obligation[]> {
   // Create a map of id -> name
   const profileMap = new Map((profiles || []).map(p => [p.id, p.name]));
 
-  // Enrich obligations with responsible names
-  return obligations.map(obligation => ({
-    ...obligation,
-    recurrence: (obligation.recurrence || 'none') as 'none' | 'monthly' | 'annual',
-    criticality: ((obligation as any).criticality || 'media') as CriticalityLevel,
-    responsible_name: profileMap.get(obligation.responsible_id) || 'Sin asignar'
-  }));
+  // Enrich obligations with responsible names and recalculate status if not 'al_dia'
+  return obligations.map(obligation => {
+    const status = obligation.status !== 'al_dia'
+      ? calculateStatus(obligation.due_date)
+      : obligation.status;
+
+    return {
+      ...obligation,
+      status,
+      recurrence: (obligation.recurrence || 'none') as 'none' | 'monthly' | 'annual',
+      criticality: ((obligation as any).criticality || 'media') as CriticalityLevel,
+      responsible_name: profileMap.get(obligation.responsible_id) || 'Sin asignar'
+    };
+  });
 }
 
 export async function getObligation(id: string): Promise<Obligation | null> {
@@ -128,8 +135,13 @@ export async function getObligation(id: string): Promise<Obligation | null> {
     .eq('id', data.responsible_id)
     .maybeSingle();
 
+  const status = data.status !== 'al_dia'
+    ? calculateStatus(data.due_date)
+    : data.status;
+
   return {
     ...data,
+    status,
     recurrence: (data.recurrence || 'none') as 'none' | 'monthly' | 'annual',
     criticality: ((data as any).criticality || 'media') as CriticalityLevel,
     responsible_name: profile?.name || 'Sin asignar'

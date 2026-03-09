@@ -184,7 +184,6 @@ export function useUpdateObligationDueDate() {
             queryClient.invalidateQueries({ queryKey: ['obligation', id] });
             queryClient.invalidateQueries({ queryKey: ['obligations'] });
             queryClient.invalidateQueries({ queryKey: ['obligation-history', id] });
-            toast.success('Fecha actualizada');
         },
         onError: (error) => {
             console.error('Error updating due date:', error);
@@ -204,7 +203,6 @@ export function useRenewObligation() {
             queryClient.invalidateQueries({ queryKey: ['obligation', id] });
             queryClient.invalidateQueries({ queryKey: ['obligations'] });
             queryClient.invalidateQueries({ queryKey: ['obligation-history', id] });
-            toast.success('Obligación renovada');
         },
         onError: (error) => {
             console.error('Error renewing obligation:', error);
