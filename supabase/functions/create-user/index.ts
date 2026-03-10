@@ -4,46 +4,55 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
 serve(async (req) => {
+  // Handle CORS preflight
   if (req.method === "OPTIONS") {
     return new Response(null, { status: 204, headers: corsHeaders });
   }
 
+  if (req.method !== "POST") {
+    return new Response(
+      JSON.stringify({ success: false, error: "Method not allowed" }),
+      { status: 405, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  }
+
   try {
-    // 1. Validate that the caller is authenticated and is an admin
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+
+    // Get the caller's JWT from the Authorization header
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
       return new Response(
-        JSON.stringify({ success: false, error: "No autorizado" }),
+        JSON.stringify({ success: false, error: "No autorizado: falta token de autenticación" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-
-    // Client for verifying the calling user's identity (using their JWT)
-    const supabaseClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!, {
-      global: { headers: { Authorization: authHeader } },
-    });
-
-    // Admin client for privileged operations
+    // Admin client (service role) for privileged operations
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
       auth: { autoRefreshToken: false, persistSession: false },
     });
 
-    // Verify the calling user is authenticated
-    const { data: { user: callerUser }, error: callerError } = await supabaseClient.auth.getUser();
-    if (callerError || !callerUser) {
+    // Verify the caller's identity using their token
+    const callerClient = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } },
+    });
+    const { data: { user: callerUser }, error: authError } = await callerClient.auth.getUser();
+
+    if (authError || !callerUser) {
       return new Response(
-        JSON.stringify({ success: false, error: "No autorizado" }),
+        JSON.stringify({ success: false, error: "No autorizado: token inválido" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Verify the caller is an admin
+    // Verify the caller is admin or owner
     const { data: callerRole } = await supabaseAdmin
       .from("user_roles")
       .select("role")
@@ -57,8 +66,9 @@ serve(async (req) => {
       );
     }
 
-    // 2. Parse the request body
-    const { email, password, name, role } = await req.json();
+    // Parse request body
+    const body = await req.json();
+    const { email, password, name, role } = body;
 
     if (!email || !password || !name || !role) {
       return new Response(
@@ -74,7 +84,7 @@ serve(async (req) => {
       );
     }
 
-    // 3. Get caller's company_id and plan limits
+    // Get caller's company and check user limits
     const { data: callerProfile } = await supabaseAdmin
       .from("profiles")
       .select("company_id, max_users")
@@ -88,48 +98,48 @@ serve(async (req) => {
       );
     }
 
-    // 4. Check user limit
+    // Check user limit (max_users === -1 means unlimited)
     if (callerProfile.max_users !== -1) {
       const { count } = await supabaseAdmin
         .from("profiles")
         .select("*", { count: "exact", head: true })
         .eq("company_id", callerProfile.company_id);
 
-      if ((count || 0) >= callerProfile.max_users) {
+      if ((count ?? 0) >= callerProfile.max_users) {
         return new Response(
           JSON.stringify({
             success: false,
-            error: `Has alcanzado el límite de ${callerProfile.max_users} usuarios de tu plan.`,
+            error: `Alcanzaste el límite de ${callerProfile.max_users} usuarios de tu plan.`,
           }),
           { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
     }
 
-    // 5. Check if user already exists
-    const { data: existingProfile } = await supabaseAdmin
+    // Check if email already exists
+    const { data: existing } = await supabaseAdmin
       .from("profiles")
       .select("id")
       .eq("email", email)
       .maybeSingle();
 
-    if (existingProfile) {
+    if (existing) {
       return new Response(
         JSON.stringify({ success: false, error: "Ya existe un usuario con ese email" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // 6. Create the user via Admin API (no email confirmation required)
+    // Create the user via Admin API (skips email confirmation)
     const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
       email,
       password,
-      email_confirm: true, // skip email verification
+      email_confirm: true,
       user_metadata: { name },
     });
 
-    if (createError || !newUser.user) {
-      console.error("Error creating user:", createError);
+    if (createError || !newUser?.user) {
+      console.error("Error creating auth user:", createError);
       return new Response(
         JSON.stringify({ success: false, error: createError?.message || "Error al crear el usuario" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -138,19 +148,13 @@ serve(async (req) => {
 
     const newUserId = newUser.user.id;
 
-    // 7. Create or update the profile for the new user (linked to the same company)
+    // Create profile linked to the same company
     const { error: profileError } = await supabaseAdmin
       .from("profiles")
-      .upsert({
-        id: newUserId,
-        email,
-        name,
-        company_id: callerProfile.company_id,
-      });
+      .upsert({ id: newUserId, email, name, company_id: callerProfile.company_id });
 
     if (profileError) {
       console.error("Error creating profile:", profileError);
-      // Rollback: delete the auth user
       await supabaseAdmin.auth.admin.deleteUser(newUserId);
       return new Response(
         JSON.stringify({ success: false, error: "Error al crear el perfil del usuario" }),
@@ -158,32 +162,32 @@ serve(async (req) => {
       );
     }
 
-    // 8. Assign the role
+    // Assign role
     const { error: roleError } = await supabaseAdmin
       .from("user_roles")
       .upsert({ user_id: newUserId, role });
 
     if (roleError) {
       console.error("Error assigning role:", roleError);
-      // Rollback
       await supabaseAdmin.auth.admin.deleteUser(newUserId);
       return new Response(
-        JSON.stringify({ success: false, error: "Error al asignar el rol del usuario" }),
+        JSON.stringify({ success: false, error: "Error al asignar el rol" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    console.log(`✅ Usuario creado exitosamente: ${email} con rol ${role} en company ${callerProfile.company_id}`);
+    console.log(`✅ Usuario creado: ${email} | rol: ${role} | company: ${callerProfile.company_id}`);
 
     return new Response(
       JSON.stringify({ success: true, userId: newUserId, message: `Usuario ${name} creado exitosamente` }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
-  } catch (error: unknown) {
-    console.error("❌ Error inesperado:", error);
-    const message = error instanceof Error ? error.message : String(error);
+
+  } catch (err: unknown) {
+    console.error("❌ Error inesperado:", err);
+    const msg = err instanceof Error ? err.message : String(err);
     return new Response(
-      JSON.stringify({ success: false, error: message }),
+      JSON.stringify({ success: false, error: msg }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }

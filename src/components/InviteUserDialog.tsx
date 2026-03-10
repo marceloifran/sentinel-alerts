@@ -35,6 +35,14 @@ const InviteUserDialog = ({ onUserInvited }: InviteUserDialogProps) => {
     const [role, setRole] = useState<AppRole | "operativo">("operativo");
     const [isCreating, setIsCreating] = useState(false);
 
+    const resetForm = () => {
+        setEmail("");
+        setName("");
+        setPassword("");
+        setRole("operativo" as AppRole);
+        setShowPassword(false);
+    };
+
     const handleCreate = async (e: React.FormEvent) => {
         e.preventDefault();
 
@@ -56,36 +64,23 @@ const InviteUserDialog = ({ onUserInvited }: InviteUserDialogProps) => {
 
         setIsCreating(true);
         try {
-            const { data: sessionData } = await supabase.auth.getSession();
-            const token = sessionData?.session?.access_token;
-
-            if (!token) {
-                toast.error("No estás autenticado");
-                return;
-            }
-
-            const response = await supabase.functions.invoke("create-user", {
+            // supabase.functions.invoke includes the auth token automatically
+            const { data, error } = await supabase.functions.invoke("create-user", {
                 body: { email, password, name, role },
-                headers: { Authorization: `Bearer ${token}` },
             });
 
-            if (response.error) {
-                throw new Error(response.error.message || "Error al crear el usuario");
+            if (error) {
+                throw new Error(error.message || "Error al crear el usuario");
             }
 
-            const result = response.data as { success: boolean; message?: string; error?: string };
-
-            if (!result.success) {
-                toast.error(result.error || "Error al crear el usuario");
+            if (!data?.success) {
+                toast.error(data?.error || "Error al crear el usuario");
                 return;
             }
 
-            toast.success(result.message || `Usuario ${name} creado exitosamente`);
+            toast.success(data.message || `Usuario ${name} creado exitosamente`);
             setIsOpen(false);
-            setEmail("");
-            setName("");
-            setPassword("");
-            setRole("operativo" as any);
+            resetForm();
             onUserInvited();
         } catch (error: any) {
             console.error("Error creating user:", error);
@@ -102,7 +97,7 @@ const InviteUserDialog = ({ onUserInvited }: InviteUserDialogProps) => {
                 Crear Usuario
             </Button>
 
-            <Dialog open={isOpen} onOpenChange={setIsOpen}>
+            <Dialog open={isOpen} onOpenChange={(open) => { setIsOpen(open); if (!open) resetForm(); }}>
                 <DialogContent>
                     <DialogHeader>
                         <DialogTitle>Crear nuevo usuario</DialogTitle>
@@ -114,9 +109,9 @@ const InviteUserDialog = ({ onUserInvited }: InviteUserDialogProps) => {
                     <form onSubmit={handleCreate}>
                         <div className="space-y-4 py-4">
                             <div className="space-y-2">
-                                <Label htmlFor="name">Nombre completo</Label>
+                                <Label htmlFor="create-name">Nombre completo</Label>
                                 <Input
-                                    id="name"
+                                    id="create-name"
                                     type="text"
                                     placeholder="Juan Pérez"
                                     value={name}
@@ -126,9 +121,9 @@ const InviteUserDialog = ({ onUserInvited }: InviteUserDialogProps) => {
                             </div>
 
                             <div className="space-y-2">
-                                <Label htmlFor="email">Email</Label>
+                                <Label htmlFor="create-email">Email</Label>
                                 <Input
-                                    id="email"
+                                    id="create-email"
                                     type="email"
                                     placeholder="usuario@empresa.com"
                                     value={email}
@@ -138,10 +133,10 @@ const InviteUserDialog = ({ onUserInvited }: InviteUserDialogProps) => {
                             </div>
 
                             <div className="space-y-2">
-                                <Label htmlFor="password">Contraseña</Label>
+                                <Label htmlFor="create-password">Contraseña</Label>
                                 <div className="relative">
                                     <Input
-                                        id="password"
+                                        id="create-password"
                                         type={showPassword ? "text" : "password"}
                                         placeholder="Mínimo 6 caracteres"
                                         value={password}
@@ -154,25 +149,21 @@ const InviteUserDialog = ({ onUserInvited }: InviteUserDialogProps) => {
                                         onClick={() => setShowPassword(!showPassword)}
                                         className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                                     >
-                                        {showPassword ? (
-                                            <EyeOff className="w-4 h-4" />
-                                        ) : (
-                                            <Eye className="w-4 h-4" />
-                                        )}
+                                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                                     </button>
                                 </div>
                                 <p className="text-xs text-muted-foreground">
-                                    Comunícale esta contraseña al usuario para que pueda ingresar
+                                    Compartí esta contraseña con el usuario para que pueda ingresar
                                 </p>
                             </div>
 
                             <div className="space-y-2">
-                                <Label htmlFor="role">Rol</Label>
+                                <Label htmlFor="create-role">Rol</Label>
                                 <Select
                                     value={role}
-                                    onValueChange={(value: string) => setRole(value as any)}
+                                    onValueChange={(value: string) => setRole(value as AppRole)}
                                 >
-                                    <SelectTrigger id="role">
+                                    <SelectTrigger id="create-role">
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -191,7 +182,7 @@ const InviteUserDialog = ({ onUserInvited }: InviteUserDialogProps) => {
                             <Button
                                 type="button"
                                 variant="outline"
-                                onClick={() => setIsOpen(false)}
+                                onClick={() => { setIsOpen(false); resetForm(); }}
                                 disabled={isCreating}
                             >
                                 Cancelar
