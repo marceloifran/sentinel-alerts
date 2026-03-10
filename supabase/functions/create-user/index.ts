@@ -3,12 +3,12 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
 serve(async (req) => {
-  // Handle CORS preflight
   if (req.method === "OPTIONS") {
     return new Response(null, { status: 204, headers: corsHeaders });
   }
@@ -25,21 +25,18 @@ serve(async (req) => {
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-    // Get the caller's JWT from the Authorization header
     const authHeader = req.headers.get("Authorization");
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
       return new Response(
-        JSON.stringify({ success: false, error: "No autorizado: falta token de autenticación" }),
+        JSON.stringify({ success: false, error: "No autorizado: falta token" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Admin client (service role) for privileged operations
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
       auth: { autoRefreshToken: false, persistSession: false },
     });
 
-    // Verify the caller's identity using their token
     const callerClient = createClient(supabaseUrl, supabaseAnonKey, {
       global: { headers: { Authorization: authHeader } },
     });
@@ -52,7 +49,6 @@ serve(async (req) => {
       );
     }
 
-    // Verify the caller is admin or owner
     const { data: callerRole } = await supabaseAdmin
       .from("user_roles")
       .select("role")
@@ -66,13 +62,12 @@ serve(async (req) => {
       );
     }
 
-    // Parse request body
     const body = await req.json();
     const { email, password, name, role } = body;
 
     if (!email || !password || !name || !role) {
       return new Response(
-        JSON.stringify({ success: false, error: "Faltan campos requeridos: email, password, name, role" }),
+        JSON.stringify({ success: false, error: "Faltan campos requeridos" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -84,7 +79,6 @@ serve(async (req) => {
       );
     }
 
-    // Get caller's company and check user limits
     const { data: callerProfile } = await supabaseAdmin
       .from("profiles")
       .select("company_id, max_users")
@@ -98,7 +92,6 @@ serve(async (req) => {
       );
     }
 
-    // Check user limit (max_users === -1 means unlimited)
     if (callerProfile.max_users !== -1) {
       const { count } = await supabaseAdmin
         .from("profiles")
@@ -116,7 +109,6 @@ serve(async (req) => {
       }
     }
 
-    // Check if email already exists
     const { data: existing } = await supabaseAdmin
       .from("profiles")
       .select("id")
@@ -130,7 +122,6 @@ serve(async (req) => {
       );
     }
 
-    // Create the user via Admin API (skips email confirmation)
     const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
       email,
       password,
@@ -148,7 +139,6 @@ serve(async (req) => {
 
     const newUserId = newUser.user.id;
 
-    // Create profile linked to the same company
     const { error: profileError } = await supabaseAdmin
       .from("profiles")
       .upsert({ id: newUserId, email, name, company_id: callerProfile.company_id });
@@ -162,7 +152,6 @@ serve(async (req) => {
       );
     }
 
-    // Assign role
     const { error: roleError } = await supabaseAdmin
       .from("user_roles")
       .upsert({ user_id: newUserId, role });
@@ -176,15 +165,14 @@ serve(async (req) => {
       );
     }
 
-    console.log(`✅ Usuario creado: ${email} | rol: ${role} | company: ${callerProfile.company_id}`);
+    console.log(`User created: ${email} | role: ${role} | company: ${callerProfile.company_id}`);
 
     return new Response(
       JSON.stringify({ success: true, userId: newUserId, message: `Usuario ${name} creado exitosamente` }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
-
-  } catch (err: unknown) {
-    console.error("❌ Error inesperado:", err);
+  } catch (err) {
+    console.error("Unexpected error:", err);
     const msg = err instanceof Error ? err.message : String(err);
     return new Response(
       JSON.stringify({ success: false, error: msg }),
