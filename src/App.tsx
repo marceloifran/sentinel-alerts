@@ -11,9 +11,10 @@ import Dashboard from "./pages/Dashboard";
 import AllObligations from "./pages/AllObligations";
 import CreateObligation from "./pages/CreateObligation";
 import ObligationDetail from "./pages/ObligationDetail";
-import UserManagement from "./pages/UserManagement";
 import UserSettings from "./pages/UserSettings";
 import Reports from "./pages/Reports";
+import AccountantPanel from "./pages/AccountantPanel";
+import CompanyObligations from "./pages/CompanyObligations";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -30,10 +31,11 @@ const App = () => (
               <Route path="/" element={<Index />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/panel" element={<AccountantPanel />} />
+              <Route path="/panel/empresa/:companyId" element={<CompanyObligations />} />
               <Route path="/obligaciones" element={<AllObligations />} />
               <Route path="/obligaciones/nueva" element={<CreateObligation />} />
               <Route path="/obligaciones/:id" element={<ObligationDetail />} />
-              <Route path="/usuarios" element={<UserManagement />} />
               <Route path="/configuracion" element={<UserSettings />} />
               <Route path="/reportes" element={<Reports />} />
               <Route path="*" element={<NotFound />} />

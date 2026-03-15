@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { LogOut, User, LayoutDashboard, ClipboardList, Users, Sparkles, Lightbulb, BarChart3 } from "lucide-react";
+import { LogOut, User, LayoutDashboard, ClipboardList, Sparkles, BarChart3, Building2 } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useState } from "react";
 import { SmartObligationLoader } from "@/components/ai/SmartObligationLoader";
@@ -26,6 +26,11 @@ const Header = ({ userName = "Usuario", onLogout, isAdmin = false, userPlan }: H
 
   const navItems = [
     {
+      path: '/panel',
+      label: 'Mi Panel',
+      icon: Building2,
+    },
+    {
       path: '/dashboard',
       label: 'Dashboard',
       icon: LayoutDashboard,
@@ -40,11 +45,6 @@ const Header = ({ userName = "Usuario", onLogout, isAdmin = false, userPlan }: H
       label: 'Reportes',
       icon: BarChart3,
     },
-    ...(isAdmin ? [{
-      path: '/usuarios',
-      label: 'Usuarios',
-      icon: Users,
-    }] : []),
   ];
 
   return (
@@ -66,7 +66,8 @@ const Header = ({ userName = "Usuario", onLogout, isAdmin = false, userPlan }: H
                 {navItems.map((item) => {
                   const Icon = item.icon;
                   const isActive = location.pathname === item.path ||
-                    (item.path === '/obligaciones' && location.pathname.startsWith('/obligaciones'));
+                    (item.path === '/obligaciones' && location.pathname.startsWith('/obligaciones')) ||
+                    (item.path === '/panel' && location.pathname.startsWith('/panel'));
 
                   return (
                     <button
