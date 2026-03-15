@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Mail, Lock, ArrowRight, User, Eye, EyeOff, Phone, Building2, Shield, CheckCircle2, Clock, Users, Crown } from "lucide-react";
+import { Mail, Lock, ArrowRight, User, Eye, EyeOff, Phone, Building2, Shield, CheckCircle2, Clock, Users } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   Select,
@@ -27,6 +27,7 @@ const SECTORS = [
   { value: "inmobiliaria", label: "Inmobiliaria" },
   { value: "gastronomia", label: "Gastronomía y Hotelería" },
   { value: "profesional", label: "Servicios Profesionales" },
+  { value: "estudio_contable", label: "Estudio Contable" },
   { value: "otro", label: "Otro" },
 ];
 
@@ -45,7 +46,6 @@ const Auth = () => {
   const [companyName, setCompanyName] = useState("");
   const [isInvitedSignup, setIsInvitedSignup] = useState(false);
 
-  // Redirect if already logged in - use useEffect instead of render-time navigation
   useEffect(() => {
     if (user) {
       navigate('/dashboard');
@@ -137,7 +137,6 @@ const Auth = () => {
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-accent/20 flex">
       {/* Left side - Branding */}
       <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-primary via-primary to-primary/90 p-12 flex-col justify-between relative overflow-hidden">
-        {/* Background decoration */}
         <div className="absolute inset-0 opacity-10">
           <div className="absolute top-20 left-10 w-72 h-72 bg-white rounded-full blur-3xl" />
           <div className="absolute bottom-20 right-10 w-96 h-96 bg-white rounded-full blur-3xl" />
@@ -152,10 +151,10 @@ const Auth = () => {
 
         <div className="relative z-10 space-y-6">
           <h1 className="text-5xl font-bold text-primary-foreground leading-tight">
-            Gestiona tus obligaciones con confianza
+            Todos tus clientes al día, desde una sola pantalla
           </h1>
           <p className="text-primary-foreground/90 text-xl leading-relaxed">
-            La plataforma integral para empresas que quieren mantener todas sus obligaciones fiscales, legales y laborales bajo control.
+            Nunca más un vencimiento perdido. Alertas automáticas para cada empresa que gestionás.
           </p>
         </div>
 
@@ -165,8 +164,8 @@ const Auth = () => {
               <Clock className="w-6 h-6 text-primary-foreground" />
             </div>
             <div>
-              <h3 className="font-semibold text-primary-foreground">Recordatorios Inteligentes</h3>
-              <p className="text-primary-foreground/80 text-sm">Notificaciones automáticas por email antes de cada vencimiento</p>
+              <h3 className="font-semibold text-primary-foreground">Alertas automáticas</h3>
+              <p className="text-primary-foreground/80 text-sm">Recibís un mail antes de cada vencimiento</p>
             </div>
           </div>
 
@@ -175,8 +174,8 @@ const Auth = () => {
               <CheckCircle2 className="w-6 h-6 text-primary-foreground" />
             </div>
             <div>
-              <h3 className="font-semibold text-primary-foreground">Dashboard Visual</h3>
-              <p className="text-primary-foreground/80 text-sm">Vista clara del estado de cumplimiento de todas tus obligaciones</p>
+              <h3 className="font-semibold text-primary-foreground">Panel multicliente</h3>
+              <p className="text-primary-foreground/80 text-sm">Verde, amarillo, rojo: sabés al instante quién está al día</p>
             </div>
           </div>
 
@@ -185,8 +184,8 @@ const Auth = () => {
               <Users className="w-6 h-6 text-primary-foreground" />
             </div>
             <div>
-              <h3 className="font-semibold text-primary-foreground">Trabajo en Equipo</h3>
-              <p className="text-primary-foreground/80 text-sm">Asigna responsables y colabora con tu equipo de trabajo</p>
+              <h3 className="font-semibold text-primary-foreground">Primer mes gratis</h3>
+              <p className="text-primary-foreground/80 text-sm">Sin tarjeta de crédito. Cancelás cuando quieras.</p>
             </div>
           </div>
         </div>
@@ -195,7 +194,6 @@ const Auth = () => {
       {/* Right side - Form */}
       <div className="flex-1 flex items-center justify-center p-6 sm:p-12">
         <div className="w-full max-w-md animate-fade-in">
-          {/* Mobile logo */}
           <div className="lg:hidden flex items-center gap-3 mb-8 justify-center">
             <img src="/logo.png" alt="IfsinRem Logo" className="w-12 h-12 object-contain rounded-xl shadow-md" />
             <span className="text-2xl font-bold text-foreground">IfsinRem</span>
@@ -204,15 +202,15 @@ const Auth = () => {
           <div className="text-center mb-8">
             <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-3 py-1.5 rounded-full text-sm font-medium mb-4">
               <Shield className="w-4 h-4" />
-              {isLogin ? "Acceso seguro" : (isInvitedSignup ? "Te estás uniendo a tu equipo" : "Registro gratuito")}
+              {isLogin ? "Acceso seguro" : (isInvitedSignup ? "Te estás uniendo a tu equipo" : "Primer mes gratis")}
             </div>
             <h2 className="text-3xl font-bold text-foreground mb-2">
-              {isLogin ? "Bienvenido de vuelta" : (isInvitedSignup ? "Crea tu usuario" : "Crea tu cuenta")}
+              {isLogin ? "Bienvenido de vuelta" : (isInvitedSignup ? "Crea tu usuario" : "Empezá gratis")}
             </h2>
             <p className="text-muted-foreground">
               {isLogin
-                ? "Ingresa tus credenciales para continuar"
-                : (isInvitedSignup ? "Completa tus datos personales para sumarte a tu empresa" : "Completa tus datos para comenzar")
+                ? "Ingresá tus credenciales para continuar"
+                : (isInvitedSignup ? "Completá tus datos personales para sumarte a tu empresa" : "Completá tus datos para comenzar")
               }
             </p>
           </div>
@@ -238,13 +236,13 @@ const Auth = () => {
                 {!isInvitedSignup && (
                   <>
                     <div className="space-y-2">
-                      <Label htmlFor="companyName" className="text-sm font-medium">Nombre de la Empresa</Label>
+                      <Label htmlFor="companyName" className="text-sm font-medium">Nombre del Estudio / Empresa</Label>
                       <div className="relative">
                         <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                         <Input
                           id="companyName"
                           type="text"
-                          placeholder="Ej: Mi Empresa S.A."
+                          placeholder="Ej: Estudio Contable García"
                           value={companyName}
                           onChange={(e) => setCompanyName(e.target.value)}
                           className="h-12 pl-10 bg-background border-border/60 focus:border-primary"
@@ -274,7 +272,7 @@ const Auth = () => {
                         <SelectTrigger className="h-12 bg-background border-border/60 focus:border-primary">
                           <div className="flex items-center gap-2">
                             <Building2 className="w-5 h-5 text-muted-foreground" />
-                            <SelectValue placeholder="Selecciona tu sector" />
+                            <SelectValue placeholder="Seleccioná tu sector" />
                           </div>
                         </SelectTrigger>
                         <SelectContent className="z-[9999]">
@@ -286,20 +284,20 @@ const Auth = () => {
                         </SelectContent>
                       </Select>
                     </div>
+
                     <div className="space-y-2">
-                      <Label htmlFor="plan" className="text-sm font-medium">Plan suscrito</Label>
+                      <Label htmlFor="plan" className="text-sm font-medium">¿Cuántas empresas gestionás?</Label>
                       <Select value={plan} onValueChange={(val: any) => setPlan(val)}>
                         <SelectTrigger className="h-12 bg-background border-border/60 focus:border-primary">
-                          <div className="flex items-center gap-2">
-                            <Crown className={`w-5 h-5 ${plan === 'enterprise' ? 'text-amber-500' : 'text-primary'}`} />
-                            <SelectValue placeholder="Selecciona un plan" />
-                          </div>
+                          <SelectValue placeholder="Seleccioná un plan" />
                         </SelectTrigger>
                         <SelectContent className="z-[9999]">
-                          <SelectItem value="professional">Professional (Equipos)</SelectItem>
-                          <SelectItem value="enterprise">Enterprise (Ilmitado)</SelectItem>
+                          <SelectItem value="starter">Hasta 5 empresas (Starter - USD 15/mes)</SelectItem>
+                          <SelectItem value="professional">Hasta 20 empresas (Pro - USD 35/mes)</SelectItem>
+                          <SelectItem value="enterprise">Ilimitadas (Estudio - USD 70/mes)</SelectItem>
                         </SelectContent>
                       </Select>
+                      <p className="text-xs text-muted-foreground">Primer mes gratis en todos los planes</p>
                     </div>
                   </>
                 )}
@@ -313,7 +311,7 @@ const Auth = () => {
                 <Input
                   id="email"
                   type="email"
-                  placeholder="tu@empresa.com"
+                  placeholder="tu@estudio.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="h-12 pl-10 bg-background border-border/60 focus:border-primary"
@@ -339,11 +337,7 @@ const Auth = () => {
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                 >
-                  {showPassword ? (
-                    <EyeOff className="w-5 h-5" />
-                  ) : (
-                    <Eye className="w-5 h-5" />
-                  )}
+                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
               </div>
               {!isLogin && (
@@ -356,7 +350,7 @@ const Auth = () => {
               className="w-full h-12 text-base gap-2 mt-6 shadow-lg shadow-primary/20"
               disabled={isLoading}
             >
-              {isLoading ? "Procesando..." : (isLogin ? "Iniciar sesión" : "Crear mi cuenta")}
+              {isLoading ? "Procesando..." : (isLogin ? "Iniciar sesión" : "Empezar gratis")}
               {!isLoading && <ArrowRight className="w-4 h-4" />}
             </Button>
           </form>
@@ -374,21 +368,15 @@ const Auth = () => {
               className="text-sm text-primary hover:text-primary/80 font-medium transition-colors"
             >
               {isLogin
-                ? "¿No tienes cuenta? Crea una gratis"
-                : "¿Ya tienes cuenta? Inicia sesión"
+                ? "¿No tenés cuenta? Empezá gratis"
+                : "¿Ya tenés cuenta? Iniciá sesión"
               }
             </button>
           </div>
 
-          {!isLogin && (
+          {!isLogin && !isInvitedSignup && (
             <p className="mt-6 text-center text-xs text-muted-foreground">
-              Al registrarte, aceptas nuestros términos de servicio y política de privacidad.
-            </p>
-          )}
-
-          {!isInvitedSignup && (
-            <p className="mt-4 text-center text-xs text-muted-foreground/70">
-              El primer usuario registrado será designado como administrador.
+              Al registrarte, aceptás nuestros términos de servicio y política de privacidad.
             </p>
           )}
         </div>
