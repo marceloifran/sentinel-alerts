@@ -14,6 +14,38 @@ export type Database = {
   }
   public: {
     Tables: {
+      accountant_clients: {
+        Row: {
+          accountant_id: string
+          client_company_id: string
+          created_at: string
+          id: string
+          nickname: string | null
+        }
+        Insert: {
+          accountant_id: string
+          client_company_id: string
+          created_at?: string
+          id?: string
+          nickname?: string | null
+        }
+        Update: {
+          accountant_id?: string
+          client_company_id?: string
+          created_at?: string
+          id?: string
+          nickname?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "accountant_clients_client_company_id_fkey"
+            columns: ["client_company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       companies: {
         Row: {
           created_at: string
