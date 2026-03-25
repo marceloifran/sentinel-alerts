@@ -13,7 +13,6 @@ import CreateObligation from "./pages/CreateObligation";
 import ObligationDetail from "./pages/ObligationDetail";
 import UserSettings from "./pages/UserSettings";
 import Reports from "./pages/Reports";
-import AccountantPanel from "./pages/AccountantPanel";
 import CompanyObligations from "./pages/CompanyObligations";
 import NotFound from "./pages/NotFound";
 
@@ -31,8 +30,7 @@ const App = () => (
               <Route path="/" element={<Index />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/panel" element={<AccountantPanel />} />
-              <Route path="/panel/empresa/:companyId" element={<CompanyObligations />} />
+              <Route path="/empresa/:companyId" element={<CompanyObligations />} />
               <Route path="/obligaciones" element={<AllObligations />} />
               <Route path="/obligaciones/nueva" element={<CreateObligation />} />
               <Route path="/obligaciones/:id" element={<ObligationDetail />} />

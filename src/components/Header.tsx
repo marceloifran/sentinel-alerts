@@ -26,11 +26,6 @@ const Header = ({ userName = "Usuario", onLogout, isAdmin = false, userPlan }: H
 
   const navItems = [
     {
-      path: '/panel',
-      label: 'Mi Panel',
-      icon: Building2,
-    },
-    {
       path: '/dashboard',
       label: 'Dashboard',
       icon: LayoutDashboard,

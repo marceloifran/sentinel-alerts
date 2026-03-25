@@ -130,19 +130,21 @@ export async function addClientCompany(
   companyName: string,
   cuit?: string
 ): Promise<ClientCompany> {
-  // 1. Create the company
-  const { data: company, error: companyError } = await supabase
+  // Generate the UUID client-side so we don't need to SELECT after INSERT
+  // (SELECT after INSERT triggers SELECT RLS, which fails before the link exists)
+  const companyId = crypto.randomUUID();
+
+  // 1. Create the company (no .select() to avoid SELECT RLS on unlinked company)
+  const { error: companyError } = await supabase
     .from('companies')
-    .insert({ name: companyName, cuit: cuit || null, plan: 'professional' })
-    .select()
-    .single();
+    .insert({ id: companyId, name: companyName, cuit: cuit || null, plan: 'professional' });
 
   if (companyError) throw companyError;
 
   // 2. Link to accountant
   const { data: link, error: linkError } = await supabase
     .from('accountant_clients' as any)
-    .insert({ accountant_id: accountantId, client_company_id: company.id })
+    .insert({ accountant_id: accountantId, client_company_id: companyId })
     .select()
     .single();
 
@@ -150,9 +152,9 @@ export async function addClientCompany(
 
   return {
     id: (link as any).id,
-    companyId: company.id,
-    companyName: company.name,
-    cuit: company.cuit,
+    companyId,
+    companyName,
+    cuit: cuit || null,
     nickname: null,
     status: 'green',
     nextObligation: null,

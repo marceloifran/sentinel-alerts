@@ -53,16 +53,16 @@ export function AddClientDialog({ open, onOpenChange, onConfirm }: AddClientDial
             <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
               <Building2 className="w-5 h-5 text-primary" />
             </div>
-            <DialogTitle>Agregar empresa cliente</DialogTitle>
+            <DialogTitle>Agregar cliente</DialogTitle>
           </div>
           <DialogDescription>
-            Ingresá los datos de la empresa que gestionás. Después podés cargarle sus obligaciones y vencimientos.
+            Ingresá los datos del cliente que gestionás. Luego podrás cargar sus obligaciones y vencimientos.
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4 mt-2">
           <div className="space-y-2">
-            <Label htmlFor="clientCompanyName">Nombre de la empresa *</Label>
+            <Label htmlFor="clientCompanyName">Nombre del cliente *</Label>
             <Input
               id="clientCompanyName"
               placeholder="Ej: Constructora Norte S.A."

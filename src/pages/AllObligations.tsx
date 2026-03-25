@@ -15,8 +15,9 @@ import {
 } from "@/components/ui/select";
 import { useAuth } from "@/contexts/AuthContext";
 import { useObligations } from "@/hooks/useObligations";
+import { useAccountantClients } from "@/hooks/useAccountantClients";
 import { categoryLabels, statusLabels, getResponsibles } from "@/services/obligationService";
-import { Search, Filter, ArrowLeft, LayoutGrid, List, RefreshCw } from "lucide-react";
+import { Search, Filter, ArrowLeft, LayoutGrid, List, RefreshCw, Building2 } from "lucide-react";
 import { toast } from "sonner";
 import { useQuery } from "@tanstack/react-query";
 import { ObligationListSkeleton } from "@/components/skeletons/Skeletons";
@@ -28,7 +29,11 @@ const AllObligations = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [clientFilter, setClientFilter] = useState<string>("all");
   const [viewMode, setViewMode] = useState<"list" | "kanban">("list");
+
+  const { data: clients = [] } = useAccountantClients();
+  const hasClients = clients.length > 0;
 
   // React Query hook
   const { data: obligations = [], isLoading, error, refetch } = useObligations();
@@ -50,9 +55,10 @@ const AllObligations = () => {
         o.responsible_name?.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesCategory = categoryFilter === "all" || o.category === categoryFilter;
       const matchesStatus = statusFilter === "all" || o.status === statusFilter;
-      return matchesSearch && matchesCategory && matchesStatus;
+      const matchesClient = clientFilter === "all" || o.company_id === clientFilter;
+      return matchesSearch && matchesCategory && matchesStatus && matchesClient;
     });
-  }, [obligations, searchTerm, categoryFilter, statusFilter]);
+  }, [obligations, searchTerm, categoryFilter, statusFilter, clientFilter]);
 
   const handleRefresh = async () => {
     await refetch();
@@ -169,6 +175,23 @@ const AllObligations = () => {
                 className="pl-10"
               />
             </div>
+
+            {hasClients && (
+              <Select value={clientFilter} onValueChange={setClientFilter}>
+                <SelectTrigger className="w-full sm:w-[200px]">
+                  <Building2 className="w-4 h-4 mr-2 text-muted-foreground" />
+                  <SelectValue placeholder="Cliente" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos los clientes</SelectItem>
+                  {clients.map((c) => (
+                    <SelectItem key={c.companyId} value={c.companyId}>
+                      {c.companyName}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
 
             <Select value={categoryFilter} onValueChange={setCategoryFilter}>
               <SelectTrigger className="w-full sm:w-[180px]">

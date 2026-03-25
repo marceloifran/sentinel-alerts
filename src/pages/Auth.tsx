@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Mail, Lock, ArrowRight, User, Eye, EyeOff, Phone, Building2, Shield, CheckCircle2, Clock, Users } from "lucide-react";
+import { Mail, Lock, ArrowRight, User, Eye, EyeOff, Phone, Shield, CheckCircle2, Clock, Users } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   Select,
@@ -14,23 +14,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-const SECTORS = [
-  { value: "construccion", label: "Construcción" },
-  { value: "comercio", label: "Comercio" },
-  { value: "servicios", label: "Servicios" },
-  { value: "industria", label: "Industria" },
-  { value: "agro", label: "Agropecuario" },
-  { value: "tecnologia", label: "Tecnología" },
-  { value: "salud", label: "Salud" },
-  { value: "educacion", label: "Educación" },
-  { value: "transporte", label: "Transporte y Logística" },
-  { value: "inmobiliaria", label: "Inmobiliaria" },
-  { value: "gastronomia", label: "Gastronomía y Hotelería" },
-  { value: "profesional", label: "Servicios Profesionales" },
-  { value: "estudio_contable", label: "Estudio Contable" },
-  { value: "otro", label: "Otro" },
-];
-
 const Auth = () => {
   const navigate = useNavigate();
   const { signIn, signUp, user } = useAuth();
@@ -39,11 +22,9 @@ const Auth = () => {
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
-  const [sector, setSector] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [plan, setPlan] = useState<'professional' | 'enterprise'>('professional');
-  const [companyName, setCompanyName] = useState("");
   const [isInvitedSignup, setIsInvitedSignup] = useState(false);
 
   useEffect(() => {
@@ -78,7 +59,7 @@ const Auth = () => {
           return;
         }
       } else {
-        if (!name || !phone || !sector || !companyName) {
+        if (!name || !phone) {
           toast.error("Por favor completa todos los campos");
           return;
         }
@@ -112,7 +93,7 @@ const Auth = () => {
         toast.success("Bienvenido de vuelta");
         navigate('/dashboard');
       } else {
-        const { error } = await signUp(email, password, name, phone, sector, plan, companyName);
+        const { error } = await signUp(email, password, name, phone, undefined, plan, undefined);
         if (error) {
           if (error.message.includes('already registered')) {
             toast.error("Este email ya está registrado");
@@ -236,21 +217,6 @@ const Auth = () => {
                 {!isInvitedSignup && (
                   <>
                     <div className="space-y-2">
-                      <Label htmlFor="companyName" className="text-sm font-medium">Nombre del Estudio / Empresa</Label>
-                      <div className="relative">
-                        <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                        <Input
-                          id="companyName"
-                          type="text"
-                          placeholder="Ej: Estudio Contable García"
-                          value={companyName}
-                          onChange={(e) => setCompanyName(e.target.value)}
-                          className="h-12 pl-10 bg-background border-border/60 focus:border-primary"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
                       <Label htmlFor="phone" className="text-sm font-medium">Teléfono</Label>
                       <div className="relative">
                         <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
@@ -262,27 +228,8 @@ const Auth = () => {
                           onChange={(e) => setPhone(e.target.value)}
                           className="h-12 pl-10 bg-background border-border/60 focus:border-primary"
                         />
+                        <p className="text-xs text-muted-foreground mt-1">Incluí código de país para recibir notificaciones</p>
                       </div>
-                      <p className="text-xs text-muted-foreground">Incluí código de país para recibir notificaciones</p>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="sector" className="text-sm font-medium">Sector o rubro</Label>
-                      <Select value={sector} onValueChange={(val) => setSector(val)}>
-                        <SelectTrigger className="h-12 bg-background border-border/60 focus:border-primary">
-                          <div className="flex items-center gap-2">
-                            <Building2 className="w-5 h-5 text-muted-foreground" />
-                            <SelectValue placeholder="Seleccioná tu sector" />
-                          </div>
-                        </SelectTrigger>
-                        <SelectContent className="z-[9999]">
-                          {SECTORS.map((s) => (
-                            <SelectItem key={s.value} value={s.value}>
-                              {s.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
                     </div>
 
                     <div className="space-y-2">
@@ -362,7 +309,6 @@ const Auth = () => {
                 setIsLogin(!isLogin);
                 setName("");
                 setPhone("");
-                setSector("");
                 setIsInvitedSignup(false);
               }}
               className="text-sm text-primary hover:text-primary/80 font-medium transition-colors"

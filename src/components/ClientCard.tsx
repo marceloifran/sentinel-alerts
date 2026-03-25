@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Building2, AlertTriangle, CheckCircle, Clock, ChevronRight, Trash2 } from 'lucide-react';
+import { ChevronRight, Trash2, Clock, Building2, AlertTriangle, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { cn } from "@/lib/utils";
 import type { ClientCompany, ClientStatus } from '@/services/accountantClientService';
 
 interface ClientCardProps {
@@ -48,15 +49,15 @@ function StatusLabel({ status, overdueCount, urgentCount }: { status: ClientStat
 }
 
 const borderColors: Record<ClientStatus, string> = {
-  red: 'border-status-danger/40 hover:border-status-danger/70',
-  yellow: 'border-status-warning/40 hover:border-status-warning/70',
-  green: 'border-status-success/30 hover:border-status-success/50',
+  red: 'hover:border-rose-500/50 border-border/50 shadow-rose-500/5',
+  yellow: 'hover:border-amber-500/50 border-border/50 shadow-amber-500/5',
+  green: 'hover:border-emerald-500/50 border-border/50 shadow-emerald-500/5',
 };
 
-const bgColors: Record<ClientStatus, string> = {
-  red: 'from-status-danger/5 to-transparent',
-  yellow: 'from-status-warning/5 to-transparent',
-  green: 'from-status-success/5 to-transparent',
+const bgGradients: Record<ClientStatus, string> = {
+  red: 'hover:from-rose-500/[0.03] hover:to-transparent',
+  yellow: 'hover:from-amber-500/[0.03] hover:to-transparent',
+  green: 'hover:from-emerald-500/[0.03] hover:to-transparent',
 };
 
 export function ClientCard({ client, delay = 0, onClick, onRemove }: ClientCardProps) {
@@ -84,113 +85,120 @@ export function ClientCard({ client, delay = 0, onClick, onRemove }: ClientCardP
   };
 
   const formatDaysLeft = (days: number) => {
-    if (days < 0) return `Venció hace ${Math.abs(days)} día${Math.abs(days) > 1 ? 's' : ''}`;
+    if (days < 0) return `Venció hace ${Math.abs(days)}d`;
     if (days === 0) return '¡Vence hoy!';
-    if (days === 1) return 'Vence mañana';
-    return `Vence en ${days} días`;
+    if (days === 1) return 'Mañana';
+    return `En ${days} días`;
   };
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 16 }}
+      initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.35, delay }}
-      whileHover={{ scale: 1.015, y: -2 }}
+      transition={{ duration: 0.3, delay }}
+      whileHover={{ y: -4 }}
       onClick={onClick}
-      className={`
-        relative group cursor-pointer rounded-xl border bg-gradient-to-br ${bgColors[client.status]}
-        ${borderColors[client.status]} bg-card shadow-sm hover:shadow-md
-        transition-all duration-200 p-5
-      `}
+      className={cn(
+        "relative group cursor-pointer rounded-2xl border bg-card transition-all duration-300",
+        "shadow-sm hover:shadow-xl",
+        borderColors[client.status],
+        bgGradients[client.status],
+        "p-5"
+      )}
     >
-      {/* Remove button */}
+      <div className="flex items-start justify-between mb-4">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-secondary/50 border border-border/50 transition-colors group-hover:bg-background">
+            <Building2 className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
+          </div>
+          <div className="min-w-0">
+            <h3 className="text-sm font-bold text-foreground leading-tight truncate group-hover:text-primary transition-colors">
+              {client.nickname || client.companyName}
+            </h3>
+            <p className="text-[11px] font-medium text-muted-foreground/70 uppercase tracking-wider mt-0.5 truncate">
+              {client.cuit ? `CUIT ${client.cuit}` : 'Sin CUIT'}
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-1.5 flex-shrink-0">
+          <StatusDot status={client.status} />
+          <div className="h-6 w-6 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all bg-secondary/80">
+            <ChevronRight className="h-3.5 w-3.5 text-foreground" />
+          </div>
+        </div>
+      </div>
+
+      <div className="space-y-3">
+        {client.nextObligation ? (
+          <div className="rounded-xl bg-muted/30 p-3 border border-border/30 transition-colors group-hover:bg-background/50 group-hover:border-primary/10">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-tight truncate">
+                {client.nextObligation.name}
+              </span>
+              <span className={cn(
+                "text-[10px] font-bold px-1.5 py-0.5 rounded-full",
+                client.status === 'red' ? "bg-rose-500/10 text-rose-600" : 
+                client.status === 'yellow' ? "bg-amber-500/10 text-amber-600" : 
+                "bg-emerald-500/10 text-emerald-600"
+              )}>
+                {formatDate(client.nextObligation.dueDate)}
+              </span>
+            </div>
+            <p className={cn(
+              "text-xs font-medium mt-1.5 flex items-center gap-1.5",
+              client.nextObligation.daysUntilDue <= 0 ? "text-rose-500" : 
+              client.nextObligation.daysUntilDue <= 7 ? "text-amber-500" : 
+              "text-emerald-500"
+            )}>
+              <Clock className="h-3 w-3" />
+              {formatDaysLeft(client.nextObligation.daysUntilDue)}
+            </p>
+          </div>
+        ) : (
+          <div className="rounded-xl bg-muted/30 p-3 border border-dashed border-border/50 text-center">
+             <p className="text-[11px] italic text-muted-foreground">Sin obligaciones futuras</p>
+          </div>
+        )}
+
+        <div className="flex items-center justify-between pt-2">
+          <div className="flex -space-x-1">
+             <span className="text-[10px] font-bold text-muted-foreground/80 bg-secondary/50 px-2 py-0.5 rounded-full border border-border/50">
+               {client.totalObligations} totales
+             </span>
+          </div>
+          <StatusLabel
+            status={client.status}
+            overdueCount={client.overdueCount}
+            urgentCount={client.urgentCount}
+          />
+        </div>
+      </div>
+
       {onRemove && !showConfirmRemove && (
         <button
           onClick={handleRemoveClick}
-          className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground"
-          title="Eliminar cliente"
+          className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-all p-1.5 rounded-lg hover:bg-rose-500/10 hover:text-rose-600 text-muted-foreground/50"
         >
-          <Trash2 className="w-4 h-4" />
+          <Trash2 className="h-3.5 w-3.5" />
         </button>
       )}
 
-      {/* Confirm remove */}
       {showConfirmRemove && (
         <div
-          className="absolute top-2 right-2 flex items-center gap-2 bg-card border border-border rounded-lg px-3 py-2 shadow-lg z-10"
+          className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-card/95 backdrop-blur-sm rounded-2xl p-4 text-center animate-in fade-in zoom-in duration-200"
           onClick={(e) => e.stopPropagation()}
         >
-          <span className="text-xs text-muted-foreground">¿Quitar cliente?</span>
-          <Button size="sm" variant="destructive" className="h-6 text-xs px-2" onClick={handleConfirmRemove}>
-            Sí
-          </Button>
-          <Button size="sm" variant="outline" className="h-6 text-xs px-2" onClick={handleCancelRemove}>
-            No
-          </Button>
-        </div>
-      )}
-
-      {/* Header row */}
-      <div className="flex items-start justify-between gap-3 mb-3">
-        <div className="flex items-center gap-3 min-w-0">
-          <div className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center flex-shrink-0">
-            <Building2 className="w-5 h-5 text-muted-foreground" />
-          </div>
-          <div className="min-w-0">
-            <p className="font-semibold text-foreground text-sm truncate leading-tight">
-              {client.nickname || client.companyName}
-            </p>
-            {client.nickname && (
-              <p className="text-xs text-muted-foreground truncate">{client.companyName}</p>
-            )}
-            {client.cuit && (
-              <p className="text-xs text-muted-foreground">CUIT {client.cuit}</p>
-            )}
+          <p className="text-xs font-bold mb-3">¿Eliminar este cliente?</p>
+          <div className="flex gap-2">
+            <Button size="sm" variant="destructive" className="h-8 text-[11px] font-bold px-4" onClick={handleConfirmRemove}>
+              Sí, eliminar
+            </Button>
+            <Button size="sm" variant="ghost" className="h-8 text-[11px] px-4" onClick={handleCancelRemove}>
+              No
+            </Button>
           </div>
         </div>
-        <div className="flex items-center gap-2 flex-shrink-0 mt-0.5">
-          <StatusDot status={client.status} />
-          <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:translate-x-0.5 transition-transform" />
-        </div>
-      </div>
-
-      {/* Status label */}
-      <StatusLabel
-        status={client.status}
-        overdueCount={client.overdueCount}
-        urgentCount={client.urgentCount}
-      />
-
-      {/* Next obligation */}
-      {client.nextObligation ? (
-        <div className="mt-2 p-2.5 rounded-lg bg-muted/50">
-          <p className="text-xs text-muted-foreground truncate">{client.nextObligation.name}</p>
-          <p className="text-xs font-medium text-foreground mt-0.5">
-            {formatDate(client.nextObligation.dueDate)} ·{' '}
-            <span
-              className={
-                client.nextObligation.daysUntilDue <= 0
-                  ? 'text-status-danger'
-                  : client.nextObligation.daysUntilDue <= 7
-                  ? 'text-status-warning'
-                  : 'text-muted-foreground'
-              }
-            >
-              {formatDaysLeft(client.nextObligation.daysUntilDue)}
-            </span>
-          </p>
-        </div>
-      ) : (
-        <p className="mt-2 text-xs text-muted-foreground italic">Sin obligaciones cargadas</p>
       )}
-
-      {/* Footer stats */}
-      <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground border-t border-border/50 pt-2.5">
-        <span>{client.totalObligations} obligación{client.totalObligations !== 1 ? 'es' : ''}</span>
-        {client.overdueCount > 0 && (
-          <span className="text-status-danger font-medium">{client.overdueCount} vencida{client.overdueCount > 1 ? 's' : ''}</span>
-        )}
-      </div>
     </motion.div>
   );
 }

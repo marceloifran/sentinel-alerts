@@ -38,6 +38,7 @@ import {
   FileIcon,
   Mic,
   Music,
+  Building2,
 } from "lucide-react";
 import { CategoryIcon } from "@/components/CategoryIcon";
 import { categoryLabels, ObligationCategory } from "@/services/obligationService";
@@ -45,6 +46,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { AudioRecorder } from "./AudioRecorder";
 import { useAuth } from "@/contexts/AuthContext";
+import { useAccountantClients } from "@/hooks/useAccountantClients";
 
 interface UploadedFile {
   file: File;
@@ -69,6 +71,7 @@ interface SmartObligationLoaderProps {
   onObligationsCreated: () => void;
   existingObligations: { name: string }[];
   userId: string;
+  preselectedCompanyId?: string;
 }
 
 export function SmartObligationLoader({
@@ -77,8 +80,10 @@ export function SmartObligationLoader({
   onObligationsCreated,
   existingObligations,
   userId,
+  preselectedCompanyId,
 }: SmartObligationLoaderProps) {
   const { profile } = useAuth();
+  const { data: clients = [] } = useAccountantClients();
   const [step, setStep] = useState<"input" | "preview" | "creating">("input");
   const [inputText, setInputText] = useState("");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -86,6 +91,7 @@ export function SmartObligationLoader({
   const [summary, setSummary] = useState("");
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
+  const [selectedCompanyId, setSelectedCompanyId] = useState<string>(preselectedCompanyId ?? "own");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const ACCEPTED_FILE_TYPES = [
@@ -230,6 +236,10 @@ export function SmartObligationLoader({
       return;
     }
 
+    // Determine target company_id
+    const targetCompanyId =
+      selectedCompanyId !== "own" ? selectedCompanyId : profile?.company_id;
+
     setStep("creating");
 
     try {
@@ -241,7 +251,7 @@ export function SmartObligationLoader({
           recurrence: obl.recurrence,
           responsible_id: userId,
           created_by: userId,
-          company_id: profile?.company_id,
+          company_id: targetCompanyId,
           status: calculateStatus(obl.due_date),
         });
 
@@ -300,6 +310,7 @@ export function SmartObligationLoader({
     setParsedObligations([]);
     setSummary("");
     setEditingIndex(null);
+    setSelectedCompanyId(preselectedCompanyId ?? "own");
     // Clean up file previews
     uploadedFiles.forEach(f => {
       if (f.preview) URL.revokeObjectURL(f.preview);
@@ -482,6 +493,32 @@ export function SmartObligationLoader({
               </TabsContent>
             </Tabs>
 
+            {/* Client company selector - only shown if accountant has clients */}
+            {clients.length > 0 && (
+              <div className="space-y-2">
+                <Label className="flex items-center gap-1.5">
+                  <Building2 className="w-4 h-4 text-muted-foreground" />
+                  Empresa cliente (opcional)
+                </Label>
+                <Select value={selectedCompanyId} onValueChange={setSelectedCompanyId}>
+                  <SelectTrigger className="h-10">
+                    <SelectValue placeholder="Mi empresa (por defecto)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="own">Mi empresa (por defecto)</SelectItem>
+                    {clients.map((c) => (
+                      <SelectItem key={c.companyId} value={c.companyId}>
+                        {c.companyName}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Las obligaciones se crearán para la empresa seleccionada.
+                </p>
+              </div>
+            )}
+
             <div className="sticky bottom-0 flex items-center justify-between gap-3 border-t bg-background pt-3">
               <span className="text-xs text-muted-foreground">
                 Analizaremos el texto, audios y archivos que cargues.
@@ -518,6 +555,18 @@ export function SmartObligationLoader({
                 <strong>Resumen:</strong> {summary}
               </div>
             )}
+
+            {/* Show target company in preview */}
+            {selectedCompanyId !== "own" && (() => {
+              const company = clients.find(c => c.companyId === selectedCompanyId);
+              return company ? (
+                <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted border border-border text-sm">
+                  <Building2 className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                  <span className="text-muted-foreground">Empresa destino:</span>
+                  <span className="font-medium text-foreground">{company.companyName}</span>
+                </div>
+              ) : null;
+            })()}
 
             <div className="flex items-center justify-between">
               <span className="text-sm text-muted-foreground">

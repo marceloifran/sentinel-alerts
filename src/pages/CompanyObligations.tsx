@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Building2, Plus, CheckCircle, AlertTriangle, XCircle } from 'lucide-react';
@@ -7,6 +7,7 @@ import Header from '@/components/Header';
 import ObligationCard from '@/components/ObligationCard';
 import EmptyState from '@/components/EmptyState';
 import StatusCard from '@/components/StatusCard';
+import { SmartObligationLoader } from '@/components/ai/SmartObligationLoader';
 import { useAuth } from '@/contexts/AuthContext';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -46,8 +47,9 @@ const CompanyObligations = () => {
   const navigate = useNavigate();
   const { companyId } = useParams<{ companyId: string }>();
   const { user, profile, isAdmin, signOut, isLoading: authLoading } = useAuth();
+  const [showSmartLoader, setShowSmartLoader] = useState(false);
 
-  const { data, isLoading } = useCompanyObligations(companyId);
+  const { data, isLoading, refetch } = useCompanyObligations(companyId);
   const company = data?.company;
   const obligations = data?.obligations ?? [];
 
@@ -88,10 +90,10 @@ const CompanyObligations = () => {
           <Button
             variant="ghost"
             className="gap-2 -ml-2 mb-4 text-muted-foreground hover:text-foreground"
-            onClick={() => navigate('/panel')}
+            onClick={() => navigate('/dashboard')}
           >
             <ArrowLeft className="w-4 h-4" />
-            Volver al panel
+            Volver al dashboard
           </Button>
 
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -108,10 +110,10 @@ const CompanyObligations = () => {
                 )}
               </div>
             </div>
-            {isAdmin && companyId && (
+            {companyId && (
               <Button
                 className="gap-2 self-start sm:self-auto"
-                onClick={() => navigate(`/obligaciones/nueva?company_id=${companyId}`)}
+                onClick={() => setShowSmartLoader(true)}
               >
                 <Plus className="w-4 h-4" />
                 Nueva obligación
@@ -170,6 +172,17 @@ const CompanyObligations = () => {
           </div>
         )}
       </main>
+      {/* SmartObligationLoader pre-set to this client company */}
+      {companyId && user && (
+        <SmartObligationLoader
+          open={showSmartLoader}
+          onOpenChange={setShowSmartLoader}
+          onObligationsCreated={() => refetch()}
+          existingObligations={(obligations).map(o => ({ name: o.name }))}
+          userId={user.id}
+          preselectedCompanyId={companyId}
+        />
+      )}
     </div>
   );
 };

@@ -9,42 +9,34 @@ interface StatusCardProps {
 }
 
 const StatusCard = ({ count, label, status, icon, active = false }: StatusCardProps) => {
+  const statusColors = {
+    success: 'text-emerald-600 border-emerald-100 bg-emerald-50/50',
+    warning: 'text-amber-600 border-amber-100 bg-amber-50/50',
+    danger: 'text-rose-600 border-rose-100 bg-rose-50/50',
+  };
+
+  const ringColors = {
+    success: 'ring-emerald-500/20',
+    warning: 'ring-amber-500/20',
+    danger: 'ring-rose-500/20',
+  };
+
   return (
     <div className={cn(
-      "card-elevated p-6 transition-all duration-200 hover:shadow-elevated animate-fade-in relative overflow-hidden",
-      active && "ring-2",
-      active && status === 'success' && "ring-status-success",
-      active && status === 'warning' && "ring-status-warning",
-      active && status === 'danger' && "ring-status-danger",
+      "relative flex items-center justify-between p-4 rounded-xl border bg-card transition-all duration-300",
+      "hover:shadow-md hover:-translate-y-0.5",
+      statusColors[status],
+      active && cn("ring-4", ringColors[status])
     )}>
-      {/* Colored background accent */}
+      <div>
+        <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground/60">{label}</p>
+        <p className="text-2xl font-extrabold tracking-tight mt-0.5">{count}</p>
+      </div>
       <div className={cn(
-        "absolute inset-0 opacity-5",
-        status === 'success' && "bg-status-success",
-        status === 'warning' && "bg-status-warning",
-        status === 'danger' && "bg-status-danger"
-      )} />
-
-      <div className="relative flex items-start justify-between">
-        <div>
-          <p className="text-sm font-medium text-muted-foreground">{label}</p>
-          <p className={cn(
-            "text-4xl font-bold mt-2",
-            status === 'success' && "text-status-success",
-            status === 'warning' && "text-status-warning",
-            status === 'danger' && "text-status-danger"
-          )}>
-            {count}
-          </p>
-        </div>
-        <div className={cn(
-          "p-3 rounded-xl",
-          status === 'success' && "bg-status-success-bg",
-          status === 'warning' && "bg-status-warning-bg",
-          status === 'danger' && "bg-status-danger-bg"
-        )}>
-          {icon}
-        </div>
+        "h-9 w-9 rounded-lg flex items-center justify-center bg-white shadow-sm border border-inherit/20",
+        statusColors[status]
+      )}>
+        {icon}
       </div>
     </div>
   );
