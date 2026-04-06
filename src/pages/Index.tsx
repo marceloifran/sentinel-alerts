@@ -188,7 +188,7 @@ const Index = () => {
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75" />
               <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500" />
             </span>
-            Sistema anti-multas para contadores argentinos
+            Sistema anti-multas para contadores y abogados argentinos
           </motion.div>
 
           <motion.h1
@@ -199,7 +199,7 @@ const Index = () => {
           >
             Nunca más pierdas
             <br />
-            <span className="text-rose-600">plata con AFIP</span>
+            <span className="text-rose-600">plata con AFIP y Justicia</span>
             <br />
             por un olvido.
           </motion.h1>
@@ -210,8 +210,8 @@ const Index = () => {
             transition={{ duration: 0.5, delay: 0.25 }}
             className="text-lg sm:text-xl text-slate-500 mb-10 max-w-2xl mx-auto"
           >
-            IfsinRem controla todos los vencimientos de todos tus clientes.
-            Te alerta antes de que sea tarde. Evitás la multa antes de que exista.
+            IfsinRem controla todos los vencimientos de tus clientes y estudios.
+            Te alerta antes de que sea tarde. Evitás la multa o el apercibimiento antes de que ocurra.
           </motion.p>
 
           <motion.div
@@ -387,7 +387,6 @@ const Index = () => {
                 {[
                   { icon: <Bell size={16} className="text-amber-600" />, text: "Alertas automáticas por email 7 días antes" },
                   { icon: <Building2 size={16} className="text-sky-600" />, text: "Panel multicliente — todos en una pantalla" },
-                  { icon: <PhoneCall size={16} className="text-emerald-600" />, text: "Alertas por WhatsApp (plan Pro en adelante)" },
                   { icon: <Shield size={16} className="text-violet-600" />, text: "Historial de cumplimiento para cada cliente" },
                   { icon: <CheckCircle2 size={16} className="text-rose-600" />, text: "Modo emergencia: vence hoy → aparece primero" },
                 ].map((f) => (
@@ -419,7 +418,7 @@ const Index = () => {
             {[
               {
                 name: "Starter",
-                desc: "Ideal para monotributistas",
+                desc: "Ideal para profesionales",
                 ars: "$14.900",
                 sub: "30 DÍAS GRATIS",
                 features: ["Hasta 3 recordatorios", "1 usuario", "Alertas por email", "Panel de riesgo/vencimientos"],
@@ -428,16 +427,16 @@ const Index = () => {
               },
               {
                 name: "Pro",
-                desc: "Contador independiente",
+                desc: "Contador o abogado independiente",
                 ars: "$34.900",
                 sub: "Plan profesional",
-                features: ["De 3 a 10 recordatorios", "5 usuarios", "Todo Starter +", "Alertas WhatsApp", "Panel multicliente"],
+                features: ["De 3 a 10 recordatorios", "5 usuarios", "Todo Starter +", "Panel multicliente"],
                 highlight: true,
                 cta: "Probar Gratis",
               },
               {
                 name: "Estudio",
-                desc: "Estudios Contables",
+                desc: "Estudios Contables o Jurídicos",
                 ars: "$69.900",
                 sub: "Gestión total",
                 features: ["Recordatorios ilimitados", "Usuarios ilimitados", "Todo Pro +", "Soporte prioritario", "Panel de control avanzado"],

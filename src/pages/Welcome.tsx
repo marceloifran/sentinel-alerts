@@ -6,7 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 
 const PLAN_INFO: Record<string, { name: string; desc: string; color: string }> = {
   starter: { name: "Starter", desc: "Hasta 5 empresas · 1 usuario", color: "text-sky-400" },
-  pro: { name: "Pro", desc: "Hasta 20 empresas · 5 usuarios · Alertas WhatsApp", color: "text-rose-400" },
+  pro: { name: "Pro", desc: "Hasta 20 empresas · 5 usuarios", color: "text-rose-400" },
   estudio: { name: "Estudio", desc: "Empresas ilimitadas · Soporte prioritario", color: "text-violet-400" },
 };
 
