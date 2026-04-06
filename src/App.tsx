@@ -14,6 +14,7 @@ import ObligationDetail from "./pages/ObligationDetail";
 import UserSettings from "./pages/UserSettings";
 import Reports from "./pages/Reports";
 import CompanyObligations from "./pages/CompanyObligations";
+import Welcome from "./pages/Welcome";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -36,6 +37,7 @@ const App = () => (
               <Route path="/obligaciones/:id" element={<ObligationDetail />} />
               <Route path="/configuracion" element={<UserSettings />} />
               <Route path="/reportes" element={<Reports />} />
+              <Route path="/bienvenida" element={<Welcome />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>

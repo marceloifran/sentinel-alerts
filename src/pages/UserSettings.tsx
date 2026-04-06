@@ -21,34 +21,18 @@ import { useQueryClient } from '@tanstack/react-query';
 // import GoogleCalendarCard from '@/components/GoogleCalendarCard';
 
 
-const SECTORS = [
-    { value: "construccion", label: "Construcción" },
-    { value: "comercio", label: "Comercio" },
-    { value: "servicios", label: "Servicios" },
-    { value: "industria", label: "Industria" },
-    { value: "transporte", label: "Transporte" },
-    { value: "gastronomia", label: "Gastronomía" },
-    { value: "salud", label: "Salud" },
-    { value: "educacion", label: "Educación" },
-    { value: "tecnologia", label: "Tecnología" },
-    { value: "agricultura", label: "Agricultura" },
-    { value: "otro", label: "Otro" },
-];
-
 const UserSettings = () => {
     const navigate = useNavigate();
     const queryClient = useQueryClient();
     const { user, profile, refreshProfile, signOut } = useAuth();
     const [isLoading, setIsLoading] = useState(false);
     const [name, setName] = useState(profile?.name || '');
-    const [sector, setSector] = useState(profile?.sector || '');
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
 
     useEffect(() => {
         if (profile) {
             setName(profile.name);
-            setSector(profile.sector || 'otro');
         }
     }, [profile]);
 
@@ -63,8 +47,7 @@ const UserSettings = () => {
             const { error } = await supabase
                 .from('profiles')
                 .update({
-                    name: name.trim(),
-                    sector: sector
+                    name: name.trim()
                 })
                 .eq('id', user?.id);
 
@@ -122,7 +105,7 @@ const UserSettings = () => {
         navigate('/');
     };
 
-    const hasChanges = name !== profile?.name || sector !== (profile?.sector || 'otro');
+    const hasChanges = name !== profile?.name;
 
     return (
         <div className="min-h-screen bg-background">
@@ -146,7 +129,7 @@ const UserSettings = () => {
                 <h1 className="text-3xl font-bold text-foreground mb-8 text-center sm:text-left">Configuración de Cuenta</h1>
 
                 <div className="space-y-6">
-                    {/* Profile & Sector Information */}
+                    {/* Profile Information */}
                     <Card className="p-6 overflow-hidden border-primary/10 shadow-md">
                         <div className="flex items-center gap-3 mb-6">
                             <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center">
@@ -154,7 +137,7 @@ const UserSettings = () => {
                             </div>
                             <div>
                                 <h2 className="text-xl font-bold text-foreground">Información del Perfil</h2>
-                                <p className="text-sm text-muted-foreground">Gestiona tu identidad y sector empresarial</p>
+                                <p className="text-sm text-muted-foreground">Gestiona tu identidad y datos básicos</p>
                             </div>
                         </div>
 
@@ -191,35 +174,6 @@ const UserSettings = () => {
                                 </div>
                             </div>
 
-                            {/* Sector */}
-                            <div className="grid gap-2">
-                                <Label htmlFor="sector" className="text-sm font-semibold">Sector Económico</Label>
-                                <div className="relative group">
-                                    <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-primary z-10" />
-                                    <Select
-                                        value={sector}
-                                        onValueChange={setSector}
-                                    >
-                                        <SelectTrigger id="sector" className="pl-10 rounded-xl focus:ring-primary/30">
-                                            <SelectValue placeholder="Selecciona tu industria" />
-                                        </SelectTrigger>
-                                        <SelectContent className="rounded-xl">
-                                            {SECTORS.map((s) => (
-                                                <SelectItem key={s.value} value={s.value} className="rounded-lg">
-                                                    {s.label}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                                <div className="mt-2 p-3 bg-blue-50/50 border border-blue-100 rounded-xl flex gap-3 items-start animate-fade-in">
-                                    <Lightbulb className="w-4 h-4 text-blue-500 mt-0.5 shrink-0" />
-                                    <p className="text-xs text-blue-700 leading-relaxed">
-                                        Tu sector se utiliza para <span className="underline decoration-blue-300 font-medium">personalizar las obligaciones sugeridas</span> por la IA.
-                                    </p>
-                                </div>
-                            </div>
-
                             {/* Action Button */}
                             <div className="pt-2 flex flex-col sm:flex-row gap-3">
                                 <Button
@@ -240,7 +194,6 @@ const UserSettings = () => {
                                         className="rounded-xl h-11"
                                         onClick={() => {
                                             setName(profile?.name || '');
-                                            setSector(profile?.sector || 'otro');
                                         }}
                                     >
                                         Descartar

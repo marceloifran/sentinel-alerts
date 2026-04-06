@@ -13,14 +13,13 @@ interface AuthContextType {
     email: string;
     phone: string | null;
     whatsapp_enabled: boolean;
-    plan: 'professional' | 'enterprise';
+    plan: 'starter' | 'professional' | 'enterprise';
     max_obligations: number;
     max_users: number;
-    sector: string | null;
     company_id: string | null;
   } | null;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
-  signUp: (email: string, password: string, name: string, phone?: string, sector?: string, plan?: 'professional' | 'enterprise', companyName?: string) => Promise<{ error: Error | null }>;
+  signUp: (email: string, password: string, name: string, phone?: string, plan?: 'starter' | 'professional' | 'enterprise', companyName?: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
 }
@@ -38,10 +37,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     email: string;
     phone: string | null;
     whatsapp_enabled: boolean;
-    plan: 'professional' | 'enterprise';
+    plan: 'starter' | 'professional' | 'enterprise';
     max_obligations: number;
     max_users: number;
-    sector: string | null;
     company_id: string | null;
   } | null>(null);
 
@@ -94,10 +92,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           email: profileData.email,
           phone: (profileData as any).phone || null,
           whatsapp_enabled: (profileData as any).whatsapp_enabled || false,
-          plan: (profileData.plan === 'starter' ? 'professional' : profileData.plan) as 'professional' | 'enterprise',
+          plan: profileData.plan as 'starter' | 'professional' | 'enterprise',
           max_obligations: profileData.max_obligations ?? 25,
           max_users: profileData.max_users ?? 10,
-          sector: profileData.sector || null,
           company_id: profileData.company_id || null,
         });
       }
@@ -131,8 +128,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     password: string,
     name: string,
     phone?: string,
-    sector?: string,
-    plan: 'professional' | 'enterprise' = 'professional',
+    plan: 'starter' | 'professional' | 'enterprise' = 'starter',
     companyName?: string
   ) => {
     const redirectUrl = `${window.location.origin}/`;
@@ -145,7 +141,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         data: {
           name,
           phone,
-          sector,
           plan,
           company_name: companyName
         }

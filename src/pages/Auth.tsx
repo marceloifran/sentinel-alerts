@@ -24,7 +24,7 @@ const Auth = () => {
   const [phone, setPhone] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [plan, setPlan] = useState<'professional' | 'enterprise'>('professional');
+  const [plan, setPlan] = useState<'starter' | 'professional' | 'enterprise'>('starter');
   const [isInvitedSignup, setIsInvitedSignup] = useState(false);
 
   useEffect(() => {
@@ -36,11 +36,18 @@ const Auth = () => {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const invitedEmail = params.get('invited_email');
+    const selectedPlan = params.get('plan') as 'starter' | 'professional' | 'enterprise';
+    const mode = params.get('mode');
 
     if (invitedEmail) {
       setIsLogin(false);
       setIsInvitedSignup(true);
       setEmail(invitedEmail);
+    } else if (selectedPlan) {
+      setIsLogin(false);
+      setPlan(selectedPlan);
+    } else if (mode === 'signup') {
+      setIsLogin(false);
     }
   }, []);
 
@@ -93,7 +100,7 @@ const Auth = () => {
         toast.success("Bienvenido de vuelta");
         navigate('/dashboard');
       } else {
-        const { error } = await signUp(email, password, name, phone, undefined, plan, undefined);
+        const { error } = await signUp(email, password, name, phone, plan, undefined);
         if (error) {
           if (error.message.includes('already registered')) {
             toast.error("Este email ya está registrado");
@@ -233,18 +240,18 @@ const Auth = () => {
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="plan" className="text-sm font-medium">¿Cuántas empresas gestionás?</Label>
+                      <Label htmlFor="plan" className="text-sm font-medium">¿Cuántos recordatorios necesitás?</Label>
                       <Select value={plan} onValueChange={(val: any) => setPlan(val)}>
                         <SelectTrigger className="h-12 bg-background border-border/60 focus:border-primary">
                           <SelectValue placeholder="Seleccioná un plan" />
                         </SelectTrigger>
                         <SelectContent className="z-[9999]">
-                          <SelectItem value="starter">Hasta 5 empresas (Starter - USD 15/mes)</SelectItem>
-                          <SelectItem value="professional">Hasta 20 empresas (Pro - USD 35/mes)</SelectItem>
-                          <SelectItem value="enterprise">Ilimitadas (Estudio - USD 70/mes)</SelectItem>
+                          <SelectItem value="starter">Hasta 3 recordatorios (Starter - $14.900/mes)</SelectItem>
+                          <SelectItem value="professional">De 3 a 10 recordatorios (Pro - $34.900/mes)</SelectItem>
+                          <SelectItem value="enterprise">Ilimitados (Estudio - $69.900/mes)</SelectItem>
                         </SelectContent>
                       </Select>
-                      <p className="text-xs text-muted-foreground">Primer mes gratis en todos los planes</p>
+                      <p className="text-xs text-muted-foreground font-medium text-rose-600">30 días gratis en el plan Starter</p>
                     </div>
                   </>
                 )}

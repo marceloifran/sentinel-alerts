@@ -4,39 +4,44 @@ CREATE OR REPLACE FUNCTION public.handle_new_user()
  LANGUAGE plpgsql
  SECURITY DEFINER
  SET search_path TO 'public'
-AS $function$
+ AS $function$
 DECLARE
   selected_plan public.user_plan;
 BEGIN
-  -- Get plan from metadata or default to professional
-  selected_plan := COALESCE(NEW.raw_user_meta_data->>'plan', 'professional')::public.user_plan;
+  -- Get plan from metadata or default to starter
+  selected_plan := COALESCE(NEW.raw_user_meta_data->>'plan', 'starter')::public.user_plan;
 
   INSERT INTO public.profiles (
     id, 
     email, 
     name, 
     phone, 
-    sector, 
     plan,
     max_obligations,
-    max_users
+    max_users,
+    plan_expires_at
   )
   VALUES (
     NEW.id, 
     NEW.email, 
     COALESCE(NEW.raw_user_meta_data->>'name', split_part(NEW.email, '@', 1)),
     NEW.raw_user_meta_data->>'phone',
-    NEW.raw_user_meta_data->>'sector',
     selected_plan,
     CASE 
-      WHEN selected_plan = 'professional' THEN 25
-      WHEN selected_plan = 'enterprise' THEN -1
-      ELSE 25
-    END,
-    CASE 
+      WHEN selected_plan = 'starter' THEN 3
       WHEN selected_plan = 'professional' THEN 10
       WHEN selected_plan = 'enterprise' THEN -1
-      ELSE 10
+      ELSE 3
+    END,
+    CASE 
+      WHEN selected_plan = 'starter' THEN 1
+      WHEN selected_plan = 'professional' THEN 5
+      WHEN selected_plan = 'enterprise' THEN -1
+      ELSE 1
+    END,
+    CASE
+      WHEN selected_plan = 'starter' THEN NOW() + INTERVAL '30 days'
+      ELSE NULL
     END
   );
   

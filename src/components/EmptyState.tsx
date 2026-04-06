@@ -13,7 +13,7 @@ interface EmptyStateProps {
 
 const EmptyState = ({
   title = "No hay obligaciones registradas",
-  description = "Comienza agregando obligaciones desde nuestras sugerencias inteligentes basadas en tu sector.",
+  description = "Comienza agregando obligaciones desde nuestras sugerencias inteligentes de vencimientos.",
   icon,
   showButton = true
 }: EmptyStateProps) => {

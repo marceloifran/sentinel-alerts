@@ -34,19 +34,18 @@ export interface TemplateInteraction {
 
 
 /**
- * Get all templates for a specific sector (for admin/preview)
+ * Get all active templates
  */
-export async function getTemplatesBySector(sector: string): Promise<ObligationTemplate[]> {
+export async function getTemplates(): Promise<ObligationTemplate[]> {
     const { data, error } = await (supabase as any)
         .from('obligation_templates')
         .select('*')
-        .or(`sector.eq.${sector},applies_to_all_sectors.eq.true`)
         .eq('is_active', true)
         .order('criticality', { ascending: false })
         .order('priority', { ascending: false });
 
     if (error) {
-        console.error('Error getting templates by sector:', error);
+        console.error('Error getting templates:', error);
         throw error;
     }
 
