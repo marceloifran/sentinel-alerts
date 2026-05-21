@@ -1,0 +1,362 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 210 20% 98%;
+    --foreground: 215 25% 15%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 215 25% 15%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 215 25% 15%;
+
+    --primary: 195 84% 32%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 210 20% 96%;
+    --secondary-foreground: 215 25% 27%;
+
+    --muted: 210 15% 93%;
+    --muted-foreground: 215 15% 46%;
+
+    --accent: 195 60% 94%;
+    --accent-foreground: 195 84% 25%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 210 20% 90%;
+    --input: 210 20% 90%;
+    --ring: 195 84% 32%;
+
+    --radius: 0.75rem;
+
+    /* Status colors */
+    --status-success: 142 76% 36%;
+    --status-success-bg: 142 76% 95%;
+    --status-success-foreground: 142 76% 20%;
+
+    --status-warning: 38 92% 50%;
+    --status-warning-bg: 38 92% 95%;
+    --status-warning-foreground: 38 92% 25%;
+
+    --status-danger: 0 84% 60%;
+    --status-danger-bg: 0 84% 96%;
+    --status-danger-foreground: 0 84% 30%;
+
+    /* Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(195 84% 32%) 0%, hsl(195 70% 40%) 100%);
+    --gradient-card: linear-gradient(180deg, hsl(0 0% 100%) 0%, hsl(210 20% 99%) 100%);
+
+    /* Shadows */
+    --shadow-sm: 0 1px 2px 0 hsl(215 25% 15% / 0.05);
+    --shadow-md: 0 4px 6px -1px hsl(215 25% 15% / 0.07), 0 2px 4px -2px hsl(215 25% 15% / 0.05);
+    --shadow-lg: 0 10px 15px -3px hsl(215 25% 15% / 0.08), 0 4px 6px -4px hsl(215 25% 15% / 0.05);
+    --shadow-card: 0 1px 3px 0 hsl(215 25% 15% / 0.04), 0 1px 2px -1px hsl(215 25% 15% / 0.04);
+
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 215 25% 27%;
+    --sidebar-primary: 195 84% 32%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 195 60% 94%;
+    --sidebar-accent-foreground: 195 84% 25%;
+    --sidebar-border: 210 20% 92%;
+    --sidebar-ring: 195 84% 32%;
+  }
+
+  .dark {
+    --background: 215 25% 9%;
+    --foreground: 210 20% 96%;
+
+    --card: 215 25% 12%;
+    --card-foreground: 210 20% 96%;
+
+    --popover: 215 25% 12%;
+    --popover-foreground: 210 20% 96%;
+
+    --primary: 195 70% 50%;
+    --primary-foreground: 215 25% 9%;
+
+    --secondary: 215 20% 18%;
+    --secondary-foreground: 210 20% 90%;
+
+    --muted: 215 20% 18%;
+    --muted-foreground: 215 15% 60%;
+
+    --accent: 195 50% 20%;
+    --accent-foreground: 195 70% 70%;
+
+    --destructive: 0 62% 50%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 215 20% 20%;
+    --input: 215 20% 20%;
+    --ring: 195 70% 50%;
+
+    --status-success: 142 70% 45%;
+    --status-success-bg: 142 50% 15%;
+    --status-success-foreground: 142 70% 70%;
+
+    --status-warning: 38 80% 55%;
+    --status-warning-bg: 38 50% 15%;
+    --status-warning-foreground: 38 80% 70%;
+
+    --status-danger: 0 70% 55%;
+    --status-danger-bg: 0 50% 15%;
+    --status-danger-foreground: 0 70% 70%;
+
+    --sidebar-background: 215 25% 10%;
+    --sidebar-foreground: 210 20% 90%;
+    --sidebar-primary: 195 70% 50%;
+    --sidebar-primary-foreground: 215 25% 9%;
+    --sidebar-accent: 195 50% 18%;
+    --sidebar-accent-foreground: 195 70% 70%;
+    --sidebar-border: 215 20% 18%;
+    --sidebar-ring: 195 70% 50%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: 'Outfit', 'Inter', system-ui, sans-serif;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply font-semibold tracking-tight;
+    font-family: 'Space Grotesk', system-ui, sans-serif;
+  }
+}
+
+@layer components {
+  .card-elevated {
+    @apply bg-card rounded-xl border border-border/50;
+    box-shadow: var(--shadow-card);
+  }
+
+  .status-badge {
+    @apply inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium;
+  }
+
+  .status-success {
+    background-color: hsl(var(--status-success-bg));
+    color: hsl(var(--status-success-foreground));
+  }
+
+  .status-warning {
+    background-color: hsl(var(--status-warning-bg));
+    color: hsl(var(--status-warning-foreground));
+  }
+
+  .status-danger {
+    background-color: hsl(var(--status-danger-bg));
+    color: hsl(var(--status-danger-foreground));
+  }
+
+  .animate-fade-in {
+    animation: fadeIn 0.3s ease-out;
+  }
+
+  .animate-slide-up {
+    animation: slideUp 0.4s ease-out;
+  }
+
+  .animate-pulse-slow {
+    animation: pulseSlow 3s ease-in-out infinite;
+  }
+
+  .animate-bounce-slow {
+    animation: bounceSlow 2s ease-in-out infinite;
+  }
+
+  .glass-morphism {
+    @apply bg-background/40 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl;
+  }
+
+  .grow-hover {
+    @apply transition-all duration-300 hover:scale-[1.02] hover:-translate-y-1;
+  }
+
+  .select-field {
+    @apply w-full appearance-none cursor-pointer rounded-xl border border-slate-200 dark:border-slate-800 bg-white text-slate-900 shadow-sm transition-colors;
+    @apply focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    background-size: 1rem 1rem;
+  }
+
+  .dark .select-field {
+    @apply bg-[#080b11] text-white;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  }
+
+  .select-field-sm {
+    @apply h-9 px-3 pr-9 text-xs rounded-lg;
+  }
+
+  .select-field-md {
+    @apply h-11 px-3 pr-10 text-sm;
+  }
+
+  .select-field-lg {
+    @apply h-12 px-3 pr-10 text-sm;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulseSlow {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.8;
+  }
+}
+
+@keyframes bounceSlow {
+
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+@keyframes gradientShift {
+
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+@keyframes glow {
+
+  0%,
+  100% {
+    box-shadow: 0 0 20px rgba(14, 116, 144, 0.3);
+  }
+
+  50% {
+    box-shadow: 0 0 40px rgba(14, 116, 144, 0.6);
+  }
+}
+
+@keyframes float {
+
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -1000px 0;
+  }
+
+  100% {
+    background-position: 1000px 0;
+  }
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Animated sound wave for voice simulation */
+@keyframes wave-bounce {
+  0%, 100% { height: 8px; }
+  50% { height: 48px; }
+}
+
+.soundwave-bar {
+  width: 4px;
+  background: linear-gradient(to top, #10b981, #34d399);
+  border-radius: 9999px;
+  animation: wave-bounce 1.2s ease-in-out infinite;
+}
+
+.soundwave-bar:nth-child(2) { animation-delay: 0.15s; }
+.soundwave-bar:nth-child(3) { animation-delay: 0.3s; }
+.soundwave-bar:nth-child(4) { animation-delay: 0.45s; }
+.soundwave-bar:nth-child(5) { animation-delay: 0.6s; }
+.soundwave-bar:nth-child(6) { animation-delay: 0.25s; }
+.soundwave-bar:nth-child(7) { animation-delay: 0.1s; }
+.soundwave-bar:nth-child(8) { animation-delay: 0.4s; }
+
+/* SVG Signature stroke drawing effect */
+@keyframes draw-signature {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.signature-path {
+  stroke-dasharray: 1000;
+  stroke-dashoffset: 1000;
+  animation: draw-signature 3s ease-in-out infinite alternate;
+}
+
+/* Reduce motion for accessibility */
+@media (prefers-reduced-motion: reduce) {
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
