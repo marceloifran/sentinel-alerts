@@ -26,9 +26,13 @@ export function SignaturePad({ onSave, onCancel, title = "Firma manuscrita del o
     const ctx = canvas.getContext("2d");
     if (ctx) {
       ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
-      ctx.lineWidth = 3;
+      ctx.lineWidth = 3.5; // Slightly thicker brush stroke for signature readability
       ctx.lineCap = "round";
-      ctx.strokeStyle = "#0f172a"; // dark charcoal brush
+      ctx.lineJoin = "round";
+      
+      // Set brush color dynamically based on whether dark mode is active
+      const isDark = document.documentElement.classList.contains("dark");
+      ctx.strokeStyle = isDark ? "#10b981" : "#0f172a"; // Emerald-500 for dark mode, Charcoal for light mode
     }
   }, []);
 
@@ -99,19 +103,29 @@ export function SignaturePad({ onSave, onCancel, title = "Firma manuscrita del o
     const canvas = canvasRef.current;
     if (!canvas || !hasDrawn) return;
 
-    // Convert canvas content to base64 image data URL
+    // Convert canvas content to base64 image data URL (will be transparent png)
     const dataUrl = canvas.toDataURL("image/png");
     onSave(dataUrl);
   };
 
   return (
-    <div className="flex flex-col gap-4 p-4 border border-slate-800 bg-[#0d121f] rounded-2xl max-w-sm w-full mx-auto">
+    <div className="flex flex-col gap-5 p-6 w-full bg-white dark:bg-[#0c101d] transition-colors duration-200">
       <div className="text-center">
-        <h3 className="text-sm font-bold text-white">{title}</h3>
-        <p className="text-[10px] text-slate-400 mt-0.5">Firmá con el dedo dentro del recuadro blanco</p>
+        <h3 className="text-base font-bold text-slate-900 dark:text-white tracking-tight">{title}</h3>
+        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+          Firme con el dedo o puntero dentro del recuadro
+        </p>
       </div>
 
-      <div className="relative border border-slate-700 bg-white rounded-xl overflow-hidden h-40">
+      <div className="relative border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/80 rounded-xl overflow-hidden h-44 transition-all duration-200 focus-within:border-emerald-500/50 focus-within:ring-1 focus-within:ring-emerald-500/20">
+        {/* Futuristic guide elements behind the transparent canvas */}
+        <div className="absolute inset-0 pointer-events-none flex flex-col justify-end pb-3 select-none">
+          <div className="w-[85%] mx-auto border-b border-dashed border-slate-250 dark:border-slate-800 h-0 mb-4" />
+          <div className="text-[9px] text-slate-400 dark:text-slate-550 text-center font-mono tracking-widest uppercase">
+            Área de firma
+          </div>
+        </div>
+
         <canvas
           ref={canvasRef}
           onMouseDown={startDrawing}
@@ -121,34 +135,35 @@ export function SignaturePad({ onSave, onCancel, title = "Firma manuscrita del o
           onTouchStart={startDrawing}
           onTouchMove={draw}
           onTouchEnd={stopDrawing}
-          className="w-full h-full cursor-crosshair touch-none"
+          className="relative w-full h-full cursor-crosshair touch-none z-10"
         />
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-3">
         <Button
           type="button"
           variant="outline"
           size="sm"
           onClick={clearCanvas}
-          className="flex-1 gap-1 border-slate-700 text-slate-300 hover:bg-slate-800 hover:text-white text-xs h-9 rounded-xl"
+          className="flex-1 gap-1.5 border-slate-200 dark:border-slate-850 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-900 text-xs h-10 rounded-xl font-semibold transition-all duration-150"
         >
-          <RotateCcw size={12} /> Limpiar
+          <RotateCcw size={14} className="text-slate-400" /> Limpiar
         </Button>
         <Button
           type="button"
           size="sm"
           onClick={handleSave}
           disabled={!hasDrawn}
-          className="flex-1 gap-1 bg-emerald-600 hover:bg-emerald-500 text-white disabled:opacity-50 text-xs h-9 rounded-xl border-0"
+          className="flex-1 gap-1.5 bg-emerald-600 hover:bg-emerald-500 disabled:bg-emerald-600/50 disabled:opacity-50 text-white text-xs h-10 rounded-xl font-semibold border-0 transition-all duration-150 shadow-sm"
         >
-          <Check size={12} /> Guardar Firma
+          <Check size={14} /> Guardar Firma
         </Button>
       </div>
+      
       <button
         type="button"
         onClick={onCancel}
-        className="text-[10px] text-slate-500 hover:text-slate-300 text-center underline mt-1"
+        className="text-xs text-slate-550 hover:text-slate-800 dark:text-slate-500 dark:hover:text-slate-350 text-center font-medium mt-1 transition-colors duration-150"
       >
         Cancelar
       </button>

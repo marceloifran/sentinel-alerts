@@ -935,7 +935,7 @@ export default function Employees() {
 
       {/* Signature Capture Pad Dialog */}
       <Dialog open={showSignatureDialog} onOpenChange={setShowSignatureDialog}>
-        <DialogContent className="sm:max-w-md rounded-2xl p-0 overflow-hidden border-slate-800">
+        <DialogContent className="sm:max-w-md rounded-2xl p-0 overflow-hidden border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0c101d]">
           <SignaturePad
             title={`Firma de ${deliveryToSign?.employee?.name || "Operario"}`}
             onSave={handleSaveSignature}

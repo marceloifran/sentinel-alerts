@@ -360,3 +360,22 @@ html {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* Hide Lovable / GPT Engineer Branding Badge (Palm Tree Logo) */
+gpt-engineer-badge,
+lovable-badge,
+#gpt-engineer-badge,
+#lovable-badge,
+[id*="gpt-engineer"],
+[class*="gpt-engineer"],
+[id*="lovable-badge"],
+[class*="lovable-badge"],
+iframe[src*="lovable.dev"],
+iframe[id*="lovable"] {
+  display: none !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  visibility: hidden !important;
+  width: 0 !important;
+  height: 0 !important;
+}

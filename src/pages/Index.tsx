@@ -370,12 +370,6 @@ const Index = () => {
             >
               Iniciar sesión
             </button>
-            <Button
-              onClick={() => navigate("/auth")}
-              className="gap-2 bg-emerald-600 hover:bg-emerald-500 text-white h-9 px-4 text-xs sm:text-sm font-bold rounded-xl border-0 shadow-lg shadow-emerald-500/10"
-            >
-              Probar gratis <ArrowRight size={14} />
-            </Button>
           </div>
         </div>
       </motion.header>
@@ -435,7 +429,7 @@ const Index = () => {
               onClick={() => navigate("/auth")}
               className="group w-full sm:w-auto flex items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-8 h-14 text-base font-bold text-white hover:bg-emerald-500 transition-all shadow-xl shadow-emerald-950/20"
             >
-              Comenzar prueba gratuita
+              Comenzar ahora
               <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
             </motion.button>
             <motion.a
@@ -638,96 +632,61 @@ const Index = () => {
         </div>
       </section>
 
-      {/* ── CALENDLY BOOKING */}
-      <section id="demo" className="px-4 py-20 sm:py-28 sm:px-8 bg-[#05070d] border-y border-slate-900/60 relative z-10">
-        <div className="mx-auto max-w-4xl">
-          <FadeIn className="text-center mb-12">
-            <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/5 px-3 py-1 text-xs font-bold text-emerald-400 mb-4 uppercase tracking-widest">
-              Reunión y Demo sin cargo
-            </div>
-            <h2 className="text-3xl sm:text-4xl font-black mb-4 text-white">Diseñemos tu Plan a Medida</h2>
-            <p className="text-slate-400 text-sm sm:text-base max-w-xl mx-auto font-sans">
-              Agenda una videollamada de 15 minutos en Calendly. Analizaremos la dotación de tus obras y configuramos tu entorno de prueba de forma gratuita.
-            </p>
-          </FadeIn>
-
-          <FadeIn>
-            <div className="relative rounded-3xl border border-emerald-500/20 bg-[#0a0f1d] p-8 sm:p-10 shadow-2xl shadow-emerald-500/5 overflow-hidden flex flex-col md:flex-row items-center justify-between gap-8">
-              {/* Neon border decoration */}
-              <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
-              
-              <div className="space-y-4 max-w-md font-sans">
-                <h3 className="text-xl font-bold text-white flex items-center gap-2 font-sans">
-                  <Calendar className="text-emerald-400" size={20} />
-                  ¿Qué resolvemos en la reunión?
-                </h3>
-                <ul className="space-y-3">
-                  {[
-                    "Demostración interactiva en vivo adaptada a tu sector.",
-                    "Consultoría exprés sobre el cumplimiento del F. 299/11.",
-                    "Análisis de viabilidad para integración con tu ERP actual.",
-                    "Habilitación inmediata de tu cuenta Sandbox para testeo."
-                  ].map((feat) => (
-                    <li key={feat} className="flex items-start gap-2.5 text-xs sm:text-sm text-slate-300 font-medium">
-                      <CheckCircle2 size={16} className="text-emerald-400 shrink-0 mt-0.5" />
-                      <span>{feat}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              <div className="w-full md:w-auto text-center shrink-0 flex flex-col items-center font-sans">
-                <div className="mb-4 bg-slate-950 border border-slate-800 rounded-2xl p-4 w-full md:w-56">
-                  <p className="text-xs text-slate-500 font-bold uppercase tracking-widest">Siguiente Paso</p>
-                  <p className="text-sm font-bold text-white mt-1">Calendly Reservado</p>
-                  <p className="text-[10px] text-emerald-400 font-semibold mt-0.5">Disponibilidad esta semana</p>
-                </div>
-                <motion.a
-                  href="https://calendly.com/ifsinrem"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  whileHover={{ scale: 1.04 }}
-                  whileTap={{ scale: 0.96 }}
-                  className="w-full flex items-center justify-center gap-2 rounded-2xl bg-emerald-600 hover:bg-emerald-500 px-8 h-12 text-sm font-bold text-white shadow-lg shadow-emerald-500/15"
-                >
-                  Agendar en Calendly <ArrowRight size={14} />
-                </motion.a>
-              </div>
-            </div>
-          </FadeIn>
-        </div>
-      </section>
-
-      {/* ── FINAL CTA — Demo personalizada */}
-      <section className="px-4 py-20 sm:py-28 sm:px-8 relative overflow-hidden z-10">
+      {/* ── FINAL CTA / DEMO BOOKING */}
+      <section id="demo" className="px-4 py-20 sm:py-28 sm:px-8 relative overflow-hidden z-10">
         <div className="pointer-events-none absolute inset-0 z-0">
           <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[700px] h-[350px] bg-emerald-500/[0.06] rounded-full blur-[110px]" />
         </div>
 
         <div className="relative mx-auto max-w-5xl z-10">
           <FadeIn>
-            <div className="relative rounded-3xl border border-slate-800/80 bg-gradient-to-br from-[#0a0f1a] via-[#0c1220] to-[#080b14] p-8 sm:p-14 overflow-hidden">
+            <div className="relative rounded-3xl border border-slate-800/80 bg-gradient-to-br from-[#0a0f1a] via-[#0c1220] to-[#080b14] p-8 sm:p-12 overflow-hidden">
               {/* subtle grid */}
               <div className="pointer-events-none absolute inset-0 opacity-[0.04]" style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,1) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,1) 1px,transparent 1px)', backgroundSize: '32px 32px' }} />
               <div className="pointer-events-none absolute -top-24 -right-24 w-72 h-72 bg-emerald-500/10 rounded-full blur-3xl" />
 
-              <div className="relative grid md:grid-cols-2 gap-10 items-center">
-                <div>
-                  <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 mb-5">
-                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                    <span className="text-[11px] font-bold uppercase tracking-widest text-emerald-300">Demo 1:1 · 20 min</span>
+              <div className="relative grid grid-cols-1 md:grid-cols-2 gap-10 items-start">
+                <div className="space-y-6">
+                  <div>
+                    <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 mb-4">
+                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                      <span className="text-[11px] font-bold uppercase tracking-widest text-emerald-300">Demo 1:1 · Sin cargo</span>
+                    </div>
+                    <h2 className="text-3xl sm:text-4xl font-black leading-tight text-white mb-4">
+                      Hablemos de tu obra.
+                      <br />
+                      <span className="text-slate-500">Diseñemos tu plan.</span>
+                    </h2>
+                    <p className="text-slate-400 text-sm sm:text-base font-medium leading-relaxed font-sans">
+                      Coordinamos una llamada corta de 15 a 20 minutos para revisar tu operativa actual de entrega de EPP y configurar tu entorno de pruebas.
+                    </p>
                   </div>
-                  <h2 className="text-3xl sm:text-4xl font-black leading-tight text-white mb-4">
-                    Hablemos de tu obra.
-                    <br />
-                    <span className="text-slate-500">Te muestro cómo blindarla.</span>
-                  </h2>
-                  <p className="text-slate-400 text-sm sm:text-base font-medium leading-relaxed font-sans">
-                    Coordinamos una llamada corta: revisamos tu operativa actual, cómo registrás hoy las entregas de EPP y te muestro el sistema funcionando con un caso real similar al tuyo.
-                  </p>
+
+                  <div className="space-y-3 font-sans">
+                    <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider">¿Qué resolvemos en la reunión?</h3>
+                    <ul className="space-y-2.5">
+                      {[
+                        "Demostración interactiva en vivo adaptada a tu sector.",
+                        "Consultoría exprés sobre el cumplimiento de la Resol. SRT 299/11.",
+                        "Análisis de viabilidad para integración con tu ERP actual.",
+                        "Habilitación de tu cuenta Sandbox para testeo."
+                      ].map((feat) => (
+                        <li key={feat} className="flex items-start gap-2.5 text-xs sm:text-sm text-slate-300 font-medium">
+                          <CheckCircle2 size={16} className="text-emerald-400 shrink-0 mt-0.5" />
+                          <span>{feat}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 </div>
 
-                <div className="flex flex-col gap-3">
+                <div className="flex flex-col gap-4 md:mt-12">
+                  <div className="mb-2 bg-slate-950/80 border border-slate-900 rounded-2xl p-4 w-full text-center">
+                    <p className="text-xs text-slate-500 font-bold uppercase tracking-widest">Siguiente Paso</p>
+                    <p className="text-sm font-bold text-white mt-1">Calendly Reservado</p>
+                    <p className="text-[10px] text-emerald-400 font-semibold mt-0.5">Disponibilidad esta semana</p>
+                  </div>
+
                   <motion.a
                     href="https://calendly.com/ifsinrem"
                     target="_blank"
@@ -742,6 +701,7 @@ const Index = () => {
                     </span>
                     <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
                   </motion.a>
+
                   <a
                     href="mailto:contacto@ifsinrem.com"
                     className="flex items-center justify-between gap-3 rounded-2xl border border-slate-800 bg-[#090d16]/60 hover:border-slate-700 hover:text-white px-6 h-14 text-sm font-semibold text-slate-300 transition-all"
@@ -752,7 +712,8 @@ const Index = () => {
                     </span>
                     <ArrowRight size={16} className="opacity-50" />
                   </a>
-                  <p className="text-[11px] text-slate-500 font-medium px-1">
+
+                  <p className="text-[11px] text-slate-500 font-medium px-1 text-center md:text-left">
                     Sin compromiso · Respuesta en menos de 24h hábiles
                   </p>
                 </div>
