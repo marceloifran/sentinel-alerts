@@ -379,3 +379,24 @@ iframe[id*="lovable"] {
   width: 0 !important;
   height: 0 !important;
 }
+
+/* Prevent horizontal overflow scroll globally */
+html,
+body,
+#root {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+/* Prevent auto-zooming on focus of form elements on mobile viewports */
+@media (max-width: 1024px) {
+  input,
+  select,
+  textarea,
+  .select-field,
+  select.select-field-sm,
+  select.select-field-md,
+  select.select-field-lg {
+    font-size: 16px !important;
+  }
+}
