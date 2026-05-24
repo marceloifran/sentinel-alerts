@@ -15,7 +15,7 @@ import {
   Sparkles,
   Mail,
 } from "lucide-react";
-import { motion, useInView } from "framer-motion";
+import { motion, useInView, AnimatePresence } from "framer-motion";
 import { useRef, useEffect, useState } from "react";
 import Footer from "@/components/Footer";
 
@@ -211,35 +211,55 @@ const Index = () => {
     switch (activeStep) {
       case 0:
         return (
-          <div className="h-full flex flex-col justify-between p-6">
+          <motion.div
+            key="step-0"
+            initial={{ opacity: 0, x: 15 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -15 }}
+            transition={{ duration: 0.25 }}
+            className="h-full flex flex-col justify-between p-6"
+          >
             <div className="flex items-center justify-between border-b border-slate-900/60 pb-3 mb-4">
               <div className="flex items-center gap-2">
                 <span className="h-2 w-2 rounded-full bg-emerald-500 animate-ping" />
                 <span className="text-[10px] text-emerald-400 font-mono font-bold tracking-widest uppercase">IA Activa — Dictando</span>
               </div>
-              <span className="text-[10px] text-slate-500 font-mono">OBRA SUR</span>
+              <span className="text-[10px] text-slate-500 font-mono">PLANTA SUR</span>
             </div>
             
             <div className="flex-1 flex flex-col justify-center items-center gap-6 my-4">
               {/* sound wave bars */}
               <div className="flex items-center justify-center gap-1.5 h-16">
-                <div className="soundwave-bar h-8" />
-                <div className="soundwave-bar h-12" />
-                <div className="soundwave-bar h-4" />
-                <div className="soundwave-bar h-14" />
-                <div className="soundwave-bar h-16" />
-                <div className="soundwave-bar h-10" />
-                <div className="soundwave-bar h-6" />
-                <div className="soundwave-bar h-12" />
+                {[8, 12, 4, 14, 16, 10, 6, 12].map((height, idx) => (
+                  <motion.div
+                    key={idx}
+                    className="w-1.5 bg-emerald-500 rounded-full"
+                    initial={{ height: height * 4 }}
+                    animate={{
+                      height: [height * 2, height * 4.5, height * 1.5, height * 4],
+                    }}
+                    transition={{
+                      duration: 0.8 + idx * 0.15,
+                      repeat: Infinity,
+                      repeatType: "reverse",
+                      ease: "easeInOut",
+                    }}
+                  />
+                ))}
               </div>
               
-              <div className="bg-[#05070c] border border-slate-900 rounded-2xl p-4 w-full text-center relative overflow-hidden">
+              <motion.div 
+                initial={{ y: 5, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.2, duration: 0.3 }}
+                className="bg-[#05070c] border border-slate-900 rounded-2xl p-4 w-full text-center relative overflow-hidden"
+              >
                 <p className="text-xs text-slate-500 font-bold uppercase tracking-wider mb-1 font-mono">Texto Procesado</p>
                 <p className="text-sm font-semibold text-emerald-300">
                   "Entrega de casco amarillo y protector auditivo para el operario Carlos Gómez"
                 </p>
                 <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-500 to-teal-500" />
-              </div>
+              </motion.div>
             </div>
 
             <div className="rounded-xl bg-[#090d16]/50 border border-slate-900/60 p-3 text-center font-sans">
@@ -247,11 +267,18 @@ const Index = () => {
                 👉 <span className="font-bold text-slate-300">Autocompletado:</span> El sistema detecta el operario Carlos Gómez y asocia los elementos Casco y Auditivos de forma automática.
               </p>
             </div>
-          </div>
+          </motion.div>
         );
       case 1:
         return (
-          <div className="h-full flex flex-col justify-between p-6">
+          <motion.div
+            key="step-1"
+            initial={{ opacity: 0, x: 15 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -15 }}
+            transition={{ duration: 0.25 }}
+            className="h-full flex flex-col justify-between p-6"
+          >
             <div className="flex items-center justify-between border-b border-slate-900/60 pb-3 mb-4">
               <span className="text-[10px] text-emerald-400 font-mono font-bold tracking-widest uppercase">Panel de Firma</span>
               <span className="text-[10px] text-slate-500 font-mono font-bold uppercase">Firma Táctil</span>
@@ -265,14 +292,21 @@ const Index = () => {
                 
                 {/* animated SVG signature */}
                 <svg className="w-48 h-24 relative z-10" viewBox="0 0 200 100">
-                  <path 
-                    className="signature-path" 
+                  <motion.path 
                     d="M20,50 Q40,20 60,70 T100,30 T140,80 T180,40" 
                     fill="none" 
                     stroke="#10b981" 
                     strokeWidth="3.5" 
                     strokeLinecap="round" 
                     strokeLinejoin="round"
+                    initial={{ pathLength: 0 }}
+                    animate={{ pathLength: 1 }}
+                    transition={{
+                      duration: 2.2,
+                      ease: "easeInOut",
+                      repeat: Infinity,
+                      repeatDelay: 1,
+                    }}
                   />
                 </svg>
 
@@ -287,18 +321,30 @@ const Index = () => {
                 🔒 <span className="font-bold text-slate-300">Resguardo Legal:</span> La firma táctil registra dirección IP, geolocalización y marca de tiempo (timestamp) para total validez jurídica.
               </p>
             </div>
-          </div>
+          </motion.div>
         );
       case 2:
         return (
-          <div className="h-full flex flex-col justify-between p-6">
+          <motion.div
+            key="step-2"
+            initial={{ opacity: 0, x: 15 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -15 }}
+            transition={{ duration: 0.25 }}
+            className="h-full flex flex-col justify-between p-6"
+          >
             <div className="flex items-center justify-between border-b border-slate-900/60 pb-3 mb-4">
               <span className="text-[10px] text-emerald-400 font-mono font-bold tracking-widest uppercase">Formulario 299/11 PDF</span>
               <span className="text-[10px] text-slate-500 font-mono">Certificado</span>
             </div>
 
             <div className="flex-1 flex flex-col justify-center items-center my-3">
-              <div className="w-44 h-28 bg-[#090d16] border border-slate-800/80 rounded-xl p-3 relative overflow-hidden shadow-lg shadow-emerald-950/5 flex flex-col justify-between">
+              <motion.div 
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ delay: 0.1, duration: 0.35 }}
+                className="w-44 h-28 bg-[#090d16] border border-slate-800/80 rounded-xl p-3 relative overflow-hidden shadow-lg shadow-emerald-950/5 flex flex-col justify-between"
+              >
                 <div className="space-y-1.5">
                   <div className="h-2 w-12 bg-slate-800 rounded" />
                   <div className="h-1.5 w-24 bg-slate-900 rounded" />
@@ -314,12 +360,22 @@ const Index = () => {
                   </div>
                   <div className="h-3 w-10 bg-[#34d399]/20 rounded border border-[#34d399]/30" />
                 </div>
-              </div>
+              </motion.div>
 
               <div className="mt-4 flex gap-2">
-                <button className="flex items-center gap-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-[10px] font-bold px-3 py-1.5 shadow border-0 transition-colors">
+                <motion.button 
+                  animate={{
+                    scale: [1, 1.05, 1],
+                  }}
+                  transition={{
+                    duration: 2,
+                    repeat: Infinity,
+                    ease: "easeInOut",
+                  }}
+                  className="flex items-center gap-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-[10px] font-bold px-3 py-1.5 shadow border-0 transition-colors"
+                >
                   Descargar Planilla Legal
-                </button>
+                </motion.button>
               </div>
             </div>
 
@@ -328,7 +384,7 @@ const Index = () => {
                 📄 <span className="font-bold text-slate-300">Listo para Auditorías:</span> Planilla digital homologada idéntica a la exigida por el Ministerio de Trabajo y la SRT.
               </p>
             </div>
-          </div>
+          </motion.div>
         );
       default:
         return null;
@@ -402,7 +458,7 @@ const Index = () => {
             Digitalizá la Entrega de EPP.
             <br />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-teal-300 to-emerald-500">
-              Firma Digital en Obra
+              Firma Digital en Campo
             </span>
             <br />
             y Planilla 299/11 Automática.
@@ -462,11 +518,11 @@ const Index = () => {
               { num: "F. 299/11", text: "generación automática en PDF firmada al instante" },
               { num: "3 clics", text: "desde cualquier celular para registrar una entrega" },
               { num: "0 papeles", text: "trazabilidad legal completa y blindada ante auditorías" },
-            ].map((s) => (
-              <div key={s.text} className="py-2">
+            ].map((s, idx) => (
+              <FadeIn key={s.text} delay={idx * 0.12} y={15} className="py-2">
                 <p className="text-2xl sm:text-3xl font-black text-emerald-400 mb-1">{s.num}</p>
                 <p className="text-xs sm:text-sm text-slate-400 font-medium px-4 font-sans">{s.text}</p>
-              </div>
+              </FadeIn>
             ))}
           </div>
         </div>
@@ -479,7 +535,7 @@ const Index = () => {
             <FadeIn delay={0}>
               <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/5 px-3 py-1 text-xs font-semibold text-emerald-400">
                 <Zap size={12} className="text-emerald-400" />
-                Control Operativo en Obra
+                Control Operativo de EPP
               </div>
               <h2 className="text-3xl sm:text-4xl font-black mb-6 leading-tight text-white">
                 Firma manuscrita digital.
@@ -531,35 +587,36 @@ const Index = () => {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
             {/* Step Selection Column */}
             <div className="lg:col-span-7 flex flex-col justify-center gap-4">
-              {steps.map((step) => {
+              {steps.map((step, idx) => {
                 const isActive = activeStep === step.id;
                 return (
-                  <button
-                    key={step.id}
-                    onClick={() => setActiveStep(step.id)}
-                    className={`w-full text-left p-6 rounded-2xl border transition-all duration-300 flex items-start gap-4 ${
-                      isActive 
-                        ? "bg-[#090d16] border-emerald-500/40 shadow-lg shadow-emerald-500/5" 
-                        : "bg-[#06080e]/40 border-slate-900 hover:border-slate-800 hover:bg-[#06080e]/80"
-                    }`}
-                  >
-                    <div className={`h-10 w-10 shrink-0 rounded-xl flex items-center justify-center transition-colors ${
-                      isActive ? "bg-emerald-500/20 border border-emerald-500/40" : "bg-slate-900 border border-slate-800"
-                    }`}>
-                      {step.icon}
-                    </div>
-                    <div className="flex-1 font-sans">
-                      <p className={`text-[10px] font-bold uppercase tracking-widest ${isActive ? "text-emerald-400" : "text-slate-500"}`}>
-                        {step.subtitle}
-                      </p>
-                      <h3 className="text-base font-bold text-white mt-1 font-sans">
-                        {step.title}
-                      </h3>
-                      <p className="text-xs sm:text-sm text-slate-400 mt-2 leading-relaxed font-medium">
-                        {step.desc}
-                      </p>
-                    </div>
-                  </button>
+                  <FadeIn key={step.id} delay={idx * 0.1} y={10}>
+                    <button
+                      onClick={() => setActiveStep(step.id)}
+                      className={`w-full text-left p-6 rounded-2xl border transition-all duration-300 flex items-start gap-4 ${
+                        isActive 
+                          ? "bg-[#090d16] border-emerald-500/40 shadow-lg shadow-emerald-500/5" 
+                          : "bg-[#06080e]/40 border-slate-900 hover:border-slate-800 hover:bg-[#06080e]/80"
+                      }`}
+                    >
+                      <div className={`h-10 w-10 shrink-0 rounded-xl flex items-center justify-center transition-colors ${
+                        isActive ? "bg-emerald-500/20 border border-emerald-500/40" : "bg-slate-900 border border-slate-800"
+                      }`}>
+                        {step.icon}
+                      </div>
+                      <div className="flex-1 font-sans">
+                        <p className={`text-[10px] font-bold uppercase tracking-widest ${isActive ? "text-emerald-400" : "text-slate-500"}`}>
+                          {step.subtitle}
+                        </p>
+                        <h3 className="text-base font-bold text-white mt-1 font-sans">
+                          {step.title}
+                        </h3>
+                        <p className="text-xs sm:text-sm text-slate-400 mt-2 leading-relaxed font-medium">
+                          {step.desc}
+                        </p>
+                      </div>
+                    </button>
+                  </FadeIn>
                 );
               })}
             </div>
@@ -577,7 +634,9 @@ const Index = () => {
 
                 {/* Simulated Content */}
                 <div className="flex-1 bg-[#04060b] relative min-h-[300px]">
-                  {renderSimulator()}
+                  <AnimatePresence mode="wait">
+                    {renderSimulator()}
+                  </AnimatePresence>
                 </div>
               </div>
             </div>
@@ -608,7 +667,7 @@ const Index = () => {
                   onClick={() => navigate("/auth")}
                   className="gap-2 bg-emerald-600 hover:bg-emerald-500 text-white h-12 px-7 font-bold rounded-xl border-0 shadow-lg shadow-emerald-500/10 font-sans"
                 >
-                  Digitalizar mis obras <ArrowRight size={16} />
+                  Digitalizar mi gestión <ArrowRight size={16} />
                 </Button>
               </div>
 
@@ -653,7 +712,7 @@ const Index = () => {
                       <span className="text-[11px] font-bold uppercase tracking-widest text-emerald-300">Demo 1:1 · Sin cargo</span>
                     </div>
                     <h2 className="text-3xl sm:text-4xl font-black leading-tight text-white mb-4">
-                      Hablemos de tu obra.
+                      Hablemos de tu empresa.
                       <br />
                       <span className="text-slate-500">Diseñemos tu plan.</span>
                     </h2>

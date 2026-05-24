@@ -217,11 +217,40 @@ export async function signEPPDelivery(
 }
 
 export async function getSignatureUrl(filePath: string): Promise<string> {
-  const { data } = await supabase.storage
-    .from('signatures')
-    .getPublicUrl(filePath);
+  try {
+    // 1. Try to download the signature directly as a Blob using the active session
+    const { data, error } = await supabase.storage
+      .from('signatures')
+      .download(filePath);
 
-  return data.publicUrl;
+    if (!error && data) {
+      return URL.createObjectURL(data);
+    }
+
+    console.warn(
+      `getSignatureUrl: direct download failed, falling back to signed URL. Error:`,
+      error,
+      `Path:`,
+      filePath
+    );
+  } catch (err) {
+    console.error("getSignatureUrl: unexpected direct download error:", err);
+  }
+
+  // Fallback: Create signed URL
+  const { data, error } = await supabase.storage
+    .from('signatures')
+    .createSignedUrl(filePath, 3600); // 1 hour expiry
+
+  if (error || !data?.signedUrl) {
+    console.error("getSignatureUrl: fallback signed URL also failed:", error);
+    const { data: publicData } = await supabase.storage
+      .from('signatures')
+      .getPublicUrl(filePath);
+    return publicData.publicUrl;
+  }
+
+  return data.signedUrl;
 }
 
 async function fetchSignatureAsBase64(path: string): Promise<string | null> {

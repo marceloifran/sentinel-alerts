@@ -259,7 +259,7 @@ export default function EPPInventory() {
             <div className="p-12 text-center text-slate-400 flex flex-col items-center justify-center">
               <Boxes size={40} className="text-slate-300 dark:text-slate-800 mb-3" />
               <p className="font-semibold text-slate-650 dark:text-slate-400 text-base mb-1">No se encontraron elementos de protección</p>
-              <p className="text-xs text-slate-400 dark:text-slate-500 mb-4">Cargá artículos a tu inventario para poder asignarlos en obra.</p>
+              <p className="text-xs text-slate-400 dark:text-slate-500 mb-4">Cargá artículos a tu inventario para poder asignarlos.</p>
               <Button onClick={handleOpenAdd} variant="outline" className="rounded-xl border-slate-250 dark:border-slate-800 dark:text-slate-300">
                 Catalogar primer EPP
               </Button>

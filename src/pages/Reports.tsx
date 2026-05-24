@@ -504,9 +504,9 @@ const Reports = () => {
               <div className="w-full text-center">
                 <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed px-4">
                   {metrics.complianceRate >= 90
-                    ? "✅ Obra blindada — Cumplimiento legal excelente. Excelente resguardo legal ante siniestros."
+                    ? "✅ Empresa blindada — Cumplimiento legal excelente. Excelente resguardo legal ante siniestros."
                     : metrics.complianceRate >= 70
-                    ? "🟡 Nivel Aceptable — Algunas firmas táctiles en obra están pendientes. Completar firmas pendientes."
+                    ? "🟡 Nivel Aceptable — Algunas firmas táctiles están pendientes. Completar firmas pendientes."
                     : metrics.complianceRate >= 50
                     ? "⚠️ Alerta — Más del 30% de tus entregas no tienen firma táctil de operario. Riesgo de multa."
                     : "🚨 Nivel Crítico — Riesgo inminente de sanción e inaplicabilidad del Formulario 299 SRT."}
@@ -524,7 +524,7 @@ const Reports = () => {
             </div>
           </ChartCard>
 
-          <ChartCard title="Estado del Inventario de Obra" sub="Relación de elementos en stock frente al stock crítico">
+          <ChartCard title="Estado del Inventario" sub="Relación de elementos en stock frente al stock crítico">
             <div className="space-y-3.5 h-48 overflow-y-auto pr-1">
               {eppItems.length === 0 ? (
                 <div className="flex h-full items-center justify-center text-xs text-slate-400 dark:text-slate-550">Sin stock registrado</div>

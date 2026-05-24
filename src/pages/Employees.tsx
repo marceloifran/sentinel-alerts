@@ -366,8 +366,8 @@ export default function Employees() {
       <main className="mx-auto max-w-5xl px-4 py-8 md:px-8">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
           <div>
-            <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Operarios de Obra</h1>
-            <p className="text-sm text-slate-400 dark:text-slate-500">Registrá y gestioná el personal de campo para la entrega de EPP.</p>
+            <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Operarios</h1>
+            <p className="text-sm text-slate-400 dark:text-slate-500">Registrá y gestioná el personal para la entrega de EPP.</p>
           </div>
           <Button
             onClick={handleOpenAdd}

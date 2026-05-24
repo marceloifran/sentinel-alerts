@@ -28,6 +28,7 @@ import {
   getEPPDeliveries,
   addEPPDelivery,
   signEPPDelivery,
+  getSignatureUrl,
   type Employee,
   type EPPItem,
   type EPPDelivery,
@@ -59,6 +60,27 @@ export default function Dashboard() {
 
   // Loading state for saving
   const [savingDelivery, setSavingDelivery] = useState(false);
+
+  // Load signature URLs whenever deliveries change
+  const [sigUrls, setSigUrls] = useState<Record<string, string>>({});
+  useEffect(() => {
+    const loadUrls = async () => {
+      const urls: Record<string, string> = {};
+      const signedDels = deliveries.filter((d) => d.status === "firmado" && d.signature_path);
+      for (const del of signedDels) {
+        if (del.signature_path && !sigUrls[del.id]) {
+          try {
+            const url = await getSignatureUrl(del.signature_path);
+            urls[del.id] = url;
+          } catch (err) {
+            console.error(err);
+          }
+        }
+      }
+      setSigUrls((prev) => ({ ...prev, ...urls }));
+    };
+    loadUrls();
+  }, [deliveries]);
 
   useEffect(() => {
     if (!companyId) return;
@@ -198,7 +220,7 @@ export default function Dashboard() {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="text-3xl sm:text-4xl font-bold text-slate-900 dark:text-white">
-              Obra: {profile?.company_name || "Mi Obra Sentinel"}
+              {profile?.company_name || "Mi Empresa"}
             </h1>
             <p className="text-base text-slate-500 dark:text-slate-400 mt-1">
               Panel de control de elementos de protección personal y firmas.
@@ -241,7 +263,7 @@ export default function Dashboard() {
             {
               title: "Operarios Activos",
               val: stats.activeWorkers.toString(),
-              desc: "Personal cargado en obra",
+              desc: "Personal registrado",
               icon: <Users className="text-indigo-500" />,
               bg: "bg-indigo-50/50 dark:bg-indigo-500/5 border-indigo-100 dark:border-indigo-500/10",
             },
@@ -296,7 +318,7 @@ export default function Dashboard() {
           <div className="lg:col-span-2 bg-white dark:bg-[#080b11] border border-slate-200 dark:border-slate-900 rounded-2xl shadow-sm overflow-hidden flex flex-col">
             <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-900 bg-slate-50 dark:bg-slate-950/40 flex items-center justify-between">
               <h2 className="text-base font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider">Planilla de Entregas Recientes</h2>
-              <span className="text-xs font-bold text-slate-500 dark:text-slate-500 uppercase">Obra</span>
+              <span className="text-xs font-bold text-slate-500 dark:text-slate-500 uppercase">Empresa</span>
             </div>
 
             <div className="flex-1">
@@ -325,6 +347,16 @@ export default function Dashboard() {
                           {del.quantity} u. de {del.epp_item?.name || "EPP"}
                         </p>
                         {del.notes && <p className="text-xs text-slate-500 dark:text-slate-500 mt-1 italic">"{del.notes}"</p>}
+                        {del.status === "firmado" && sigUrls[del.id] && (
+                          <div className="mt-2 flex items-center gap-1.5">
+                            <span className="text-[9px] text-slate-400 dark:text-slate-550">Firma:</span>
+                            <img
+                              src={sigUrls[del.id]}
+                              className="h-7 object-contain bg-white dark:bg-slate-100 border border-slate-250 dark:border-slate-800 rounded px-1"
+                              alt="Firma"
+                            />
+                          </div>
+                        )}
                       </div>
 
                       <div className="flex items-center gap-3">
@@ -386,10 +418,10 @@ export default function Dashboard() {
               <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/10 rounded-full blur-xl pointer-events-none" />
               <h3 className="text-lg font-black text-white">Dictá por voz</h3>
               <p className="text-sm text-slate-300 mt-2 leading-relaxed">
-                ¿Estás en el medio de la obra con guantes o herramientas? Tocá el micrófono abajo a la derecha y decile al asistente qué estás entregando y a quién. Se cargará solo.
+                ¿Estás ocupado o con las manos llenas? Tocá el micrófono abajo a la derecha y decile al asistente qué estás entregando y a quién. Se cargará solo.
               </p>
               <div className="flex items-center gap-1.5 text-xs text-emerald-400 font-bold uppercase mt-4">
-                <CheckCircle2 size={14} /> Manos Libres · Optimizado Obra
+                <CheckCircle2 size={14} /> Manos Libres · Optimizado
               </div>
             </div>
           </div>

@@ -343,36 +343,59 @@ REGLAS DE OPERACIÓN:
           (block: { type: string }) => block.type === "tool_use"
         );
 
-        anthropicMessages.push({
-          role: "assistant",
-          content: aiResponse.content,
-        });
+        if (toolUseBlocks.length > 0) {
+          const toolCall = toolUseBlocks[0];
+          const toolName = toolCall.name;
+          const args = toolCall.input;
 
-        const toolResults: Array<{ type: string; tool_use_id: string; content: string }> = [];
+          let responseText = "";
+          if (toolName === "quick_epp_delivery") {
+            const emp = employees?.find((e: any) => e.id === args.employee_id);
+            const empName = emp ? emp.name : "Operario desconocido";
+            
+            responseText = `📋 **Confirmar entrega de EPP**\n\n¿Confirmás el registro de esta entrega?\n\n`;
+            const itemsList = [];
+            const eppIds = args.epp_item_ids || [];
+            const quantities = args.quantities || [];
+            for (let idx = 0; idx < eppIds.length; idx++) {
+              const eppId = eppIds[idx];
+              const qty = quantities[idx] || 1;
+              const epp = eppItems?.find((item: any) => item.id === eppId);
+              const eppName = epp ? epp.name : "EPP desconocido";
+              itemsList.push(`* **${qty}x ${eppName}** para **${empName}**`);
+            }
+            responseText += itemsList.join("\n");
+          } else if (toolName === "add_employee") {
+            responseText = `👤 **Confirmar alta de operario**\n\n¿Confirmás que querés crear el siguiente operario?\n\n* **Nombre:** ${args.name}\n* **DNI/CUIL:** ${args.dni_cuil}\n* **Puesto:** ${args.job_title || "General"}`;
+          } else if (toolName === "add_epp_item") {
+            const categoryLabel = {
+              cabeza: "Protección Craneana (Cascos)",
+              manos: "Protección de Manos (Guantes)",
+              pies: "Protección de Pies (Calzado)",
+              ocular: "Protección Ocular (Anteojos)",
+              auditivo: "Protección Auditiva (Tapones/Copas)",
+              respiratorio: "Protección Respiratoria (Semimáscaras)",
+              altura: "Trabajo en Altura (Arneses)",
+              cuerpo: "Ropa de Trabajo / Cuerpo",
+              otro: "Otros"
+            }[normalizeEppCategory(args.category)] || "Otros";
 
-        for (const toolCall of toolUseBlocks) {
-          console.log(`Executing tool: ${toolCall.name}`, toolCall.input);
-          const result = await executeTool(
-            toolCall.name,
-            toolCall.input,
-            supabaseClient,
-            companyId,
-            supervisorId
+            responseText = `📦 **Confirmar nuevo EPP en catálogo**\n\n¿Confirmás el registro de este elemento?\n\n* **Nombre:** ${args.name}\n* **Categoría:** ${categoryLabel}\n* **Stock inicial:** ${args.stock || 0}\n* **Marca:** ${args.brand || "-"}\n* **Modelo:** ${args.type_model || "-"}`;
+          } else {
+            responseText = `⚠️ Acción detectada: **${toolName}**. ¿Confirmás realizar esta acción?`;
+          }
+
+          return new Response(
+            JSON.stringify({
+              response: responseText,
+              pendingAction: {
+                type: toolName,
+                args: args
+              }
+            }),
+            { headers: { ...corsHeaders, "Content-Type": "application/json" } }
           );
-          console.log(`Tool result: ${result}`);
-
-          toolResults.push({
-            type: "tool_result",
-            tool_use_id: toolCall.id,
-            content: result,
-          });
         }
-
-        anthropicMessages.push({
-          role: "user",
-          content: toolResults,
-        });
-        continue;
       }
 
       const textBlock = (aiResponse.content || []).find(

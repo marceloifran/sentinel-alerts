@@ -21,7 +21,7 @@ const Footer = () => {
               <span className="text-base font-bold text-white tracking-tight">ifsin<span className="text-emerald-400">rem</span></span>
             </div>
             <p className="text-sm text-slate-500 leading-relaxed max-w-xs font-medium">
-              Gestión Inteligente de EPP y Documentación Laboral con Inteligencia Artificial. Blindá tus obras ante reclamos e inspecciones.
+              Gestión Inteligente de EPP y Documentación Laboral con Inteligencia Artificial. Blindá tu empresa ante reclamos e inspecciones.
             </p>
           </div>
 

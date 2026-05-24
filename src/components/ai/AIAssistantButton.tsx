@@ -83,6 +83,10 @@ export function AIAssistantButton() {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
+  const [pendingAction, setPendingAction] = useState<{
+    type: string;
+    args: any;
+  } | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
@@ -251,7 +255,7 @@ export function AIAssistantButton() {
     eppList: any[],
     companyId: string,
     supervisorId: string
-  ): Promise<{ success: boolean; response: string }> => {
+  ): Promise<{ success: boolean; response: string; pendingAction?: any }> => {
     const normalized = text.toLowerCase()
       .normalize("NFD")
       .replace(/[\u0300-\u036f]/g, ""); // remove accents
@@ -267,25 +271,13 @@ export function AIAssistantButton() {
         };
       }
 
-      const { data: emp, error } = await supabase
-        .from("employees")
-        .insert({
-          company_id: companyId,
-          name,
-          dni_cuil: dni,
-          job_title: jobTitle,
-          status: "activo"
-        })
-        .select("id, name")
-        .single();
-
-      if (error) {
-        return { success: false, response: `❌ Error al crear el operario: ${error.message}` };
-      }
-
       return {
         success: true,
-        response: `👥 **Operario registrado con éxito**\n\nSe dio de alta a **${emp.name}** (DNI: ${dni}) con el puesto de **${jobTitle}**.`
+        response: `👤 **Confirmar alta de operario**\n\n¿Confirmás que querés crear el siguiente operario?\n\n* **Nombre:** ${name}\n* **DNI/CUIL:** ${dni}\n* **Puesto:** ${jobTitle}`,
+        pendingAction: {
+          type: "add_employee",
+          args: { name, dni_cuil: dni, job_title: jobTitle }
+        }
       };
     }
 
@@ -356,25 +348,6 @@ export function AIAssistantButton() {
         };
       }
 
-      const { data: item, error } = await supabase
-        .from("epp_items")
-        .insert({
-          company_id: companyId,
-          name,
-          description: `Creado automáticamente por asistente de voz IA`,
-          category,
-          stock,
-          brand: brand || null,
-          type_model: typeModel || null,
-          certified: "Si"
-        })
-        .select("id, name")
-        .single();
-
-      if (error) {
-        return { success: false, response: `❌ Error al registrar el elemento EPP: ${error.message}` };
-      }
-
       const categoryLabel = {
         cabeza: "Protección Craneana (Cascos)",
         manos: "Protección de Manos (Guantes)",
@@ -389,7 +362,11 @@ export function AIAssistantButton() {
 
       return {
         success: true,
-        response: `📦 **EPP Catalogado con Éxito**\n\nSe agregó **${item.name}** al catálogo de stock.\n\n* **Categoría**: ${categoryLabel}\n* **Stock Inicial**: ${stock} unidades\n* **Marca**: ${brand || "-"}\n* **Modelo**: ${typeModel || "-"}\n* **Certificación**: Aprobado por Normas de Seguridad.`
+        response: `📦 **Confirmar nuevo EPP en catálogo**\n\n¿Confirmás el registro de este elemento?\n\n* **Nombre:** ${name}\n* **Categoría:** ${categoryLabel}\n* **Stock Inicial:** ${stock} unidades\n* **Marca:** ${brand || "-"}\n* **Modelo:** ${typeModel || "-"}`,
+        pendingAction: {
+          type: "add_epp_item",
+          args: { name, category, stock, brand, type_model: typeModel }
+        }
       };
     }
 
@@ -446,33 +423,18 @@ export function AIAssistantButton() {
     }
 
     if (foundEmployee && foundEpp) {
-      const { data: delivery, error } = await supabase
-        .from("epp_deliveries")
-        .insert({
-          company_id: companyId,
-          employee_id: foundEmployee.id,
-          epp_item_id: foundEpp.id,
-          quantity,
-          supervisor_id: supervisorId,
-          status: "pendiente",
-          notes: `Entregado por comando de voz/IA (Local)`
-        })
-        .select("id")
-        .single();
-
-      if (error) {
-        return { success: false, response: `❌ Error al registrar la entrega: ${error.message}` };
-      }
-
-      const newStock = Math.max(0, foundEpp.stock - quantity);
-      await supabase
-        .from("epp_items")
-        .update({ stock: newStock })
-        .eq("id", foundEpp.id);
-
       return {
         success: true,
-        response: `✅ **Entrega Registrada con Éxito**\n\nSe asignó **${quantity}x ${foundEpp.name}** para el operario **${foundEmployee.name}**.\n\n*La entrega quedó registrada en estado pendiente de firma digital.*`
+        response: `📋 **Confirmar entrega de EPP**\n\n¿Confirmás el registro de esta entrega?\n\n* **${quantity}x ${foundEpp.name}** para **${foundEmployee.name}**`,
+        pendingAction: {
+          type: "quick_epp_delivery",
+          args: {
+            employee_id: foundEmployee.id,
+            epp_item_ids: [foundEpp.id],
+            quantities: [quantity],
+            notes: `Entregado por comando de voz/IA (Local)`
+          }
+        }
       };
     }
 
@@ -492,8 +454,159 @@ export function AIAssistantButton() {
 
     return {
       success: false,
-      response: `🎙️ **Asistente de Obra Activo**\n\nNo logré entender el comando. Podés dictar:\n- *"Entregar casco amarillo a Marcelo Ifran"* \n- *"Registrar operario Carlos Gómez DNI 20-30440550-9 puesto Soldador"* \n- *"Crear EPP Casco de seguridad marca 3M con stock de 50"*`
+      response: `🎙️ **Asistente de EPP Activo**\n\nNo logré entender el comando. Podés dictar:\n- *"Entregar casco amarillo a Marcelo Ifran"* \n- *"Registrar operario Carlos Gómez DNI 20-30440550-9 puesto Soldador"* \n- *"Crear EPP Casco de seguridad marca 3M con stock de 50"*`
     };
+  };
+
+  const executePendingAction = async (actionToExecute?: { type: string; args: any }) => {
+    const action = actionToExecute || pendingAction;
+    if (!action) return;
+    setIsLoading(true);
+    try {
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      if (!currentUser) throw new Error("No se pudo identificar la sesión activa.");
+
+      const { data: userProfile } = await supabase
+        .from("profiles")
+        .select("company_id")
+        .eq("id", currentUser.id)
+        .single();
+
+      if (!userProfile?.company_id) throw new Error("No se pudo identificar tu empresa.");
+      const companyId = userProfile.company_id;
+
+      if (action.type === "add_employee") {
+        const { name, dni_cuil, job_title } = action.args;
+        const { data: emp, error } = await supabase
+          .from("employees")
+          .insert({
+            company_id: companyId,
+            name,
+            dni_cuil,
+            job_title: job_title || "General",
+            status: "activo"
+          })
+          .select("id, name")
+          .single();
+
+        if (error) throw new Error(`Error al crear el operario: ${error.message}`);
+
+        setMessages((prev) => [
+          ...prev,
+          {
+            role: "assistant",
+            content: `👥 **Operario registrado con éxito**\n\nSe dio de alta a **${emp.name}** (DNI: ${dni_cuil}) con el puesto de **${job_title || "General"}**.`
+          }
+        ]);
+      } else if (action.type === "add_epp_item") {
+        const { name, category, stock, brand, type_model } = action.args;
+        const { data: item, error } = await supabase
+          .from("epp_items")
+          .insert({
+            company_id: companyId,
+            name,
+            description: `Creado automáticamente por asistente de voz IA`,
+            category,
+            stock: stock || 0,
+            brand: brand || null,
+            type_model: type_model || null,
+            certified: "Si"
+          })
+          .select("id, name")
+          .single();
+
+        if (error) throw new Error(`Error al registrar el elemento EPP: ${error.message}`);
+
+        const categoryLabel = {
+          cabeza: "Protección Craneana (Cascos)",
+          manos: "Protección de Manos (Guantes)",
+          pies: "Protección de Pies (Calzado)",
+          ocular: "Protección Ocular (Anteojos)",
+          auditivo: "Protección Auditiva (Tapones/Copas)",
+          respiratorio: "Protección Respiratoria (Semimáscaras)",
+          altura: "Trabajo en Altura (Arneses)",
+          cuerpo: "Ropa de Trabajo / Cuerpo",
+          otro: "Otros Elementos / Herramientas"
+        }[category] || "Otros";
+
+        setMessages((prev) => [
+          ...prev,
+          {
+            role: "assistant",
+            content: `📦 **EPP Catalogado con Éxito**\n\nSe agregó **${item.name}** al catálogo de stock.\n\n* **Categoría**: ${categoryLabel}\n* **Stock Inicial**: ${stock || 0} unidades\n* **Marca**: ${brand || "-"}\n* **Modelo**: ${type_model || "-"}\n* **Certificación**: Aprobado por Normas de Seguridad.`
+          }
+        ]);
+      } else if (action.type === "quick_epp_delivery") {
+        const { employee_id, epp_item_ids, quantities = [], notes } = action.args;
+
+        const results = [];
+        for (let idx = 0; idx < epp_item_ids.length; idx++) {
+          const eppId = epp_item_ids[idx];
+          const qty = Number(quantities[idx]) || 1;
+
+          const { data: epp } = await supabase
+            .from("epp_items")
+            .select("id, name, stock")
+            .eq("id", eppId)
+            .single();
+
+          if (!epp) {
+            results.push(`❌ EPP con ID ${eppId} no encontrado.`);
+            continue;
+          }
+
+          const { error } = await supabase
+            .from("epp_deliveries")
+            .insert({
+              company_id: companyId,
+              employee_id,
+              epp_item_id: eppId,
+              quantity: qty,
+              supervisor_id: currentUser.id,
+              status: "pendiente",
+              notes: notes || `Entregado por comando de voz/IA`
+            });
+
+          if (error) {
+            results.push(`❌ Error al registrar entrega de ${epp.name}: ${error.message}`);
+          } else {
+            const newStock = Math.max(0, epp.stock - qty);
+            await supabase
+              .from("epp_items")
+              .update({ stock: newStock })
+              .eq("id", eppId);
+
+            results.push(`✅ **${qty}x ${epp.name}** registrado con éxito (pendiente de firma).`);
+          }
+        }
+
+        setMessages((prev) => [
+          ...prev,
+          {
+            role: "assistant",
+            content: `📋 **Resultado de la entrega:**\n\n${results.join("\n")}`
+          }
+        ]);
+      }
+
+      // Invalidate queries to refresh lists
+      queryClient.invalidateQueries({ queryKey: ["epp-deliveries"] });
+      queryClient.invalidateQueries({ queryKey: ["employees"] });
+      queryClient.invalidateQueries({ queryKey: ["epp-items"] });
+      window.dispatchEvent(new CustomEvent("epp-data-changed"));
+      
+      // Clear pending action
+      setPendingAction(null);
+    } catch (error) {
+      console.error("Error executing pending action:", error);
+      toast.error(error instanceof Error ? error.message : "Error al procesar la acción");
+      setMessages((prev) => [
+        ...prev,
+        { role: "assistant", content: `❌ Ocurrió un error al guardar los datos: ${error instanceof Error ? error.message : "Error desconocido"}` }
+      ]);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleSend = async (overrideInput?: string) => {
@@ -502,11 +615,53 @@ export function AIAssistantButton() {
 
     setInput("");
     const userMsg: Message = { role: "user", content: text };
-    const updatedMessages = [...messages, userMsg];
-    setMessages(updatedMessages);
+    setMessages((prev) => [...prev, userMsg]);
+
+    if (pendingAction) {
+      const normalized = text.toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, ""); // remove accents
+
+      const isConfirm = normalized === "si" || 
+                         normalized === "sí" || 
+                         normalized.includes("confirmar") || 
+                         normalized.includes("dale") || 
+                         normalized.includes("aceptar") || 
+                         normalized.includes("guardar") || 
+                         normalized.includes("ok") || 
+                         normalized.includes("aprobar") ||
+                         normalized.includes("correcto");
+                         
+      const isCancel = normalized === "no" || 
+                        normalized.includes("cancelar") || 
+                        normalized.includes("cancelá") || 
+                        normalized.includes("rechazar") || 
+                        normalized.includes("no quiero");
+
+      if (isConfirm) {
+        await executePendingAction();
+      } else if (isCancel) {
+        setPendingAction(null);
+        setMessages((prev) => [
+          ...prev,
+          { role: "assistant", content: "❌ Operación cancelada. ¿En qué más te puedo ayudar?" }
+        ]);
+      } else {
+        setMessages((prev) => [
+          ...prev,
+          { 
+            role: "assistant", 
+            content: "⚠️ Tenés una acción pendiente de confirmación. Por favor, decime **sí** para confirmar o **no** para cancelar (o usá los botones)." 
+          }
+        ]);
+      }
+      return;
+    }
+
     setIsLoading(true);
 
     try {
+      const updatedMessages = [...messages, userMsg];
       let useLocalFallback = false;
       let aiUnavailable = false;
       let aiErrorMessage = "";
@@ -542,20 +697,20 @@ export function AIAssistantButton() {
             responseText += `\n\n_Detalle IA: ${aiErrorMessage}_`;
           }
           setMessages((prev) => [...prev, { role: "assistant", content: responseText }]);
+          if (localResult.pendingAction) {
+            setPendingAction(localResult.pendingAction);
+          }
         } else {
           setMessages((prev) => [...prev, { role: "assistant", content: "No se pudo identificar tu empresa o sesión activa." }]);
         }
       } else if (data) {
         setMessages((prev) => [...prev, { role: "assistant", content: data.response }]);
+        if (data.pendingAction) {
+          setPendingAction(data.pendingAction);
+        }
       }
 
-      // Invalidate queries to refresh dashboard, employee lists, and inventory tables
-      queryClient.invalidateQueries({ queryKey: ["epp-deliveries"] });
-      queryClient.invalidateQueries({ queryKey: ["employees"] });
-      queryClient.invalidateQueries({ queryKey: ["epp-items"] });
-      
-      // Custom triggers to make sure local lists reload instantly
-      window.dispatchEvent(new CustomEvent("epp-data-changed"));
+      // Note: we don't invalidate queries here anymore, as database actions are deferred to confirmation stage.
 
     } catch (error) {
       console.error("AI Assistant error:", error);
@@ -676,9 +831,9 @@ export function AIAssistantButton() {
                   <div className="h-16 w-16 bg-slate-900 border border-slate-800 rounded-2xl flex items-center justify-center mx-auto mb-4">
                     <Mic className="w-8 h-8 text-emerald-400" />
                   </div>
-                  <p className="font-bold text-white text-base">¡Hola! Soy tu asistente de obra.</p>
+                  <p className="font-bold text-white text-base">¡Hola! Soy tu asistente de EPP.</p>
                   <p className="text-xs text-slate-400 mt-1 max-w-xs mx-auto">
-                    Dictame la entrega de EPP en campo y lo registraré automáticamente en el sistema.
+                    Dictame la entrega de EPP y la registraré automáticamente en el sistema.
                   </p>
                 </div>
 
@@ -749,6 +904,34 @@ export function AIAssistantButton() {
                     <div className="bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 flex items-center gap-2">
                       <Loader2 className="w-4 h-4 text-emerald-400 animate-spin" />
                       <span className="text-xs text-slate-400 font-semibold">Procesando dictado...</span>
+                    </div>
+                  </div>
+                )}
+                {pendingAction && !isLoading && (
+                  <div className="flex flex-col gap-2 p-3 bg-slate-900 border border-emerald-500/20 rounded-2xl animate-in fade-in slide-in-from-bottom duration-300">
+                    <p className="text-xs text-slate-350 font-semibold text-center">
+                      ¿Confirmás guardar esta información en el sistema?
+                    </p>
+                    <div className="flex gap-2">
+                      <Button
+                        onClick={() => executePendingAction()}
+                        className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs py-2 rounded-xl border-0 h-9"
+                      >
+                        Sí, confirmar
+                      </Button>
+                      <Button
+                        onClick={() => {
+                          setPendingAction(null);
+                          setMessages((prev) => [
+                            ...prev,
+                            { role: "assistant", content: "❌ Operación cancelada. ¿En qué más te puedo ayudar?" }
+                          ]);
+                        }}
+                        variant="outline"
+                        className="flex-1 border-slate-800 hover:bg-slate-800 text-slate-300 hover:text-white font-bold text-xs py-2 rounded-xl h-9"
+                      >
+                        No, cancelar
+                      </Button>
                     </div>
                   </div>
                 )}
