@@ -30,9 +30,8 @@ export function SignaturePad({ onSave, onCancel, title = "Firma manuscrita del o
       ctx.lineCap = "round";
       ctx.lineJoin = "round";
       
-      // Set brush color dynamically based on whether dark mode is active
-      const isDark = document.documentElement.classList.contains("dark");
-      ctx.strokeStyle = isDark ? "#10b981" : "#0f172a"; // Emerald-500 for dark mode, Charcoal for light mode
+      // Brush stroke color must always be black
+      ctx.strokeStyle = "#000000";
     }
   }, []);
 
@@ -117,11 +116,11 @@ export function SignaturePad({ onSave, onCancel, title = "Firma manuscrita del o
         </p>
       </div>
 
-      <div className="relative border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/80 rounded-xl overflow-hidden h-44 transition-all duration-200 focus-within:border-emerald-500/50 focus-within:ring-1 focus-within:ring-emerald-500/20">
-        {/* Futuristic guide elements behind the transparent canvas */}
+      <div className="relative border border-slate-250 bg-white rounded-xl overflow-hidden h-44 transition-all duration-200 focus-within:border-slate-400">
+        {/* Guide elements behind the transparent canvas */}
         <div className="absolute inset-0 pointer-events-none flex flex-col justify-end pb-3 select-none">
-          <div className="w-[85%] mx-auto border-b border-dashed border-slate-250 dark:border-slate-800 h-0 mb-4" />
-          <div className="text-[9px] text-slate-400 dark:text-slate-550 text-center font-mono tracking-widest uppercase">
+          <div className="w-[85%] mx-auto border-b border-dashed border-slate-200 h-0 mb-4" />
+          <div className="text-[9px] text-slate-450 text-center font-mono tracking-widest uppercase">
             Área de firma
           </div>
         </div>

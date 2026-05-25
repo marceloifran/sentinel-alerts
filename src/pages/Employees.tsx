@@ -1,4 +1,5 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
 import { Button } from "@/components/ui/button";
@@ -18,15 +19,14 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import { useQueryClient } from "@tanstack/react-query";
+import { useEmployees, useEPPItems, useEPPDeliveries, eppKeys } from "@/hooks/useEPPData";
 import {
-  getEmployees,
   addEmployee,
   updateEmployee,
   deleteEmployee,
-  getEPPDeliveries,
   addEPPDelivery,
   signEPPDelivery,
-  getEPPItems,
   getSignatureUrl,
   generateForm299PDF,
   type Employee,
@@ -56,10 +56,12 @@ export default function Employees() {
   const { user, profile, isAdmin, signOut } = useAuth();
   const companyId = profile?.company_id;
 
-  const [employees, setEmployees] = useState<Employee[]>([]);
-  const [eppItems, setEppItems] = useState<EPPItem[]>([]);
-  const [allDeliveries, setAllDeliveries] = useState<EPPDelivery[]>([]);
-  const [loading, setLoading] = useState(true);
+  // React Query queries
+  const { data: employees = [], isLoading: loadingEmployees } = useEmployees(companyId);
+  const { data: eppItems = [], isLoading: loadingItems } = useEPPItems(companyId);
+  const { data: allDeliveries = [], isLoading: loadingDeliveries } = useEPPDeliveries(companyId);
+
+  const loading = loadingEmployees || loadingItems || loadingDeliveries;
   const [searchQuery, setSearchQuery] = useState("");
 
   // Dialog states
@@ -71,6 +73,14 @@ export default function Employees() {
   const [selectedEmployeeForDetail, setSelectedEmployeeForDetail] = useState<Employee | null>(null);
   const [showDetailDialog, setShowDetailDialog] = useState(false);
   const [sigUrls, setSigUrls] = useState<Record<string, string>>({});
+  const sigUrlsRef = useRef(sigUrls);
+
+  // EPP Planilla 299 Preview Modal states
+  const [showPreviewDialog, setShowPreviewDialog] = useState(false);
+  const [previewEmployee, setPreviewEmployee] = useState<Employee | null>(null);
+  const [previewDeliveries, setPreviewDeliveries] = useState<EPPDelivery[]>([]);
+  const [previewCompany, setPreviewCompany] = useState<any>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
 
   // Quick delivery state inside details
   const [quickEppId, setQuickEppId] = useState("");
@@ -94,7 +104,6 @@ export default function Employees() {
 
   useEffect(() => {
     if (!companyId) return;
-    loadData();
 
     // Auto-reload data on voice change event
     const handleDataChange = () => {
@@ -107,23 +116,16 @@ export default function Employees() {
     };
   }, [companyId]);
 
+  const queryClient = useQueryClient();
+
   const loadData = async () => {
-    try {
-      setLoading(true);
-      const [empList, eppList, delList] = await Promise.all([
-        getEmployees(companyId!),
-        getEPPItems(companyId!),
-        getEPPDeliveries(companyId!),
-      ]);
-      setEmployees(empList);
-      setEppItems(eppList);
-      setAllDeliveries(delList);
-    } catch (err: any) {
-      toast.error("Error al cargar datos: " + err.message);
-    } finally {
-      setLoading(false);
-    }
+    await queryClient.invalidateQueries({ queryKey: eppKeys.all });
   };
+
+  // Keep the ref updated with the latest state
+  useEffect(() => {
+    sigUrlsRef.current = sigUrls;
+  }, [sigUrls]);
 
   // Load signature URLs whenever deliveries change
   useEffect(() => {
@@ -131,7 +133,7 @@ export default function Employees() {
       const urls: Record<string, string> = {};
       const signedDels = allDeliveries.filter((d) => d.status === "firmado" && d.signature_path);
       for (const del of signedDels) {
-        if (del.signature_path && !sigUrls[del.id]) {
+        if (del.signature_path && !sigUrlsRef.current[del.id]) {
           try {
             const url = await getSignatureUrl(del.signature_path);
             urls[del.id] = url;
@@ -140,7 +142,9 @@ export default function Employees() {
           }
         }
       }
-      setSigUrls((prev) => ({ ...prev, ...urls }));
+      if (Object.keys(urls).length > 0) {
+        setSigUrls((prev) => ({ ...prev, ...urls }));
+      }
     };
     loadUrls();
   }, [allDeliveries]);
@@ -313,24 +317,53 @@ export default function Employees() {
     }
   };
 
-  const handleDownloadF299 = async (emp: Employee) => {
+  const handleOpenPreview = async (emp: Employee) => {
     try {
-      toast.loading(`Generando Planilla 299 para ${emp.name}...`);
+      setPreviewLoading(true);
+      setPreviewEmployee(emp);
+      setShowPreviewDialog(true);
+
       const signedDeliveries = allDeliveries.filter(
         (d) => d.employee_id === emp.id && d.status === "firmado"
       );
+      setPreviewDeliveries(signedDeliveries);
 
-      if (signedDeliveries.length === 0) {
+      const { data: companyData } = await supabase
+        .from('companies' as any)
+        .select('*')
+        .eq('id', emp.company_id)
+        .single();
+
+      setPreviewCompany(companyData || {
+        name: profile?.company_name || "Constructora Sentinel",
+        cuit: profile?.company_cuit || "30-12345678-9",
+        address: "Av. Alfredo Palacios N° 2430",
+        city: "Salta",
+        zip_code: "4400",
+        state: "Salta"
+      });
+    } catch (err: any) {
+      toast.error("Error al cargar la vista previa: " + err.message);
+    } finally {
+      setPreviewLoading(false);
+    }
+  };
+
+  const handleDownloadFromPreview = async () => {
+    if (!previewEmployee) return;
+    try {
+      toast.loading(`Generando Planilla 299 para ${previewEmployee.name}...`);
+      if (previewDeliveries.length === 0) {
         toast.dismiss();
-        toast.warning(`No hay entregas firmadas para ${emp.name}. Por favor, firme las entregas pendientes primero.`);
+        toast.warning(`No hay entregas firmadas para ${previewEmployee.name}. Por favor, firme las entregas pendientes primero.`);
         return;
       }
 
       const companyInfo = {
-        name: profile?.company_name || "Constructora Sentinel",
-        cuit: profile?.company_cuit || "30-12345678-9",
+        name: previewCompany?.name || profile?.company_name || "Constructora Sentinel",
+        cuit: previewCompany?.cuit || profile?.company_cuit || "30-12345678-9",
       };
-      await generateForm299PDF(companyInfo, emp, signedDeliveries);
+      await generateForm299PDF(companyInfo, previewEmployee, previewDeliveries);
       toast.dismiss();
       toast.success("Planilla 299 descargada");
     } catch (err: any) {
@@ -455,8 +488,8 @@ export default function Employees() {
                             <Button
                               variant="ghost"
                               size="icon"
-                              onClick={() => handleDownloadF299(emp)}
-                              title="Descargar Planilla Legal 299"
+                              onClick={() => handleOpenPreview(emp)}
+                              title="Ver y Descargar Planilla Legal 299"
                               className="h-8 w-8 text-slate-400 hover:text-emerald-650 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 rounded-lg"
                             >
                               <FileDown size={14} />
@@ -528,8 +561,8 @@ export default function Employees() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleDownloadF299(emp)}
-                          className="h-8 text-xs gap-1 rounded-lg text-slate-600 dark:text-slate-350 hover:bg-slate-50 dark:hover:bg-slate-900"
+                          onClick={() => handleOpenPreview(emp)}
+                          className="h-8 text-xs gap-1 rounded-lg text-slate-600 dark:text-slate-350 hover:bg-slate-55 dark:hover:bg-slate-900"
                         >
                           <FileDown size={12} /> F299
                         </Button>
@@ -573,10 +606,10 @@ export default function Employees() {
                     </p>
                   </div>
                   <Button
-                    onClick={() => handleDownloadF299(selectedEmployeeForDetail)}
-                    className="bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs gap-1 px-3 border-0 h-9 font-bold"
+                    onClick={() => handleOpenPreview(selectedEmployeeForDetail)}
+                    className="bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs gap-1.5 px-3 border-0 h-9 font-bold"
                   >
-                    <FileDown size={12} /> Planilla 299
+                    <Eye size={12} /> Ver Planilla 299
                   </Button>
                 </DialogTitle>
               </DialogHeader>
@@ -933,7 +966,7 @@ export default function Employees() {
         </DialogContent>
       </Dialog>
 
-      {/* Signature Capture Pad Dialog */}
+       {/* Signature Capture Pad Dialog */}
       <Dialog open={showSignatureDialog} onOpenChange={setShowSignatureDialog}>
         <DialogContent className="sm:max-w-md rounded-2xl p-0 overflow-hidden border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0c101d]">
           <SignaturePad
@@ -941,6 +974,159 @@ export default function Employees() {
             onSave={handleSaveSignature}
             onCancel={() => setShowSignatureDialog(false)}
           />
+        </DialogContent>
+      </Dialog>
+
+      {/* EPP (Formulario 299) Preview Modal */}
+      <Dialog open={showPreviewDialog} onOpenChange={setShowPreviewDialog}>
+        <DialogContent className="max-w-4xl w-[95vw] max-h-[90vh] overflow-y-auto p-6 bg-white dark:bg-[#0c101d] text-slate-900 dark:text-white border-slate-200 dark:border-slate-800">
+          <DialogHeader className="border-b border-slate-250 dark:border-slate-800 pb-4">
+            <DialogTitle className="flex items-center justify-between text-slate-900 dark:text-white text-lg">
+              <span className="font-bold">Vista Previa - Formulario 299/11 (SRT)</span>
+              {previewEmployee && previewDeliveries.length > 0 && (
+                <Button
+                  onClick={handleDownloadFromPreview}
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs gap-1.5 px-4 h-9 font-bold"
+                >
+                  <FileDown size={14} /> Descargar PDF
+                </Button>
+              )}
+            </DialogTitle>
+          </DialogHeader>
+
+          {previewLoading ? (
+            <div className="py-20 text-center text-slate-400">Cargando vista previa de la planilla...</div>
+          ) : !previewEmployee ? (
+            <div className="py-10 text-center text-slate-400">No se seleccionó ningún operario.</div>
+          ) : (
+            <div className="space-y-6 pt-4 font-sans text-slate-900 dark:text-white">
+              {/* Official paper look container */}
+              <div className="border border-slate-300 dark:border-slate-800 bg-white dark:bg-[#080b11] p-4 sm:p-8 rounded-xl shadow-inner max-w-3xl mx-auto text-black dark:text-slate-200">
+                {/* Header Grid */}
+                <div className="border border-black dark:border-slate-700 text-xs">
+                  {/* Row 1: Title */}
+                  <div className="grid grid-cols-12 border-b border-black dark:border-slate-700">
+                    <div className="col-span-10 p-3 flex flex-col items-center justify-center text-center font-bold">
+                      <p className="text-sm font-black uppercase text-slate-900 dark:text-white">Constancia de Entrega de Ropa de Trabajo y Elementos de Protección Personal</p>
+                      <p className="text-[10px] text-slate-500 mt-0.5">(Resolución S.R.T. N° 299/2011)</p>
+                    </div>
+                    <div className="col-span-2 border-l border-black dark:border-slate-700 p-2 flex flex-col items-center justify-center text-center">
+                      <span className="text-[11px] font-black text-emerald-600 dark:text-emerald-400 leading-none">BMI</span>
+                      <span className="text-[6px] font-bold text-slate-550 leading-none mt-0.5">CONSTRUCTORA</span>
+                    </div>
+                  </div>
+
+                  {/* Row 2: Razón Social / CUIT */}
+                  <div className="grid grid-cols-12 border-b border-black dark:border-slate-700">
+                    <div className="col-span-2 p-2 border-r border-black dark:border-slate-700 font-bold bg-slate-50 dark:bg-slate-900/40">Razón Social:</div>
+                    <div className="col-span-5 p-2 border-r border-black dark:border-slate-700 truncate text-slate-800 dark:text-slate-300">{previewCompany?.name || profile?.company_name}</div>
+                    <div className="col-span-2 p-2 border-r border-black dark:border-slate-700 font-bold bg-slate-50 dark:bg-slate-900/40">C.U.I.T. N°:</div>
+                    <div className="col-span-3 p-2 font-mono text-slate-800 dark:text-slate-300">{previewCompany?.cuit || profile?.company_cuit || "-"}</div>
+                  </div>
+
+                  {/* Row 3: Address fields */}
+                  <div className="grid grid-cols-24 border-b border-black dark:border-slate-700" style={{ gridTemplateColumns: 'repeat(24, minmax(0, 1fr))' }}>
+                    <div className="col-span-3 p-2 border-r border-black dark:border-slate-700 font-bold bg-slate-50 dark:bg-slate-900/40">Dirección:</div>
+                    <div className="col-span-5 p-2 border-r border-black dark:border-slate-700 truncate text-slate-800 dark:text-slate-300">{previewCompany?.address || "Av. Alfredo Palacios N° 2430"}</div>
+                    <div className="col-span-3 p-2 border-r border-black dark:border-slate-700 font-bold bg-slate-50 dark:bg-slate-900/40 text-center">Localidad:</div>
+                    <div className="col-span-3 p-2 border-r border-black dark:border-slate-700 truncate text-slate-800 dark:text-slate-300">{previewCompany?.city || "Salta"}</div>
+                    <div className="col-span-2 p-2 border-r border-black dark:border-slate-700 font-bold bg-slate-50 dark:bg-slate-900/40 text-center">CP:</div>
+                    <div className="col-span-2 p-2 border-r border-black dark:border-slate-700 text-center font-mono text-slate-800 dark:text-slate-300">{previewCompany?.zip_code || "4400"}</div>
+                    <div className="col-span-3 p-2 border-r border-black dark:border-slate-700 font-bold bg-slate-50 dark:bg-slate-900/40 text-center">Provincia:</div>
+                    <div className="col-span-3 p-2 truncate text-slate-800 dark:text-slate-300">{previewCompany?.state || "Salta"}</div>
+                  </div>
+
+                  {/* Row 4: Worker details */}
+                  <div className="grid grid-cols-12 border-b border-black dark:border-slate-700">
+                    <div className="col-span-2 p-2 border-r border-black dark:border-slate-700 font-bold bg-slate-50 dark:bg-slate-900/40">Trabajador:</div>
+                    <div className="col-span-6 p-2 border-r border-black dark:border-slate-700 font-bold text-slate-900 dark:text-white">{previewEmployee.name}</div>
+                    <div className="col-span-2 p-2 border-r border-black dark:border-slate-700 font-bold bg-slate-50 dark:bg-slate-900/40">D.N.I N°:</div>
+                    <div className="col-span-2 p-2 font-mono text-slate-800 dark:text-slate-300">{previewEmployee.dni_cuil}</div>
+                  </div>
+
+                  {/* Row 5: Job Description & Required EPP */}
+                  <div className="grid grid-cols-12">
+                    <div className="col-span-4 p-3 border-r border-black dark:border-slate-700 space-y-1">
+                      <p className="font-bold text-[10px] text-slate-500 uppercase tracking-wide">Breve descripción del puesto:</p>
+                      <p className="text-[10px] leading-relaxed text-slate-700 dark:text-slate-350">
+                        {previewEmployee.job_description || "Operario de Tareas Generales en Obra: Excavación Manual y Movimiento de Suelos..."}
+                      </p>
+                    </div>
+                    <div className="col-span-8 p-3 space-y-1">
+                      <p className="font-bold text-[10px] text-slate-500 uppercase tracking-wide">Elementos de Protección Personal necesarios:</p>
+                      <p className="text-[10px] leading-relaxed text-slate-700 dark:text-slate-355">
+                        {previewEmployee.required_epps || "Casco de Seguridad / Gafas de Seguridad Transparentes / Guantes de Vaqueta / Guantes de Acrilonitrilo / Botines de Seguridad con Puntera..."}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Deliveries Table */}
+                <div className="mt-6 border border-black dark:border-slate-700 rounded-lg overflow-hidden">
+                  <table className="w-full text-left text-xs border-collapse">
+                    <thead>
+                      <tr className="bg-slate-50 dark:bg-slate-900/40 border-b border-black dark:border-slate-700">
+                        <th className="p-2 border-r border-black dark:border-slate-700 text-center font-bold w-8">N°</th>
+                        <th className="p-2 border-r border-black dark:border-slate-700 font-bold">Detalle de Elemento</th>
+                        <th className="p-2 border-r border-black dark:border-slate-700 font-bold">Tipo/Modelo</th>
+                        <th className="p-2 border-r border-black dark:border-slate-700 font-bold">Marca</th>
+                        <th className="p-2 border-r border-black dark:border-slate-700 font-bold text-center">Certificado</th>
+                        <th className="p-2 border-r border-black dark:border-slate-700 text-center w-12 font-bold">Cant.</th>
+                        <th className="p-2 border-r border-black dark:border-slate-700 text-center w-24 font-bold">Fecha</th>
+                        <th className="p-2 text-center w-28 font-bold">Firma Trabajador</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-black dark:divide-slate-700">
+                      {previewDeliveries.length === 0 ? (
+                        <tr>
+                          <td colSpan={8} className="p-6 text-center text-slate-550 italic bg-white dark:bg-[#080b11]">
+                            No hay registros de EPP firmados para esta planilla.
+                          </td>
+                        </tr>
+                      ) : (
+                        previewDeliveries.map((del, idx) => (
+                          <tr key={del.id} className="hover:bg-slate-50/20">
+                            <td className="p-2 border-r border-black dark:border-slate-700 text-center font-mono">{idx + 1}</td>
+                            <td className="p-2 border-r border-black dark:border-slate-700 font-semibold">{del.epp_item?.name || "Elemento"}</td>
+                            <td className="p-2 border-r border-black dark:border-slate-700 font-mono text-[11px]">{(del.epp_item as any)?.type_model || "-"}</td>
+                            <td className="p-2 border-r border-black dark:border-slate-700">{(del.epp_item as any)?.brand || "-"}</td>
+                            <td className="p-2 border-r border-black dark:border-slate-700 text-center font-bold text-[10px]">{(del.epp_item as any)?.certified || "Si"}</td>
+                            <td className="p-2 border-r border-black dark:border-slate-700 text-center font-semibold">{del.quantity}</td>
+                            <td className="p-2 border-r border-black dark:border-slate-700 text-center font-mono text-[11px]">{del.delivery_date}</td>
+                            <td className="p-2 text-center flex items-center justify-center min-h-[48px]">
+                              {del.status === "firmado" && sigUrls[del.id] ? (
+                                <img
+                                  src={sigUrls[del.id]}
+                                  className="h-9 object-contain bg-white dark:bg-slate-100 border border-slate-200 dark:border-slate-800 rounded px-1 max-w-[90px]"
+                                  alt="Firma"
+                                />
+                              ) : (
+                                <span className="text-[10px] text-slate-450 italic">Sin firma</span>
+                              )}
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+
+                <div className="mt-8 pt-4 border-t border-dashed border-slate-300 dark:border-slate-800 text-[10px] text-slate-500 flex flex-col sm:flex-row justify-between gap-4">
+                  <p>Documento oficial emitido bajo la resolución SRT N° 299/2011.</p>
+                  <p className="font-mono">Operario ID: {previewEmployee.id.substring(0, 8)}...</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <DialogFooter className="border-t border-slate-250 dark:border-slate-800 pt-4 mt-6">
+            <Button
+              onClick={() => setShowPreviewDialog(false)}
+              className="bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-xs px-4 border-0"
+            >
+              Cerrar Vista Previa
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

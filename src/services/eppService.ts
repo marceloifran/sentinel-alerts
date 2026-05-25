@@ -255,14 +255,18 @@ export async function getSignatureUrl(filePath: string): Promise<string> {
 
 async function fetchSignatureAsBase64(path: string): Promise<string | null> {
   try {
-    const url = await getSignatureUrl(path);
-    const response = await fetch(url);
-    if (!response.ok) throw new Error("No se pudo obtener la firma");
-    const blob = await response.blob();
+    const { data, error } = await supabase.storage
+      .from('signatures')
+      .download(path);
+
+    if (error || !data) {
+      throw error || new Error("No se pudo descargar la firma desde el storage");
+    }
+
     return new Promise((resolve) => {
       const reader = new FileReader();
       reader.onloadend = () => resolve(reader.result as string);
-      reader.readAsDataURL(blob);
+      reader.readAsDataURL(data);
     });
   } catch (err) {
     console.error("Error cargando firma para PDF:", err);
@@ -272,11 +276,11 @@ async function fetchSignatureAsBase64(path: string): Promise<string | null> {
 
 // ─── PDF GENERATION (FORMULARIO 299 SRT EXACT LAYOUT) ──────────────────────────
 
-export async function generateForm299PDF(
+export async function buildForm299PDF(
   companyInfo: { name: string; cuit: string | null },
   employeeInfo: Employee,
   deliveries: EPPDelivery[]
-): Promise<void> {
+): Promise<jsPDF> {
   const doc = new jsPDF({
     orientation: 'portrait',
     unit: 'mm',
@@ -446,7 +450,7 @@ export async function generateForm299PDF(
   // Description Values
   doc.setFont('Helvetica', 'normal');
   doc.setFontSize(7);
-  const jobVal = employee.job_description || "Operario de Tareas Generales en Obra: Excavación Manual y Movimiento de Sueldos -Corte y Armado de Hierros - Armado de Encofrados - Elaboración, vertido y vibrado de H° A° - Trabajos de Albañilería en General.-";
+  const jobVal = employee.job_description || "Operario de Tareas Generales en Obra: Excavación Manual y Movimiento de Suelos -Corte y Armado de Hierros - Armado de Encofrados - Elaboración, vertido y vibrado de H° A° - Trabajos de Albañilería en General.-";
   const splitJobVal = doc.splitTextToSize(jobVal, 54);
   doc.text(splitJobVal, 12, startY + 63);
 
@@ -534,6 +538,14 @@ export async function generateForm299PDF(
     }
   });
 
-  // Save the PDF matching the naming convention of worker
-  doc.save(`Formulario_299_${employee.name.replace(/\s+/g, '_')}.pdf`);
+  return doc;
+}
+
+export async function generateForm299PDF(
+  companyInfo: { name: string; cuit: string | null },
+  employeeInfo: Employee,
+  deliveries: EPPDelivery[]
+): Promise<void> {
+  const doc = await buildForm299PDF(companyInfo, employeeInfo, deliveries);
+  doc.save(`Formulario_299_${employeeInfo.name.replace(/\s+/g, '_')}.pdf`);
 }

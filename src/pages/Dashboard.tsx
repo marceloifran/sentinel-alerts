@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
 import { Button } from "@/components/ui/button";
@@ -22,10 +22,9 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
+import { useQueryClient } from "@tanstack/react-query";
+import { useEmployees, useEPPItems, useEPPDeliveries, eppKeys } from "@/hooks/useEPPData";
 import {
-  getEmployees,
-  getEPPItems,
-  getEPPDeliveries,
   addEPPDelivery,
   signEPPDelivery,
   getSignatureUrl,
@@ -41,11 +40,12 @@ export default function Dashboard() {
   const { user, profile, isAdmin, signOut } = useAuth();
   const companyId = profile?.company_id;
 
-  // Data states
-  const [employees, setEmployees] = useState<Employee[]>([]);
-  const [eppItems, setEppItems] = useState<EPPItem[]>([]);
-  const [deliveries, setDeliveries] = useState<EPPDelivery[]>([]);
-  const [loading, setLoading] = useState(true);
+  // React Query queries
+  const { data: employees = [], isLoading: loadingEmployees } = useEmployees(companyId);
+  const { data: eppItems = [], isLoading: loadingItems } = useEPPItems(companyId);
+  const { data: deliveries = [], isLoading: loadingDeliveries } = useEPPDeliveries(companyId);
+
+  const loading = loadingEmployees || loadingItems || loadingDeliveries;
 
   // Form / Dialog states
   const [showDeliveryDialog, setShowDeliveryDialog] = useState(false);
@@ -63,12 +63,19 @@ export default function Dashboard() {
 
   // Load signature URLs whenever deliveries change
   const [sigUrls, setSigUrls] = useState<Record<string, string>>({});
+  const sigUrlsRef = useRef(sigUrls);
+
+  // Keep ref updated
+  useEffect(() => {
+    sigUrlsRef.current = sigUrls;
+  }, [sigUrls]);
+
   useEffect(() => {
     const loadUrls = async () => {
       const urls: Record<string, string> = {};
       const signedDels = deliveries.filter((d) => d.status === "firmado" && d.signature_path);
       for (const del of signedDels) {
-        if (del.signature_path && !sigUrls[del.id]) {
+        if (del.signature_path && !sigUrlsRef.current[del.id]) {
           try {
             const url = await getSignatureUrl(del.signature_path);
             urls[del.id] = url;
@@ -77,14 +84,15 @@ export default function Dashboard() {
           }
         }
       }
-      setSigUrls((prev) => ({ ...prev, ...urls }));
+      if (Object.keys(urls).length > 0) {
+        setSigUrls((prev) => ({ ...prev, ...urls }));
+      }
     };
     loadUrls();
   }, [deliveries]);
 
   useEffect(() => {
     if (!companyId) return;
-    loadAllData();
 
     // Auto-reload data on voice change event
     const handleDataChange = () => {
@@ -97,22 +105,10 @@ export default function Dashboard() {
     };
   }, [companyId]);
 
+  const queryClient = useQueryClient();
+
   const loadAllData = async () => {
-    try {
-      setLoading(true);
-      const [empList, eppList, delList] = await Promise.all([
-        getEmployees(companyId!),
-        getEPPItems(companyId!),
-        getEPPDeliveries(companyId!),
-      ]);
-      setEmployees(empList);
-      setEppItems(eppList);
-      setDeliveries(delList);
-    } catch (err: any) {
-      toast.error("Error al cargar la información: " + err.message);
-    } finally {
-      setLoading(false);
-    }
+    await queryClient.invalidateQueries({ queryKey: eppKeys.all });
   };
 
   const handleLogout = async () => {

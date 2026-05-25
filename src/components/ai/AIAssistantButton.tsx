@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
 import { useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
+import { eppKeys } from "@/hooks/useEPPData";
 
 interface Message {
   role: "user" | "assistant";
@@ -278,6 +279,92 @@ export function AIAssistantButton() {
           type: "add_employee",
           args: { name, dni_cuil: dni, job_title: jobTitle }
         }
+      };
+    }
+
+    // 4. UPDATE EMPLOYEE PATTERN
+    const isUpdateEmployee = normalized.includes("actualizar operario") || 
+                             normalized.includes("modificar operario") || 
+                             normalized.includes("editar operario") ||
+                             normalized.includes("cambiar dni") ||
+                             normalized.includes("ponerle el dni") ||
+                             normalized.includes("actualizar dni") ||
+                             normalized.includes("cambiar puesto") ||
+                             normalized.includes("cambiar cargo");
+
+    if (isUpdateEmployee) {
+      // Find employee candidate
+      let foundEmployee: any = null;
+      for (const emp of empList) {
+        const empNameNorm = emp.name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        if (normalized.includes(empNameNorm)) {
+          foundEmployee = emp;
+          break;
+        }
+      }
+
+      // If not exact match, try matching first name
+      if (!foundEmployee) {
+        for (const emp of empList) {
+          const firstName = emp.name.split(" ")[0].toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+          if (firstName.length > 2 && normalized.includes(firstName)) {
+            foundEmployee = emp;
+            break;
+          }
+        }
+      }
+
+      // Fallback: use the last employee in the list (since they said "al último operario que cargué")
+      if (!foundEmployee && empList.length > 0) {
+        if (normalized.includes("ultimo") || normalized.includes("ultima")) {
+          foundEmployee = empList[empList.length - 1];
+        }
+      }
+
+      // Extract new DNI
+      let newDni = "";
+      const dniFormatted = text.match(/\b\d{2}-\d{8}-\d\b/);
+      if (dniFormatted) {
+        newDni = dniFormatted[0];
+      } else {
+        const dniMatch = text.match(/(?:dni|cuil|cuit)?\s*(\b\d{7,10}\b)/i) || text.match(/\b\d{2}\s*\d{3}\s*\d{3}\b/);
+        if (dniMatch) {
+          newDni = dniMatch[0].replace(/[\s.-]+/g, "");
+        }
+      }
+
+      // Extract new job title
+      let newJobTitle = "";
+      const jobMatch = text.match(/(?:puesto|cargo|como)\s+([a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+?)(?=\s+(?:con\s+)?(?:dni|cuil)|$)/i);
+      if (jobMatch?.[1]) {
+        newJobTitle = jobMatch[1].trim();
+      }
+
+      if (foundEmployee && (newDni || newJobTitle)) {
+        const changesList = [];
+        const args: any = { employee_id: foundEmployee.id };
+        if (newDni) {
+          args.dni_cuil = newDni;
+          changesList.push(`DNI/CUIL a: ${newDni}`);
+        }
+        if (newJobTitle) {
+          args.job_title = newJobTitle;
+          changesList.push(`Puesto a: ${newJobTitle}`);
+        }
+
+        return {
+          success: true,
+          response: `👤 **Confirmar actualización de operario**\n\n¿Confirmás actualizar los datos de **${foundEmployee.name}**?\n\n* ${changesList.join("\n* ")}`,
+          pendingAction: {
+            type: "update_employee",
+            args
+          }
+        };
+      }
+
+      return {
+        success: false,
+        response: `⚠️ Detecté un comando para actualizar datos, pero no logré identificar el operario o los nuevos datos. Ej: *"Al operario Martín Rojas ponerle el DNI 20-30440550-9"*`
       };
     }
 
@@ -587,12 +674,34 @@ export function AIAssistantButton() {
             content: `📋 **Resultado de la entrega:**\n\n${results.join("\n")}`
           }
         ]);
+      } else if (action.type === "update_employee") {
+        const { employee_id, dni_cuil, job_title, phone, status } = action.args;
+        const updates: any = {};
+        if (dni_cuil !== undefined) updates.dni_cuil = dni_cuil;
+        if (job_title !== undefined) updates.job_title = job_title;
+        if (phone !== undefined) updates.phone = phone;
+        if (status !== undefined) updates.status = status;
+
+        const { data: emp, error } = await supabase
+          .from("employees")
+          .update(updates)
+          .eq("id", employee_id)
+          .select("id, name")
+          .single();
+
+        if (error) throw new Error(`Error al actualizar el operario: ${error.message}`);
+
+        setMessages((prev) => [
+          ...prev,
+          {
+            role: "assistant",
+            content: `👤 **Operario actualizado con éxito**\n\nSe actualizaron los datos de **${emp.name}** en el sistema.`
+          }
+        ]);
       }
 
       // Invalidate queries to refresh lists
-      queryClient.invalidateQueries({ queryKey: ["epp-deliveries"] });
-      queryClient.invalidateQueries({ queryKey: ["employees"] });
-      queryClient.invalidateQueries({ queryKey: ["epp-items"] });
+      queryClient.invalidateQueries({ queryKey: eppKeys.all });
       window.dispatchEvent(new CustomEvent("epp-data-changed"));
       
       // Clear pending action
@@ -814,14 +923,26 @@ export function AIAssistantButton() {
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="sm:max-w-md h-[550px] flex flex-col p-0 rounded-2xl overflow-hidden border-slate-800 bg-[#0a0d16]">
-          <DialogHeader className="p-4 border-b border-slate-800 bg-[#080b11]">
-            <DialogTitle className="flex items-center gap-2 text-white">
+          <DialogHeader className="p-4 border-b border-slate-800 bg-[#080b11] flex flex-row items-center justify-between space-y-0">
+            <DialogTitle className="flex items-center gap-2 text-white text-base">
               <Sparkles className="w-5 h-5 text-emerald-400" />
               Asistente de Voz ifsinrem
               <span className="text-[10px] bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded-full flex items-center gap-1 font-bold">
                 <Zap className="w-3 h-3" /> IA + dictado
               </span>
             </DialogTitle>
+            {messages.length > 0 && (
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  setMessages([]);
+                  setPendingAction(null);
+                }}
+                className="text-xs text-slate-400 hover:text-white hover:bg-slate-900 rounded-lg px-2.5 h-8 border border-slate-800 mr-8 font-semibold"
+              >
+                Limpiar
+              </Button>
+            )}
           </DialogHeader>
 
           <ScrollArea className="flex-1 p-4" ref={scrollRef}>
@@ -941,12 +1062,25 @@ export function AIAssistantButton() {
 
           <div className="p-4 border-t border-slate-800 bg-[#080b11]">
             <div className="flex gap-2">
+              <Button
+                onClick={handleVoiceToggle}
+                variant="ghost"
+                size="icon"
+                disabled={isLoading}
+                className={`rounded-xl h-10 w-10 shrink-0 border border-slate-800 ${
+                  isRecording 
+                    ? "bg-rose-500/15 hover:bg-rose-500/25 text-rose-450 hover:text-rose-400" 
+                    : "bg-[#0f1425] text-emerald-400 hover:text-emerald-300 hover:bg-slate-900"
+                }`}
+              >
+                <Mic className={`w-4 h-4 ${isRecording ? "animate-pulse" : ""}`} />
+              </Button>
               <Input
                 ref={inputRef}
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder="Dictá o escribí: 'Casco para Carlos'..."
+                placeholder={isRecording ? "Escuchando... hablá ahora" : "Dictá o escribí: 'Casco para Carlos'..."}
                 disabled={isLoading}
                 className="rounded-xl border-slate-850 bg-[#0f1425] text-white text-sm focus-visible:ring-emerald-500/25"
               />

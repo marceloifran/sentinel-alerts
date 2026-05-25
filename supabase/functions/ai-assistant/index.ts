@@ -58,6 +58,22 @@ const anthropicTools = [
       required: ["name", "category"],
     },
   },
+  {
+    name: "update_employee",
+    description: "Modifica o actualiza los datos de un operario existente en la obra (como DNI, puesto, legajo, teléfono o estado).",
+    input_schema: {
+      type: "object",
+      properties: {
+        employee_id: { type: "string", description: "El UUID del operario a actualizar" },
+        dni_cuil: { type: "string", description: "Nuevo número de DNI o CUIL (opcional)" },
+        job_title: { type: "string", description: "Nuevo puesto de trabajo (opcional)" },
+        file_number: { type: "string", description: "Nuevo número de legajo (opcional)" },
+        phone: { type: "string", description: "Nuevo teléfono (opcional)" },
+        status: { type: "string", enum: ["activo", "inactivo"], description: "Nuevo estado (opcional)" }
+      },
+      required: ["employee_id"]
+    }
+  }
 ];
 
 const VALID_EPP_CATEGORIES = ["cabeza", "manos", "pies", "ocular", "auditivo", "respiratorio", "altura", "cuerpo", "otro"];
@@ -200,6 +216,26 @@ async function executeTool(
 
         if (error) return JSON.stringify({ error: `No se pudo crear el elemento EPP: ${error.message}` });
         return JSON.stringify({ success: true, message: `EPP ${item.name} catalogado correctamente en stock con ID ${item.id}` });
+      }
+
+      case "update_employee": {
+        const { employee_id, dni_cuil, job_title, file_number, phone, status } = args;
+        const updates: Record<string, any> = {};
+        if (dni_cuil !== undefined) updates.dni_cuil = dni_cuil;
+        if (job_title !== undefined) updates.job_title = job_title;
+        if (file_number !== undefined) updates.file_number = file_number;
+        if (phone !== undefined) updates.phone = phone;
+        if (status !== undefined) updates.status = status;
+
+        const { data: emp, error } = await supabaseClient
+          .from("employees")
+          .update(updates)
+          .eq("id", employee_id)
+          .select("id, name")
+          .single();
+
+        if (error) return JSON.stringify({ error: `No se pudo actualizar el operario: ${error.message}` });
+        return JSON.stringify({ success: true, message: `Operario ${emp.name} actualizado correctamente` });
       }
 
       default:
@@ -381,6 +417,17 @@ REGLAS DE OPERACIÓN:
             }[normalizeEppCategory(args.category)] || "Otros";
 
             responseText = `📦 **Confirmar nuevo EPP en catálogo**\n\n¿Confirmás el registro de este elemento?\n\n* **Nombre:** ${args.name}\n* **Categoría:** ${categoryLabel}\n* **Stock inicial:** ${args.stock || 0}\n* **Marca:** ${args.brand || "-"}\n* **Modelo:** ${args.type_model || "-"}`;
+          } else if (toolName === "update_employee") {
+            const emp = employees?.find((e: any) => e.id === args.employee_id);
+            const empName = emp ? emp.name : "Operario";
+            const changes = [];
+            if (args.dni_cuil) changes.push(`* **DNI/CUIL:** ${args.dni_cuil}`);
+            if (args.job_title) changes.push(`* **Puesto:** ${args.job_title}`);
+            if (args.file_number) changes.push(`* **Legajo:** ${args.file_number}`);
+            if (args.phone) changes.push(`* **Teléfono:** ${args.phone}`);
+            if (args.status) changes.push(`* **Estado:** ${args.status}`);
+            
+            responseText = `👤 **Confirmar actualización de operario**\n\n¿Confirmás actualizar los datos de **${empName}**?\n\n${changes.join("\n")}`;
           } else {
             responseText = `⚠️ Acción detectada: **${toolName}**. ¿Confirmás realizar esta acción?`;
           }
