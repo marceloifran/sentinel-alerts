@@ -66,7 +66,7 @@ const Footer = () => {
             </h3>
             <div className="flex gap-3">
               {[
-                { icon: Linkedin, href: 'https://www.linkedin.com/company/ifsinrem/', label: 'LinkedIn' },
+                { icon: Linkedin, href: 'https://www.linkedin.com/company/ifsint/', label: 'LinkedIn' },
                 { icon: Mail, href: 'mailto:contacto@ifsinrem.com', label: 'Email' },
                 { icon: Calendar, href: 'https://calendly.com/ifsinrem', label: 'Demo' },
               ].map((s) => (
@@ -92,7 +92,7 @@ const Footer = () => {
           <p className="text-xs text-slate-500 font-medium">
             © {year} ifsinrem by{' '}
             <a
-              href="https://www.linkedin.com/company/ifsinrem/"
+              href="https://www.linkedin.com/company/ifsint/"
               target="_blank"
               rel="noopener noreferrer"
               className="text-slate-400 hover:text-emerald-400 transition-colors"
