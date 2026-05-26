@@ -18,6 +18,7 @@ import {
 import { motion, useInView, AnimatePresence } from "framer-motion";
 import { useRef, useEffect, useState } from "react";
 import Footer from "@/components/Footer";
+import { openCalendly } from "@/utils/calendly";
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
 
@@ -492,8 +493,9 @@ const Index = () => {
               href="https://calendly.com/ifsinrem"
               target="_blank"
               rel="noopener noreferrer"
+              onClick={openCalendly}
               whileHover={{ scale: 1.02 }}
-              className="w-full sm:w-auto flex items-center justify-center gap-2 rounded-2xl border border-slate-800 bg-[#090d16]/80 px-8 h-14 text-base font-bold text-slate-300 hover:border-slate-700 hover:text-white transition-all font-sans"
+              className="w-full sm:w-auto flex items-center justify-center gap-2 rounded-2xl border border-slate-800 bg-[#090d16]/80 px-8 h-14 text-base font-bold text-slate-300 hover:border-slate-700 hover:text-white transition-all cursor-pointer font-sans"
             >
               Agendar Demo en Vivo
             </motion.a>
@@ -750,9 +752,10 @@ const Index = () => {
                     href="https://calendly.com/ifsinrem"
                     target="_blank"
                     rel="noopener noreferrer"
+                    onClick={openCalendly}
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
-                    className="group flex items-center justify-between gap-3 rounded-2xl bg-emerald-600 hover:bg-emerald-500 px-6 h-14 text-base font-bold text-white shadow-xl shadow-emerald-500/20 transition-colors"
+                    className="group flex items-center justify-between gap-3 rounded-2xl bg-emerald-600 hover:bg-emerald-500 px-6 h-14 text-base font-bold text-white shadow-xl shadow-emerald-500/20 transition-colors cursor-pointer"
                   >
                     <span className="flex items-center gap-3">
                       <Calendar size={18} />

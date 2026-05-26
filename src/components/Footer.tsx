@@ -1,6 +1,7 @@
 import { Linkedin, Mail, Calendar, Shield, ArrowRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
+import { openCalendly } from '@/utils/calendly';
 
 const Footer = () => {
   const year = new Date().getFullYear();
@@ -34,7 +35,7 @@ const Footer = () => {
               {[
                 { label: 'Inicio', href: '#' },
                 { label: 'Cómo funciona', href: '#como-funciona' },
-                { label: 'Agendar Demo (Calendly)', href: 'https://calendly.com/ifsinrem', external: true },
+                { label: 'Agendar Demo (Calendly)', href: 'https://calendly.com/ifsinrem', external: true, onClick: openCalendly },
               ].map((l) => (
                 <li key={l.label}>
                   {l.external ? (
@@ -42,7 +43,8 @@ const Footer = () => {
                       href={l.href}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-sm text-slate-400 hover:text-emerald-400 transition-colors font-medium"
+                      onClick={l.onClick}
+                      className="text-sm text-slate-400 hover:text-emerald-400 transition-colors font-medium cursor-pointer"
                     >
                       {l.label}
                     </a>
@@ -68,16 +70,17 @@ const Footer = () => {
               {[
                 { icon: Linkedin, href: 'https://www.linkedin.com/company/ifsint/', label: 'LinkedIn' },
                 { icon: Mail, href: 'mailto:contacto@ifsinrem.com', label: 'Email' },
-                { icon: Calendar, href: 'https://calendly.com/ifsinrem', label: 'Demo' },
+                { icon: Calendar, href: 'https://calendly.com/ifsinrem', label: 'Demo', onClick: openCalendly },
               ].map((s) => (
                 <motion.a
                   key={s.label}
                   href={s.href}
                   target="_blank"
                   rel="noopener noreferrer"
+                  onClick={s.onClick}
                   aria-label={s.label}
                   whileHover={{ scale: 1.1, y: -2 }}
-                  className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-900 border border-slate-800 text-slate-400 hover:border-emerald-500/30 hover:text-emerald-400 transition-all shadow-sm"
+                  className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-900 border border-slate-800 text-slate-400 hover:border-emerald-500/30 hover:text-emerald-400 transition-all shadow-sm cursor-pointer"
                 >
                   <s.icon size={16} />
                 </motion.a>
